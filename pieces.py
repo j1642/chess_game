@@ -1,4 +1,4 @@
-import board
+#import board
 
 class Pawn:
     def __init__(self, name: str, white_or_black: str, position: int):
@@ -21,14 +21,30 @@ class Pawn:
     # TODO: Allow diagonal captures, en passant
     # TODO: Remove moves where a friendly piece is
     def update_moves(self):
+        self.moves = []
         if self.has_moved is True:
             if self.color == 'white':
-                self.moves = list(self.square + 8)
+                self.moves.append(self.square + 8)
             elif self.color == 'black':
-                self.moves = list(self.square - 8)
+                self.moves.append(self.square - 8)
         elif self.has_moved is False:
-            self.moves = list(self.square + 8, self.square + 16)
-
+            if self.color == 'white':
+                self.moves.append(self.square + 8)
+                self.moves.append(self.square + 16)
+            elif self.color == 'black':
+                self.moves.append(self.square - 8)
+                self.moves.append(self.square - 16)
+                
+    def move_piece(self, new_square: int):
+        if new_square in self.moves:
+            self.has_moved = True
+            old_square = self.square
+            self.square = new_square
+    #        squares[old_square], squares[new_square] = '', self.name
+        else:
+            return f'Not a valid move for {self.name}.'
+    
+    # Update global list of piece positions:
     # Where squares is a global list of square contents
     # Get new_square from input in main script
    # def move_piece(self):
@@ -63,7 +79,7 @@ class Knight:
         #all_moves = [self.square + delta for delta in [17, 10, -6, -15, -17, -10, 6, 15]]
 
         # all_moves ordered by downward (toward 1st rank) to upward knight movements
-        all_moves = [self.square + delta for delta in [-15, -17, -6, -10, 6, 10, 15, 17]]
+        all_moves = [self.square + delta for delta in (-15, -17, -6, -10, 6, 10, 15, 17)]
         if self.square in board.rank_1:
             del all_moves[:3]
         elif self.square in board.rank_2:
@@ -73,35 +89,31 @@ class Knight:
         elif self.square in board.rank_8:
             del all_moves[3:]
             
-        # Use try, except because some of list elements may be missing already    
+        # Some of list elements may be missing already from del statements.
         if self.square in board.a_file:
-            try:
-                all_moves.remove(self.square - 17)
-                all_moves.remove(self.square - 10)
-                all_moves.remove(self.square + 6)
-                all_moves.remove(self.square + 15)
-            except ValueError:
-                pass
+            for movement in (-17, -10, 6, 15):
+                try:
+                    all_moves.remove(self.square + movement)
+                except ValueError:
+                    continue
         elif self.square in board.b_file:
-            try:
-                all_moves.remove(self.square - 10)
-                all_moves.remove(self.square + 6)
-            except ValueError:
-                pass
+            for movement in (-10, 6):
+                try:
+                    all_moves.remove(self.square + movement)
+                except ValueError:
+                    continue
         elif self.square in board.g_file:
-            try:
-                all_moves.remove(self.square + 10)
-                all_moves.remove(self.square - 6)
-            except ValueError:
-                pass
+            for movement in (10, -6):
+                try:
+                    all_moves.remove(self.square + movement)
+                except ValueError:
+                    continue
         elif self.square in board.h_file:
-            try:
-                all_moves.remove(self.square + 17)
-                all_moves.remove(self.square + 10)
-                all_moves.remove(self.square - 6)
-                all_moves.remove(self.square - 15)
-            except ValueError:
-                pass
+            for movement in (17, 10, -6, -15):
+                try:
+                    all_moves.remove(self.square + movement)
+                except ValueError:
+                    continue
             
         self.moves = all_moves
         
@@ -139,12 +151,19 @@ class Bishop:
     # TODO: Remove moves where friendly pieces are
     # TODO: Remove moves that jump over pieces
     def update_moves(self):
+        # Switch these with board_obj attributes later on.
+        a_file = [i * 8 for i in range(8)]
+        h_file = [i * 8 + 7 for i in range(8)]
         all_moves = []
-        for diagonal_scalar in range(1, 7):
-            for direction in [-9, -7, 7, 9]:
-                if 0 <= (self.square + direction * diagonal_scalar) <= 63:
+        for direction in (-9, -7, 7, 9):
+            for diagonal_scalar in range(1, 7):
+                new_square = self.square + direction * diagonal_scalar
+                if 0 <= new_square <= 63:
                     all_moves.append(self.square + direction * diagonal_scalar)
-                    
+                    # Do not allow piece to move over the side of the board
+                    if new_square in a_file or h_file:
+                        break
+
         # if friendly_piece or opponent_piece in direction a or b or c or d:
             # remove moves past the blocking piece
         
@@ -182,9 +201,12 @@ class Rook:
     def update_moves(self):
         all_moves = []
         for vert_horiz_scalar in range(1, 7):
-            for direction in [-8, -1, 1, 8]:
+            for direction in (-8, -1, 1, 8):
                 if 0 <= (self.square + direction * vert_horiz_scalar) <= 63:
                     all_moves.append(self.square + direction * vert_horiz_scalar)
+                # Prevent useless calculations.
+                else:
+                    break
                     
         self.moves = sorted(all_moves)
     
@@ -220,16 +242,27 @@ class Queen:
     # Copied from bishop and rook update_moves()
     def update_moves(self):
         all_moves = []
+        # Prevent going over side of board.
+        # Switch these with board_obj attributes later on.
+        a_file = [i * 8 for i in range(8)]
+        h_file = [i * 8 + 7 for i in range(8)]
         # Vertical and horizontal moves
         for vert_horiz_scalar in range(1, 7):
-            for direction in [-8, -1, 1, 8]:
+            for direction in (-8, -1, 1, 8):
                 if 0 <= (self.square + direction * vert_horiz_scalar) <= 63:
                     all_moves.append(self.square + direction * vert_horiz_scalar)
         # Diagonal moves
-        for diagonal_scalar in range(1, 7):
-            for direction in [-9, -7, 7, 9]:
-                if 0 <= (self.square + direction * diagonal_scalar) <= 63:
+        for direction in (-9, -7, 7, 9):
+            for diagonal_scalar in range(1, 7):
+                new_square = self.square + direction * diagonal_scalar
+                if 0 <= new_square <= 63:
                     all_moves.append(self.square + direction * diagonal_scalar)
+                    # Do not allow piece to move over the side of the board
+                    if new_square in a_file or h_file:
+                        break
+                # Prevent useless calculation.
+                else:
+                    break
         
         self.moves = all_moves
     
@@ -318,3 +351,27 @@ class King:
         else:
             print(f'Not a valid move for {self.name}.')
             return f'Not a valid move for {self.name}.'
+
+
+
+##############################################################################
+# Tests
+##############################################################################
+
+if __name__ == '__main__':
+    import unittest
+    
+    class TestPieceMovement(unittest.TestCase):
+        def test_pawn(self):
+            pawn = Pawn('Pa', 'white', 8)
+            pawn.update_moves()
+            self.assertEqual(pawn.moves, [16, 24])
+            pawn.move_piece(24)
+            self.assertEqual(pawn.square, 24)
+            self.assertTrue(pawn.has_moved)
+            pawn.update_moves()
+            self.assertEqual(pawn.moves, [32])
+            
+            
+            
+    unittest.main()

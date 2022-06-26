@@ -1,7 +1,32 @@
 #import board
 
-# TODO: use closure (e.g. update_all_moves() ) in game.py (I think) to
-# hold a_file, h_file, etc. instead of each piece creating their own.
+class RanksFiles:
+    # Certain piece moves are illegal depending on board position. This class
+    # prevents redundant creation of these iterables within multiple pieces.
+    # E.g. a knight may not jump over the edge of the board.
+    
+    # Sets have a constant time complexity for membership check, and are not
+    # time intensive to create, according to timeit.timeit().
+    def __init__(self):
+        self.a_file = set([i * 8 for i in range(8)])
+        self.b_file = set([i * 8 + 1 for i in range(8)])
+        self.c_file = set([i * 8 + 2 for i in range(8)])
+        self.d_file = set([i * 8 + 3 for i in range(8)])
+        self.e_file = set([i * 8 + 4 for i in range(8)])
+        self.f_file = set([i * 8 + 5 for i in range(8)])
+        self.g_file = set([i * 8 + 6 for i in range(8)])
+        self.h_file = set([i * 8 + 7 for i in range(8)])
+
+        # If x is small, list(range(x)) seems to be faster than comprehensions.
+        self.rank_1 = set(range(8))
+        self.rank_2 = set(range(8, 16))
+        self.rank_3 = set(range(16, 24))
+        self.rank_4 = set(range(24, 32))
+        self.rank_5 = set(range(32, 40))
+        self.rank_6 = set(range(40, 48))
+        self.rank_7 = set(range(48, 56))
+        self.rank_8 = set(range(56, 64))
+
 
 class Pawn:
     def __init__(self, name: str, white_or_black: str, position: int):
@@ -17,11 +42,13 @@ class Pawn:
         elif self.color == 'black':
             self.symbol = 'p'
         
+        
     def __repr__(self):
         return f'''Sym:, {self.symbol}, Sq:, {self.square}, {self.color},
     has_moved: {self.has_moved}'''
 
-    # TODO: Allow diagonal captures, en passant
+
+    # TODO: Allow diagonal captures, en passant (add sides of board boundary)
     # TODO: Remove moves where a friendly piece is
     def update_moves(self):
         self.moves = []
@@ -37,6 +64,7 @@ class Pawn:
             elif self.color == 'black':
                 self.moves.append(self.square - 8)
                 self.moves.append(self.square - 16)
+                
                 
     def move_piece(self, new_square: int):
         if new_square in self.moves:
@@ -72,46 +100,50 @@ class Knight:
         elif self.color == 'black':
             self.symbol = 'n'
 
+
     def __repr__(self):
         return f'Sym:, {self.symbol}, Sq:, {self.square}, {self.color}'
+
 
     # TODO: Remove moves where a friendly piece is
     # Knight movement is very dependent on current square
     def update_moves(self):
-        # In commented out all_moves, ordered by move direction clockwise
+        # Moves ordered by move direction clockwise
         #all_moves = [self.square + delta for delta in [17, 10, -6, -15, -17, -10, 6, 15]]
 
-        # all_moves ordered by downward (toward 1st rank) to upward knight movements
-        all_moves = [self.square + delta for delta in (-15, -17, -6, -10, 6, 10, 15, 17)]
-        if self.square in list(range(0,8)):
-            del all_moves[:4] # was to index 3 but going to 4 removes all neg. moves.
-        elif self.square in list(range(8, 16)):
+        # Moves ordered from downward (toward 1st rank) to upward knight movements
+        knight_move_directions = (-15, -17, -6, -10, 6, 10, 15, 17)
+        all_moves = [self.square + delta for delta in knight_move_directions]
+        
+        if self.square in ranks_files.rank_1:
+            del all_moves[:4] # was index 3 (incorrect). Going to 4 correctly removes all neg. moves.
+        elif self.square in ranks_files.rank_2:
             del all_moves[:2] # was 1, see comment above.
-        elif self.square in list(range(48, 56)):
+        elif self.square in ranks_files.rank_7:
             del all_moves[6:]
-        elif self.square in list(range(56, 64)):
+        elif self.square in ranks_files.rank_8:
             del all_moves[4:] # was 3, see comment above.
             
-        # Some of list elements may be missing already from del statements.
-        if self.square in list(range(0, 64, 8)):
+        # Some of items may be missing due to the the previous del statements.
+        if self.square in ranks_files.a_file:
             for movement in (-17, -10, 6, 15):
                 try:
                     all_moves.remove(self.square + movement)
                 except ValueError:
                     continue
-        elif self.square in list(range(1, 65, 8)):#board.b_file:
+        elif self.square in ranks_files.b_file:
             for movement in (-10, 6):
                 try:
                     all_moves.remove(self.square + movement)
                 except ValueError:
                     continue
-        elif self.square in list(range(6, 70, 8)):#board.g_file:
+        elif self.square in ranks_files.g_file:
             for movement in (10, -6):
                 try:
                     all_moves.remove(self.square + movement)
                 except ValueError:
                     continue
-        elif self.square in list(range(7, 71, 8)):#board.h_file:
+        elif self.square in ranks_files.h_file:
             for movement in (17, 10, -6, -15):
                 try:
                     all_moves.remove(self.square + movement)
@@ -119,6 +151,7 @@ class Knight:
                     continue
             
         self.moves = all_moves
+        
         
     # Get new_square from input in main script
     # Squares is now an attribute, <board_object>.squares
@@ -148,15 +181,14 @@ class Bishop:
         elif self.color == 'black':
             self.symbol = 'b'
             
+            
     def __repr__(self):        
         return f'Sym:, {self.symbol}, Sq:, {self.square}, {self.color}'
         
+    
     # TODO: Remove moves where friendly pieces are
     # TODO: Remove moves that jump over pieces
     def update_moves(self):
-        # list(range()) takes 33% of the time of a list comprehension.
-        a_file = list(range(0, 57, 8))
-        h_file = list(range(7, 64, 8))
         all_moves = []
         for direction in (-9, -7, 7, 9):
             for diagonal_scalar in range(1, 7):
@@ -164,8 +196,15 @@ class Bishop:
                 if 0 <= new_square <= 63:
                     all_moves.append(new_square)
                     # Do not allow piece to move over the side of the board
-                    if new_square in a_file or new_square in h_file:
+                    if new_square in ranks_files.a_file:
                         break
+                    elif new_square in ranks_files.h_file:
+                        break
+                    #elif new_square in opponent_occupied_squares:
+                        #break
+                    #elif new_square in friendly_occupied-squares:
+                        #all_moves.pop()
+                        #break
                 else:
                     # No use searching past the top or bottom of the board.
                     break
@@ -174,6 +213,7 @@ class Bishop:
             # remove moves past the blocking piece
         
         self.moves = all_moves
+    
     
     def move_piece(self, new_square: int):
         if new_square in self.moves:
@@ -198,29 +238,32 @@ class Rook:
         elif self.color == 'black':
             self.symbol = 'r'
             
+            
     def __repr__(self):        
         return f'''Sym:, {self.symbol}, Sq:, {self.square}, {self.color}, 
     has_moved: {self.has_moved}'''
         
+    
     # TODO: Remove moves where friendly pieces are
     # TODO: Remove moves that jump over pieces
     def update_moves(self):
         all_moves = []
-        a_file = list(range(0, 57, 8))
-        h_file = list(range(7, 64, 8))
         
         for direction in (-8, -1, 1, 8):
             for vert_horiz_scalar in range(1, 8):
                 new_square = self.square + direction * vert_horiz_scalar
-                if 0 <= new_square <= 63:
+                if -1 < new_square < 64:
                     all_moves.append(new_square)
-                    if new_square in a_file or new_square in h_file:
+                    if new_square in ranks_files.a_file:
+                        break
+                    elif new_square in ranks_files.h_file:
                         break
                 # Prevent useless calculations.
                 else:
                     break
                     
         self.moves = sorted(all_moves)
+    
     
     def move_piece(self, new_square: int, castling=False):
         # TODO: update board list
@@ -261,42 +304,34 @@ class Queen:
         elif self.color == 'black':
             self.symbol = 'q'
             
+            
     def __repr__(self):        
         return f'Sym:, {self.symbol}, Sq:, {self.square}, {self.color}'
         
+    
     # TODO: Remove moves where friendly pieces are
     # TODO: Remove moves that jump over pieces
     # Copied from bishop and rook update_moves()
     def update_moves(self):
         all_moves = []
-        a_file = list(range(0, 57, 8))
-        h_file = list(range(7, 64, 8))
-        # Vertical and horizontal moves
-        for direction in (-8, -1, 1, 8):
-            for vert_horiz_scalar in range(1, 8):
-                new_square = self.square + direction * vert_horiz_scalar
-                if 0 <= new_square <= 63:
+        # Vertical and horizontal moves in the first half of the tuple.
+        # Diagonal directions in the second half of the tuple.
+        for direction in (-8, -1, 1, 8, -9, -7, 7, 9):
+            for scalar in range(1, 8):
+                new_square = self.square + direction * scalar
+                if -1 < new_square < 64:
                     all_moves.append(new_square)
-                    if new_square in a_file or new_square in h_file:
-                        # Prevent crossing board sides.
+                    # Prevent crossing board sides.
+                    if new_square in ranks_files.a_file:
+                        break
+                    elif new_square in ranks_files.h_file:
                         break
                 # Prevent move calculations past top or bottom of board.
                 else:
                     break
-        # Diagonal moves
-        for direction in (-9, -7, 7, 9):
-            for diagonal_scalar in range(1, 7):
-                new_square = self.square + direction * diagonal_scalar
-                if 0 <= new_square <= 63:
-                    all_moves.append(self.square + direction * diagonal_scalar)
-                    # Do not allow piece to move over the side of the board
-                    if new_square in a_file or new_square in h_file:
-                        break
-                # Prevent useless calculation.
-                else:
-                    break
         
         self.moves = all_moves
+    
     
     def move_piece(self, new_square: int):
         if new_square in self.moves:
@@ -321,32 +356,31 @@ class King:
         elif self.color == 'black':
             self.symbol = 'k'
             
+            
     def __repr__(self):
         return f'''Sym:, {self.symbol}, Sq:, {self.square}, {self.color}, 
     moved:, {self.has_moved}, in check:, {self.in_check}'''
-        
+
+
     # TODO: Remove moves where friendly pieces are
     # TODO: Remove enemy-controlled squares
     def update_moves(self):
         all_moves = []
-        a_file = list(range(0, 57, 8))
-        h_file = list(range(7, 64, 8))
-        first_rank = list(range(0, 8))
-        eighth_rank = list(range(56, 64))
         directions = [7, 8, 9, -1, 1, -9, -8, -7]
-        if self.square in first_rank:
+        if self.square in ranks_files.rank_1:
             directions = directions[:5]
-        elif self.square in eighth_rank:
+        elif self.square in ranks_files.rank_8:
             directions = directions[3:]
+
         # Separate if/elif for ranks (rows) and files (columns).
         # A piece can be in both the first rank and the H file.
-        if self.square in a_file:
+        if self.square in ranks_files.a_file:
             for direction in (7, -1, -9):
                 try:
                     directions.remove(direction)
                 except ValueError:
                     continue
-        elif self.square in h_file:
+        elif self.square in ranks_files.h_file:
             for direction in (9, 1, -7):
                 try:
                     directions.remove(direction)
@@ -359,7 +393,7 @@ class King:
                 all_moves.append(self.square + delta)
         
         # TODO: Finish Castling - get rook to move as well
-        # TODO: An empty square that is under attack b/w rook and king
+        # TODO: Does an empty square that is under attack b/w rook and king
         # prevents castling?
         if self.has_moved is False:
             if self.color == 'white' and self.square == 4:
@@ -402,6 +436,7 @@ class King:
                 
         self.moves = all_moves
     
+    
     def move_piece(self, new_square: int):
         if new_square in self.moves:
             old_square = self.square
@@ -438,11 +473,16 @@ if __name__ == '__main__':
     class Board:
         def __init__(self):
             self.squares = [' '] * 64
+            
+    # Globals required for testing.
     board = Board()
     black_rook_a = Rook('ra', 'black', 56)
     black_rook_h = Rook('rh', 'black', 63)
     white_rook_a = Rook('Ra', 'white', 0)
     white_rook_h = Rook('Rh', 'white', 7)
+    
+    ranks_files = RanksFiles()
+    
     
     class TestPieceMovement(unittest.TestCase):
         def test_pawn_movement(self):

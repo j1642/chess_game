@@ -1,36 +1,24 @@
+from os import chdir, getcwd
+if getcwd().split('/')[-1] != 'chess':
+    chdir('Python/chess')
+
 import pieces
 
 class Board:
-    '''Holds current board'''
+    '''Holds the current board.'''
+    
     def __init__(self):
         self.squares = [' '] * 64
         self.squares_occ_white = []
         self.squares_occ_black = []
-        self.white_pieces_ls = []
-        self.black_pieces_ls = []
+        self.white_pieces = []
+        self.black_pieces = []
 
-        self.a_file = [i * 8 for i in range(8)]
-        self.b_file = [i * 8 + 1 for i in range(8)]
-        self.c_file = [i * 8 + 2 for i in range(8)]
-        self.d_file = [i * 8 + 3 for i in range(8)]
-        self.e_file = [i * 8 + 4 for i in range(8)]
-        self.f_file = [i * 8 + 5 for i in range(8)]
-        self.g_file = [i * 8 + 6 for i in range(8)]
-        self.h_file = [i * 8 + 7 for i in range(8)]
-
-        # If x is small, list(range(x)) is faster than comprehensions
-        self.rank_1 = list(range(8))
-        self.rank_2 = list(range(8, 16))
-        self.rank_3 = list(range(16, 24))
-        self.rank_4 = list(range(24, 32))
-        self.rank_5 = list(range(32, 40))
-        self.rank_6 = list(range(40, 48))
-        self.rank_7 = list(range(48, 56))
-        self.rank_8 = list(range(56, 64))
 
     def __repr__(self):
-        '''Shows the current board. Useful for feedback to user before GUI.'''
-
+        '''Shows the current board. Useful for feedback to user before GUI
+        is implememnted. Starts from the eighth rank (row).'''
+        
         ranks_to_print = []
         for factor in range(7, -1, -1):
             rank_x = ['|']
@@ -58,108 +46,194 @@ class Board:
         self.squares[60] = 'k'
         self.squares[59] = 'q'
 
-    # TODO: Does not work
+
     # TODO: Compare move list for all pieces to the occupied lists to cut
-    #   illegal moves
+    #   illegal moves.
     def find_occupied_squares(self):
         '''Gets lists of squares occupied by white and black pieces,
         respectively.
 
         These lists are used to prevent a white piece moving to a square
         occupied by another white piece, for example.'''
+        self.squares_occ_white = []
+        self.squares_occ_black = []
         
-        for square in self.squares:
+        for ind, square in enumerate(self.squares):
             if square.isupper():
-                self.squares_occ_white.append(self.squares.index(square))
-                #print(self.squares.index(square))
+                self.squares_occ_white.append(ind)
             elif square.islower():
-                self.squares_occ_black.append(self.squares.index(square))
+                self.squares_occ_black.append(ind)
 
-    # Can these variable names be improved?
+
+    # Variable suffix corresponds to starting file (column) of a piece.
     def initialize_pieces(self):
-        white_rq = pieces.Rook('rook queenside', 'white', 0)
-        white_nq = pieces.Knight('knight queenside', 'white', 1)
-        white_bq = pieces.Bishop('bishop queenside', 'white', 2)
-        white_q = pieces.Queen('Queen', 'white', 3)
-        white_k = pieces.King('King', 'white', 4)
-        white_bk = pieces.Bishop('bishop kingside', 'white', 5)
-        white_nk = pieces.Knight('knight kingside', 'white', 6)
-        white_rk = pieces.Rook('rook kingside', 'white', 7)
+        white_rook_a = pieces.Rook('Ra', 'white', 0)
+        white_knight_b = pieces.Knight('Nb', 'white', 1)
+        white_bishop_c = pieces.Bishop('Bc', 'white', 2)
+        white_queen = pieces.Queen('Q', 'white', 3)
+        white_king = pieces.King('K', 'white', 4)
+        white_bishop_f = pieces.Bishop('Bf', 'white', 5)
+        white_knight_g = pieces.Knight('Ng', 'white', 6)
+        white_rook_h = pieces.Rook('Rh', 'white', 7)
 
-        white_pa = pieces.Pawn('pawn a', 'white', 8)
-        white_pb = pieces.Pawn('pawn b', 'white', 9)
-        white_pc = pieces.Pawn('pawn c', 'white', 10)
-        white_pd = pieces.Pawn('pawn d', 'white', 11)
-        white_pe = pieces.Pawn('pawn e', 'white', 12)
-        white_pf = pieces.Pawn('pawn f', 'white', 13)
-        white_pg = pieces.Pawn('pawn g', 'white', 14)
-        white_ph = pieces.Pawn('pawn h', 'white', 15)
+        white_pawn_a = pieces.Pawn('Pa', 'white', 8)
+        white_pawn_b = pieces.Pawn('Pb', 'white', 9)
+        white_pawn_c = pieces.Pawn('Pc', 'white', 10)
+        white_pawn_d = pieces.Pawn('Pd', 'white', 11)
+        white_pawn_e = pieces.Pawn('Pe', 'white', 12)
+        white_pawn_f = pieces.Pawn('Pf', 'white', 13)
+        white_pawn_g = pieces.Pawn('Pg', 'white', 14)
+        white_pawn_h = pieces.Pawn('Ph', 'white', 15)
 
-        self.white_pieces_ls = [white_rq, white_nq, white_bq, white_q, 
-                                    white_k, white_bk, white_nk, white_rk, 
-                                    white_pa, white_pb, white_pc, white_pd, 
-                                    white_pe, white_pf, white_pg, white_ph]
+        self.white_pieces = [white_rook_a, white_knight_b, white_bishop_c,
+                                white_queen, white_king, white_bishop_f,
+                                white_knight_g, white_rook_h, white_pawn_a,
+                                white_pawn_b, white_pawn_c, white_pawn_d,
+                                white_pawn_e, white_pawn_f, white_pawn_g,
+                                white_pawn_h]
 
-        black_rq = pieces.Rook('rook queenside', 'black', 56)
-        black_nq = pieces.Knight('knight queenside', 'black', 57)
-        black_bq = pieces.Bishop('bishop queenside', 'black', 58)
-        black_q = pieces.Queen('queen', 'black', 59)
-        black_k = pieces.King('king', 'black', 60)
-        black_bk = pieces.Bishop('bishop kingside', 'black', 61)
-        black_nk = pieces.Knight('knight kingside', 'black', 62)
-        black_rk = pieces.Rook('rook kingside', 'black', 63)
+        black_rook_a = pieces.Rook('ra', 'black', 56)
+        black_knight_b = pieces.Knight('nb', 'black', 57)
+        black_bishop_c = pieces.Bishop('bc', 'black', 58)
+        black_queen = pieces.Queen('q', 'black', 59)
+        black_king = pieces.King('k', 'black', 60)
+        black_bishop_f = pieces.Bishop('bf', 'black', 61)
+        black_knight_g = pieces.Knight('ng', 'black', 62)
+        black_rook_h = pieces.Rook('rh', 'black', 63)
 
-        black_pa = pieces.Pawn('pawn a', 'black', 48)
-        black_pb = pieces.Pawn('pawn b', 'black', 49)
-        black_pc = pieces.Pawn('pawn c', 'black', 50)
-        black_pd = pieces.Pawn('pawn d', 'black', 51)
-        black_pe = pieces.Pawn('pawn e', 'black', 52)
-        black_pf = pieces.Pawn('pawn f', 'black', 53)
-        black_pg = pieces.Pawn('pawn g', 'black', 54)
-        black_ph = pieces.Pawn('pawn h', 'black', 55)
+        black_pawn_a = pieces.Pawn('pa', 'black', 48)
+        black_pawn_b = pieces.Pawn('pb', 'black', 49)
+        black_pawn_c = pieces.Pawn('pc', 'black', 50)
+        black_pawn_d = pieces.Pawn('pd', 'black', 51)
+        black_pawn_e = pieces.Pawn('pe', 'black', 52)
+        black_pawn_f = pieces.Pawn('pf', 'black', 53)
+        black_pawn_g = pieces.Pawn('pg', 'black', 54)
+        black_pawn_h = pieces.Pawn('ph', 'black', 55)
 
-        self.black_pieces_ls = [black_rq, black_nq, black_bq, black_q, 
-                                    black_k, black_bk, black_nk, black_rk, 
-                                    black_pa, black_pb, black_pc, black_pd, 
-                                    black_pe, black_pf, black_pg, black_ph]
+        self.black_pieces = [black_rook_a, black_knight_b, black_bishop_c,
+                                black_queen, black_king, black_bishop_f,
+                                black_knight_g, black_rook_h,black_pawn_a,
+                                black_pawn_b, black_pawn_c, black_pawn_d,
+                                black_pawn_e, black_pawn_f, black_pawn_g,
+                                black_pawn_h]
 
-    def get_updated_moves_white(self, white_pieces_ls: list):
-        for piece in white_pieces_ls:
+
+    def update_moves_white(self, white_pieces: list):
+        'Helper function for update_white_controlled_squares() method.'
+        for piece in white_pieces:
             piece.update_moves()
 
-    def get_updated_moves_black(self, black_pieces_ls: list):
-        for piece in black_pieces_ls:
+
+    def update_moves_black(self, black_pieces: list):
+        'Helper function for update_black_controlled_squares() method.'
+        for piece in black_pieces:
             piece.update_moves()
 
-    def white_controlled_squares(self, white_pieces_ls: list):
+
+    def update_white_controlled_squares(self, white_pieces: list):
         '''Creates set to determine if black king is in check and limit 
         black king moves which would put it in check.'''
-        # Could use sets but list.append() is O(1)
         white_controlled_squares = []
 
-        self.get_updated_moves_white(self.white_pieces_ls)
-        for piece in white_pieces_ls:
+        self.update_moves_white(self.white_pieces)
+        for piece in white_pieces:
             for move in piece.moves:
                 white_controlled_squares.append(move)
 
-        return sorted(set(white_controlled_squares))
+        self.white_controlled_squares = set(white_controlled_squares)
 
-    def black_controlled_squares(self, black_pieces_ls: list):
+
+    def update_black_controlled_squares(self, black_pieces: list):
         '''Creates set to determine if white king is in check and limit 
         white king moves which would put it in check.'''
-        # Could use sets but list.append() is O(1)
         black_controlled_squares = []
 
-        self.get_updated_moves_black(self.black_pieces_ls)        
-        for piece in black_pieces_ls:
+        self.update_moves_black(self.black_pieces)        
+        for piece in black_pieces:
             for move in piece.moves:
                 black_controlled_squares.append(move)
 
-        return sorted(set(black_controlled_squares))
+        self.black_controlled_squares = set(black_controlled_squares)
 
-b = Board()
-b.set_initial_squares()
-b.initialize_pieces()
-#print(b)
-b.white_pieces_ls[4].__repr__()
-print(b.white_pieces_ls[4])
+
+
+if __name__ == '__main__':
+    import unittest
+    
+    
+    class test_board(unittest.TestCase):
+        
+        def test_set_initial_squares(self):
+            board = Board()
+            self.assertEqual(board.squares, [' '] * 64)
+            
+            board.set_initial_squares()
+            self.assertEqual(board.squares, ['R','N', 'B', 'Q', 'K', 'B', 'N',
+                                             'R', 'P', 'P', 'P', 'P', 'P', 'P',
+                                             'P', 'P']
+                                             + [' '] * 32
+                                             + ['p', 'p', 'p', 'p', 'p', 'p',
+                                                'p', 'p', 'r', 'n', 'b', 'q',
+                                                'k', 'b', 'n', 'r'])
+        
+        
+        def test_repr(self):
+            board = Board()
+            board.set_initial_squares()
+            # Finally figured out how to make nice, neat multipe line strings.
+            compare_to_initial_squares_repr = '|r|n|b|q|k|b|n|r|\n'\
+                                '|p|p|p|p|p|p|p|p|\n'\
+                                '| | | | | | | | |\n'\
+                                '| | | | | | | | |\n'\
+                                '| | | | | | | | |\n'\
+                                '| | | | | | | | |\n'\
+                                '|P|P|P|P|P|P|P|P|\n'\
+                                '|R|N|B|Q|K|B|N|R|'
+            self.assertEqual(board.__repr__(), compare_to_initial_squares_repr)
+        
+            
+        def test_find_occupied_squares(self):
+            board = Board()
+            
+            board.set_initial_squares()
+            self.assertEqual(board.squares_occ_white, board.squares_occ_black)
+            self.assertEqual(board.squares_occ_black, [])
+            
+            board.find_occupied_squares()
+            self.assertEqual(board.squares_occ_white, list(range(16)))
+            self.assertEqual(board.squares_occ_black, list(range(48, 64)))
+            
+            board.squares[0], board.squares[27] = board.squares[27], \
+                                                  board.squares[0]
+            board.find_occupied_squares()
+            self.assertEqual(board.squares_occ_white, list(range(1,16)) + [27])
+        
+        
+        def test_initialize_pieces(self):
+            # This is not particularly thorough, however there is not much
+            #     to test for this method.
+            board = Board()
+            self.assertEqual(board.white_pieces, board.black_pieces)
+            board.initialize_pieces()
+            self.assertEqual(len(board.white_pieces), len(board.black_pieces))
+            self.assertEqual(len(board.black_pieces), 16)
+            print(board.black_pieces)
+        
+        
+        def update_moves_white(self):
+            pass
+        
+        
+        def update_moves_black(self):
+            pass
+        
+        
+        def update_white_controlled_squares(self):
+            pass
+        
+        
+        def update_black_controlled_squares(self):
+            pass
+        
+        
+    unittest.main()

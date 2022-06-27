@@ -44,8 +44,8 @@ class Pawn:
         
         
     def __repr__(self):
-        return f'''Sym:, {self.symbol}, Sq:, {self.square}, {self.color},
-    has_moved: {self.has_moved}'''
+        return f'''({self.symbol}, Sq: {self.square}, {self.color}, \
+    has_moved: {self.has_moved})'''
 
 
     # TODO: Allow diagonal captures, en passant (add sides of board boundary)
@@ -102,7 +102,7 @@ class Knight:
 
 
     def __repr__(self):
-        return f'Sym:, {self.symbol}, Sq:, {self.square}, {self.color}'
+        return f'({self.symbol}, Sq: {self.square}, {self.color})'
 
 
     # TODO: Remove moves where a friendly piece is
@@ -183,15 +183,21 @@ class Bishop:
             
             
     def __repr__(self):        
-        return f'Sym:, {self.symbol}, Sq:, {self.square}, {self.color}'
+        return f'({self.symbol}, Sq: {self.square}, {self.color})'
         
     
     # TODO: Remove moves where friendly pieces are
     # TODO: Remove moves that jump over pieces
     def update_moves(self):
         all_moves = []
-        for direction in (-9, -7, 7, 9):
-            for diagonal_scalar in range(1, 7):
+        directions = [9, -7, -9, 7]
+        if self.square in ranks_files.a_file:
+            directions = directions[:2]
+        elif self.square in ranks_files.h_file:
+            directions = directions[2:]
+            
+        for direction in directions:
+            for diagonal_scalar in range(1, 8):
                 new_square = self.square + direction * diagonal_scalar
                 if 0 <= new_square <= 63:
                     all_moves.append(new_square)
@@ -240,8 +246,8 @@ class Rook:
             
             
     def __repr__(self):        
-        return f'''Sym:, {self.symbol}, Sq:, {self.square}, {self.color}, 
-    has_moved: {self.has_moved}'''
+        return f'''({self.symbol}, Sq: {self.square}, {self.color}, \
+    has_moved: {self.has_moved})'''
         
     
     # TODO: Remove moves where friendly pieces are
@@ -254,9 +260,9 @@ class Rook:
                 new_square = self.square + direction * vert_horiz_scalar
                 if -1 < new_square < 64:
                     all_moves.append(new_square)
-                    if new_square in ranks_files.a_file:
+                    if new_square in ranks_files.a_file and direction == -1:
                         break
-                    elif new_square in ranks_files.h_file:
+                    elif new_square in ranks_files.h_file and direction == 1:
                         break
                 # Prevent useless calculations.
                 else:
@@ -306,7 +312,7 @@ class Queen:
             
             
     def __repr__(self):        
-        return f'Sym:, {self.symbol}, Sq:, {self.square}, {self.color}'
+        return f'({self.symbol}, Sq: {self.square}, {self.color})'
         
     
     # TODO: Remove moves where friendly pieces are
@@ -314,17 +320,24 @@ class Queen:
     # Copied from bishop and rook update_moves()
     def update_moves(self):
         all_moves = []
+        
+        directions = [9, -7, 1, 8, -8, -1, 7, -9]
+        if self.square in ranks_files.a_file:
+            directions = directions[:5]
+        elif self.square in ranks_files.h_file:
+            directions = directions[3:]
+            
         # Vertical and horizontal moves in the first half of the tuple.
         # Diagonal directions in the second half of the tuple.
-        for direction in (-8, -1, 1, 8, -9, -7, 7, 9):
+        for direction in directions:
             for scalar in range(1, 8):
                 new_square = self.square + direction * scalar
                 if -1 < new_square < 64:
                     all_moves.append(new_square)
                     # Prevent crossing board sides.
-                    if new_square in ranks_files.a_file:
+                    if new_square in ranks_files.a_file and direction in (-9, -1, 7):
                         break
-                    elif new_square in ranks_files.h_file:
+                    elif new_square in ranks_files.h_file and direction in (9, 1, -7):
                         break
                 # Prevent move calculations past top or bottom of board.
                 else:
@@ -358,8 +371,8 @@ class King:
             
             
     def __repr__(self):
-        return f'''Sym:, {self.symbol}, Sq:, {self.square}, {self.color}, 
-    moved:, {self.has_moved}, in check:, {self.in_check}'''
+        return f'''({self.symbol}, Sq: {self.square}, {self.color}, \
+    has_moved: {self.has_moved}, in check: {self.in_check})'''
 
 
     # TODO: Remove moves where friendly pieces are
@@ -527,6 +540,11 @@ if __name__ == '__main__':
             supposed_bishop_moves = set((61, 59, 45, 38, 31, 43, 34, 25, 16))
             self.assertEqual(set(bishop.moves), supposed_bishop_moves)
             
+            # This block should prevent bishop edge cases on the corners/sides.
+            bishop = Bishop('Bc', 'white', 0)
+            bishop.update_moves()
+            self.assertEqual(set(bishop.moves), set(list(range(9, 64, 9))))
+            
         
         def test_rook_movement(self):
             rook = Rook('Ra', 'white', 9)
@@ -539,17 +557,16 @@ if __name__ == '__main__':
             rook.move_piece(10)
             self.assertTrue(rook.has_moved)
             
+            # This block should prevent any rook edge cases on the corners/sides.
             rook = Rook('Ra', 'white', 0)
-            self.assertFalse(rook.moves)
+            rook.update_moves()
+            self.assertEqual(set(rook.moves), set(list(range(8, 57, 8)) + list(range(1, 8))))
             rook.move_piece(3, castling=True)
             self.assertEqual(rook.square, 3)
-            self.assertTrue(rook.has_moved)
             
             rook = Rook('ra', 'black', 56)
-            self.assertFalse(rook.moves)
             rook.move_piece(59, castling=True)
             self.assertEqual(rook.square, 59)
-            self.assertTrue(rook.has_moved)
             self.assertRaises(Exception, rook.move_piece, 59, castling=True)
             
             rook = Rook('ra', 'white', 0)
@@ -566,8 +583,15 @@ if __name__ == '__main__':
             supposed_queen_moves += [0, 16, 2, 18, 27, 36, 45, 54, 63]
             self.assertEqual(set(queen.moves), set(supposed_queen_moves))
             
-        def test_king_movement(self):
+            # This block should prevent queen edge cases on the corners/sides.
+            queen = Queen('Q', 'white', 0)
+            queen.update_moves()
+            self.assertEqual(set(queen.moves), set(list(range(9, 64, 9)) \
+                                          + list(range(8, 57, 8)) \
+                                          + list(range(1, 8))))
             
+            
+        def test_king_movement(self):
             king = King('k', 'black', 63)
             self.assertFalse(king.has_moved)
             self.assertFalse(king.moves)

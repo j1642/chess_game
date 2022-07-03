@@ -4,15 +4,17 @@ if getcwd().split('/')[-1] != 'chess':
 
 import pieces
 
+# TODO: notice if a piece is captured and remove it from the piece list.
+
 class Board:
     '''Holds the current board.'''
     
     def __init__(self):
         self.squares = [' '] * 64
-        self.squares_occ_white = []
-        self.squares_occ_black = []
         self.white_pieces = []
         self.black_pieces = []
+        self.white_controlled_squares = []
+        self.black_controlled_squares = []
 
 
     def __repr__(self):
@@ -23,28 +25,17 @@ class Board:
         for factor in range(7, -1, -1):
             rank_x = ['|']
             for square in range(factor * 8, factor * 8 + 8):
-                rank_x.append(self.squares[square])
+                try:
+                    rank_x.append(self.squares[square].name[0])
+                except AttributeError:
+                    assert self.squares[square] == ' '
+                    rank_x.append(self.squares[square])
                 rank_x.append('|')
             ranks_to_print.append(''.join(rank_x))
+            
         ls = '\n'.join(ranks_to_print)  # Looks nice w/ print( <board_object> )
 
         return ls
-
-
-    def set_initial_squares(self):
-        '''Sets up the board for a new game.'''
-
-        ranks1_2 = ['R','N', 'B', 'Q', 'K', 'B', 'N', 'R', 'P', 'P', 'P',
-                  'P', 'P', 'P', 'P', 'P']
-
-        for i in range(16):
-            self.squares[i] = ranks1_2[i]
-        ranks1_2.reverse()
-        for i in range(48, 64):
-            self.squares[i] = ranks1_2[(i - 48)].lower()
-        # Manually change black king and queen positions b/c they are mirrored
-        self.squares[60] = 'k'
-        self.squares[59] = 'q'
 
 
     # TODO: Compare move list for all pieces to the occupied lists to cut
@@ -117,39 +108,43 @@ class Board:
                                 black_pawn_e, black_pawn_f, black_pawn_g,
                                 black_pawn_h]
 
+        for piece in self.white_pieces + self.black_pieces:
+            self.squares[piece.square] = piece
 
-    def update_moves_white(self, white_pieces: list):
+
+    def update_moves_white(self):
         'Helper function for update_white_controlled_squares() method.'
-        for piece in white_pieces:
-            piece.update_moves()
+        
+        for piece in self.white_pieces:
+            piece.update_moves(self)
 
 
-    def update_moves_black(self, black_pieces: list):
+    def update_moves_black(self):
         'Helper function for update_black_controlled_squares() method.'
-        for piece in black_pieces:
-            piece.update_moves()
+        for piece in self.black_pieces:
+            piece.update_moves(self)
 
 
-    def update_white_controlled_squares(self, white_pieces: list):
+    def update_white_controlled_squares(self):
         '''Creates set to determine if black king is in check and limit 
         black king moves which would put it in check.'''
         white_controlled_squares = []
 
-        self.update_moves_white(self.white_pieces)
-        for piece in white_pieces:
+        self.update_moves_white()
+        for piece in self.white_pieces:
             for move in piece.moves:
                 white_controlled_squares.append(move)
 
         self.white_controlled_squares = set(white_controlled_squares)
 
 
-    def update_black_controlled_squares(self, black_pieces: list):
+    def update_black_controlled_squares(self):
         '''Creates set to determine if white king is in check and limit 
         white king moves which would put it in check.'''
         black_controlled_squares = []
 
-        self.update_moves_black(self.black_pieces)        
-        for piece in black_pieces:
+        self.update_moves_black()        
+        for piece in self.black_pieces:
             for move in piece.moves:
                 black_controlled_squares.append(move)
 
@@ -160,26 +155,15 @@ class Board:
 if __name__ == '__main__':
     import unittest
     
+    board = Board()
+    
+    # TODO: Check that piece.move_piece() alters the Board object
     
     class test_board(unittest.TestCase):
         
-        def test_set_initial_squares(self):
-            board = Board()
-            self.assertEqual(board.squares, [' '] * 64)
-            
-            board.set_initial_squares()
-            self.assertEqual(board.squares, ['R','N', 'B', 'Q', 'K', 'B', 'N',
-                                             'R', 'P', 'P', 'P', 'P', 'P', 'P',
-                                             'P', 'P']
-                                             + [' '] * 32
-                                             + ['p', 'p', 'p', 'p', 'p', 'p',
-                                                'p', 'p', 'r', 'n', 'b', 'q',
-                                                'k', 'b', 'n', 'r'])
-        
-        
         def test_repr(self):
             board = Board()
-            board.set_initial_squares()
+            board.initialize_pieces()
             # Finally figured out how to make nice, neat multipe line strings.
             compare_to_initial_squares_repr = '|r|n|b|q|k|b|n|r|\n'\
                                 '|p|p|p|p|p|p|p|p|\n'\
@@ -192,48 +176,86 @@ if __name__ == '__main__':
             self.assertEqual(board.__repr__(), compare_to_initial_squares_repr)
         
             
-        def test_find_occupied_squares(self):
-            board = Board()
-            
-            board.set_initial_squares()
-            self.assertEqual(board.squares_occ_white, board.squares_occ_black)
-            self.assertEqual(board.squares_occ_black, [])
-            
-            board.find_occupied_squares()
-            self.assertEqual(board.squares_occ_white, list(range(16)))
-            self.assertEqual(board.squares_occ_black, list(range(48, 64)))
-            
-            board.squares[0], board.squares[27] = board.squares[27], \
-                                                  board.squares[0]
-            board.find_occupied_squares()
-            self.assertEqual(board.squares_occ_white, list(range(1,16)) + [27])
-        
-        
         def test_initialize_pieces(self):
             # This is not particularly thorough, however there is not much
             #     to test for this method.
             board = Board()
-            self.assertEqual(board.white_pieces, board.black_pieces)
             board.initialize_pieces()
             self.assertEqual(len(board.white_pieces), len(board.black_pieces))
             self.assertEqual(len(board.black_pieces), 16)
-            print(board.black_pieces)
+            #print(board.black_pieces)
+            rook_a = pieces.Rook('Ra', 'white', 0)
+            #print('\n')
+            #print(board.squares[0])
+            #print(rook_a)
+            # This test does not work with assertEqual or assertIs.
+            #self.assertIs(board.squares[0], rook_a)
+    
+        
+        def test_update_white_controlled_squares(self):
+            board = Board()
+            board.initialize_pieces()
+            board.update_white_controlled_squares()
+            self.assertEqual(board.white_controlled_squares,
+                             set(list(range(16, 32))))
         
         
-        def update_moves_white(self):
-            pass
+        def test_update_black_controlled_squares(self):
+            board = Board()
+            board.initialize_pieces()
+            board.update_black_controlled_squares()
+            #print(board.white_pieces)
+            self.assertEqual(board.black_controlled_squares,
+                             set(list(range(32, 48))))
+            
         
-        
-        def update_moves_black(self):
-            pass
-        
-        
-        def update_white_controlled_squares(self):
-            pass
-        
-        
-        def update_black_controlled_squares(self):
-            pass
+        def test_board_updates_upon_piece_movement(self):
+            board = Board()
+            board.initialize_pieces()
+            
+            # Test Pawn.move_piece() updates Board object.
+            test_pawn = board.squares[8]
+            test_pawn.update_moves(board)
+            board = test_pawn.move_piece(board, 16)
+            self.assertEqual(board.squares[8], ' ')
+            self.assertIsInstance(board.squares[16], pieces.Pawn)
+            self.assertEqual(board.squares[16], test_pawn)
+            
+            # Remove all white pawns from the board so all other white pieces
+            # can move.
+            board.squares[16] = ' '
+            # board.squares[8:] = [' '] sets the 8th item to ' ' and removes
+            # all items past index 8. Neat feature.
+            board.squares[8:16] = [' '] * 8
+
+            for piece in board.squares[:8]:
+                piece.update_moves(board)
+            
+            # TODO: Finish ths method
+            # Test all piece types beside pawn, which was tested above.
+            new_squares = (48, 18, 16, 0, 12, 23, 1)
+            for ind, piece in enumerate(board.squares[:8]):
+                old_board = board
+                old_square = piece.square
+                new_square = new_squares[ind]
+                
+                piece.update_moves(board)
+                print(piece.moves)
+                new_board = piece.move_piece(board, new_square)
+                print(new_board)
+                if old_board == new_board:
+                    raise Exception(f'Invalid move for {piece.name}')
+                board = new_board
+                
+                self.assertEqual(board.squares[old_square], ' ')
+                self.assertEqual(board.squares[new_square], piece)
+                
+                
+            
+            # TODO: if a piece is moved to an invalid square, the move_piece()
+            # method returns the unaltered board. Maybe the game should check
+            # if new_board == old_board and if so, prompt same player for a 
+            # valid move.
         
         
     unittest.main()

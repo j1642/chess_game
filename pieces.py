@@ -129,14 +129,15 @@ class Pawn:
                 continue
                 
                 
-    def move_piece(self, new_square: int):
+    def move_piece(self, board, new_square: int):
         if new_square in self.moves:
             self.has_moved = True
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
-            return f'Not a valid move for {self.name}.'
+        
+        return board
     
 
 class Knight:
@@ -214,14 +215,15 @@ class Knight:
         self.moves = all_moves
         
         
-    def move_piece(self, new_square: int):
+    def move_piece(self, board, new_square: int):
         if new_square in self.moves:
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
             #print(f'Not a valid move for {self.__class__.__name__}.')
-            return f'Not a valid move for {self.name}.'
+            
+        return board
 
 
 class Bishop:
@@ -285,13 +287,14 @@ class Bishop:
         self.moves = all_moves
     
     
-    def move_piece(self, new_square: int):
+    def move_piece(self, board, new_square: int):
         if new_square in self.moves:
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
-            return f'Not a valid move for {self.name}.'
+            
+        return board
 
 
 class Rook:
@@ -350,7 +353,9 @@ class Rook:
         self.moves = sorted(all_moves)
     
     
-    def move_piece(self, new_square: int, castling=False):
+    def move_piece(self, board, new_square: int, castling=False):
+        # Do not return board here when castling. Board will be returned by
+        # King.move_piece().
         if castling:
             if not self.has_moved:
                 # Do not check if new_square is in self.moves
@@ -366,14 +371,15 @@ class Rook:
             else:
                 raise Exception(f'Castling rook "{self.name}" is illegal. ' \
                                 f'Rook "{self.name}" has already moved.')
-            
+        
         elif new_square in self.moves:
             self.has_moved = True
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
+            return board
         else:
             print(f'Not a valid move for {self.name}.')
-            return f'Not a valid move for {self.name}.'
+            return board
 
 
 class Queen:
@@ -393,7 +399,7 @@ class Queen:
     def __repr__(self):        
         return f'({self.symbol}, Sq: {self.square}, {self.color})'
         
-    
+    # Could replace this with bishop.moves + rook.moves from the queen's square
     def update_moves(self, board):
         all_moves = []
         
@@ -435,13 +441,15 @@ class Queen:
         self.moves = all_moves
     
     
-    def move_piece(self, new_square: int):
+    def move_piece(self, board, new_square: int):
         if new_square in self.moves:
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
-            return f'Not a valid move for {self.name}.'
+            
+        return board
+
 
 # TODO: Implement check. If king's square is in opponent's controlled squares.
 # Need to know which piece is attacking the king so capturing it is a valid
@@ -584,7 +592,7 @@ class King:
         self.moves = all_moves
     
     
-    def move_piece(self, new_square: int):
+    def move_piece(self, board, new_square: int):
         if new_square in self.moves:
             old_square, self.square = self.square, new_square
             # Check if king is castling. If so, move the corresponding rook.
@@ -605,7 +613,8 @@ class King:
             board.squares[old_square], board.squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
-            return f'Not a valid move for {self.name}.'
+            
+        return board
 
 
 
@@ -668,7 +677,7 @@ if __name__ == '__main__':
             
             new_squares = (8, 18, 10, 11, 12, 14)
             for ind, piece in enumerate(pieces):
-                piece.move_piece(new_squares[ind])
+                piece.move_piece(board, new_squares[ind])
             
             # This test will fail if the new_squares are changed, so it works.
             for ind, piece in enumerate(pieces):
@@ -681,7 +690,7 @@ if __name__ == '__main__':
             self.assertFalse(pawn.has_moved)
             pawn.update_moves(board)
             self.assertEqual(pawn.moves, [16, 24])
-            pawn.move_piece(24)
+            pawn.move_piece(board, 24)
             self.assertEqual(pawn.square, 24)
             self.assertTrue(pawn.has_moved)
             pawn.update_moves(board)
@@ -783,7 +792,7 @@ if __name__ == '__main__':
             self.assertFalse(knight.moves)
             knight.update_moves(board)
             self.assertEqual(set(knight.moves), set((16, 18, 11)))
-            knight.move_piece(18)
+            knight.move_piece(board, 18)
             self.assertEqual(knight.square, 18)
             knight.update_moves(board)
             knight_move_directions = (-15, -17, -6, -10, 6, 10, 15, 17)
@@ -863,7 +872,7 @@ if __name__ == '__main__':
             supposed_rook_moves = [1, 8] + list(range(17, 58, 8)) \
                                 + list(range(10, 16))
             self.assertEqual(set(rook.moves), set(supposed_rook_moves))
-            rook.move_piece(10)
+            rook.move_piece(board, 10)
             self.assertTrue(rook.has_moved)
             
             # This block should prevent any rook edge cases on the corners/sides.
@@ -876,11 +885,11 @@ if __name__ == '__main__':
             rook = Rook('Ra', 'white', 0)
             rook.update_moves(board)
             self.assertEqual(set(rook.moves), set(list(range(8, 57, 8)) + list(range(1, 8))))
-            rook.move_piece(3, castling=True)
+            rook.move_piece(board, 3, castling=True)
             self.assertEqual(rook.square, 3)
             
             rook = Rook('ra', 'black', 56)
-            rook.move_piece(59, castling=True)
+            rook.move_piece(board, 59, castling=True)
             self.assertEqual(rook.square, 59)
             self.assertRaises(Exception, rook.move_piece, 59, castling=True)
             
@@ -973,7 +982,7 @@ if __name__ == '__main__':
             # Rooks need to exist to check for castling possibility.
             king.update_moves(board)
             self.assertEqual(set(king.moves), set((62, 55, 54)))
-            king.move_piece(55)
+            king.move_piece(board, 55)
             self.assertTrue(king.has_moved)
             
             # Initialize rooks so king can add castling moves to king.moves.

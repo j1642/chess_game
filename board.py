@@ -112,17 +112,24 @@ class Board:
             self.squares[piece.square] = piece
 
 
+# TODO: all moves need to be updated before attacked squares can be removed from
+# both king move lists. 
     def update_moves_white(self):
         'Helper function for update_white_controlled_squares() method.'
-        
         for piece in self.white_pieces:
-            piece.update_moves(self)
+            if isinstance(piece, pieces.King):
+                piece.update_moves(self)
+            else:
+                piece.update_moves(self.squares)
 
 
     def update_moves_black(self):
         'Helper function for update_black_controlled_squares() method.'
         for piece in self.black_pieces:
-            piece.update_moves(self)
+            if isinstance(piece, pieces.King):
+                piece.update_moves(self)
+            else:
+                piece.update_moves(self.squares)
 
 
     def update_white_controlled_squares(self):
@@ -157,13 +164,15 @@ if __name__ == '__main__':
     
     board = Board()
     
-    # TODO: Check that piece.move_piece() alters the Board object
     
     class test_board(unittest.TestCase):
         
-        def test_repr(self):
+        def test_repr_and_initialize_pieces(self):
             board = Board()
             board.initialize_pieces()
+            self.assertEqual(len(board.white_pieces), len(board.black_pieces))
+            self.assertEqual(len(board.black_pieces), 16)
+            
             # Finally figured out how to make nice, neat multipe line strings.
             compare_to_initial_squares_repr = '|r|n|b|q|k|b|n|r|\n'\
                                 '|p|p|p|p|p|p|p|p|\n'\
@@ -173,25 +182,10 @@ if __name__ == '__main__':
                                 '| | | | | | | | |\n'\
                                 '|P|P|P|P|P|P|P|P|\n'\
                                 '|R|N|B|Q|K|B|N|R|'
+                                
             self.assertEqual(board.__repr__(), compare_to_initial_squares_repr)
         
             
-        def test_initialize_pieces(self):
-            # This is not particularly thorough, however there is not much
-            #     to test for this method.
-            board = Board()
-            board.initialize_pieces()
-            self.assertEqual(len(board.white_pieces), len(board.black_pieces))
-            self.assertEqual(len(board.black_pieces), 16)
-            #print(board.black_pieces)
-            rook_a = pieces.Rook('Ra', 'white', 0)
-            #print('\n')
-            #print(board.squares[0])
-            #print(rook_a)
-            # This test does not work with assertEqual or assertIs.
-            #self.assertIs(board.squares[0], rook_a)
-    
-        
         def test_update_white_controlled_squares(self):
             board = Board()
             board.initialize_pieces()
@@ -231,31 +225,33 @@ if __name__ == '__main__':
             for piece in board.squares[:8]:
                 piece.update_moves(board)
             
-            # TODO: Finish ths method
             # Test all piece types beside pawn, which was tested above.
-            new_squares = (48, 18, 16, 0, 12, 23, 1)
+            new_squares = (48, 18, 16, 0, 12, 23, 21, 1)
             for ind, piece in enumerate(board.squares[:8]):
-                old_board = board
                 old_square = piece.square
                 new_square = new_squares[ind]
                 
                 piece.update_moves(board)
-                print(piece.moves)
-                new_board = piece.move_piece(board, new_square)
-                print(new_board)
-                if old_board == new_board:
+                board = piece.move_piece(board, new_square)
+
+                if board.squares[old_square] == piece:
                     raise Exception(f'Invalid move for {piece.name}')
-                board = new_board
                 
                 self.assertEqual(board.squares[old_square], ' ')
                 self.assertEqual(board.squares[new_square], piece)
                 
                 
+        def test_integration_remove_king_moves_into_check(self):
+            board = Board()
+            #TODO: is this test needed?
             
-            # TODO: if a piece is moved to an invalid square, the move_piece()
-            # method returns the unaltered board. Maybe the game should check
-            # if new_board == old_board and if so, prompt same player for a 
-            # valid move.
+        
+        
+        
+        # TODO: if a piece is moved to an invalid square, the move_piece()
+        # method returns the unaltered board (implemented in pieces.py). 
+        # game.py should check if the squares have changed and if so,
+        # prompt same player for a valid move.
         
         
     unittest.main()

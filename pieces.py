@@ -52,7 +52,6 @@ class RanksFiles:
 ranks_files = RanksFiles()
 
 
-# TODO: pass board.squares as arg to update_moves() methods
 class Pawn:
     def __init__(self, name: str, white_or_black: str, position: int):
         self.name = name
@@ -77,7 +76,7 @@ class Pawn:
     # Keep record of last move. If last move was a pawn moving two squares
     # forward, en passant is available if there is a pawn on either side of the
     # moved pawns new square.
-    def update_moves(self, board):
+    def update_moves(self, all_squares: list):
         self.moves = []
         forward_direction = 8
         
@@ -87,13 +86,13 @@ class Pawn:
         square_in_front = self.square + forward_direction
         
         # Prevent forward moves if there is a piece blocking the way.
-        if board.squares[square_in_front] == ' ':
+        if all_squares[square_in_front] == ' ':
             if self.has_moved:
                     self.moves.append(square_in_front)
             elif self.has_moved is False:
                     self.moves.append(square_in_front)
                     two_squares_ahead = square_in_front + forward_direction
-                    if board.squares[two_squares_ahead] == ' ':
+                    if all_squares[two_squares_ahead] == ' ':
                         self.moves.append(two_squares_ahead)
         
         # Limit capture directions if pawn is in the A or H file.
@@ -119,25 +118,25 @@ class Pawn:
             examined_square = self.square + direction
             try:
                 # Check if piece in examined_square is the opponent's.
-                square_contents = board.squares[examined_square].color
+                square_contents = all_squares[examined_square].color
                 if square_contents != self.color:
                     # Capturing opponent's piece is a legal move.
                     self.moves.append(examined_square)
             except AttributeError:
                 # examined_square is empty
-                assert board.squares[examined_square] == ' '
+                assert all_squares[examined_square] == ' '
                 continue
                 
                 
-    def move_piece(self, board, new_square: int):
+    def move_piece(self, all_squares, new_square: int):
         if new_square in self.moves:
             self.has_moved = True
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            all_squares[old_square], all_squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
         
-        return board
+        return all_squares
     
 
 class Knight:
@@ -158,7 +157,7 @@ class Knight:
         return f'({self.symbol}, Sq: {self.square}, {self.color})'
 
 
-    def update_moves(self, board):
+    def update_moves(self, all_squares: list):
         # Moves ordered by move direction clockwise
         #all_moves = [self.square + delta for delta in [17, 10, -6, -15, -17, -10, 6, 15]]
 
@@ -205,25 +204,25 @@ class Knight:
         all_moves_copy = all_moves.copy()
         for square in all_moves_copy:
             try:
-                square_contents = board.squares[square].color
+                square_contents = all_squares[square].color
                 if square_contents == self.color:
                     all_moves.remove(square)
             except AttributeError:
-                assert board.squares[square] == ' '
+                assert all_squares[square] == ' '
                 continue
                     
         self.moves = all_moves
         
         
-    def move_piece(self, board, new_square: int):
+    def move_piece(self, all_squares, new_square: int):
         if new_square in self.moves:
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            all_squares[old_square], all_squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
             #print(f'Not a valid move for {self.__class__.__name__}.')
             
-        return board
+        return all_squares
 
 
 class Bishop:
@@ -244,7 +243,7 @@ class Bishop:
         return f'({self.symbol}, Sq: {self.square}, {self.color})'
         
     
-    def update_moves(self, board):
+    def update_moves(self, all_squares: list):
         all_moves = []
         directions = [9, -7, -9, 7]
         if self.square in ranks_files.a_file:
@@ -257,12 +256,12 @@ class Bishop:
                 new_square = self.square + direction * diagonal_scalar
                 if -1 < new_square < 64:
                     # Is new square empty, a friendly piece, or opposing piece?
-                    if board.squares[new_square] == ' ':
+                    if all_squares[new_square] == ' ':
                         pass
-                    elif self.color == board.squares[new_square].color:
+                    elif self.color == all_squares[new_square].color:
                         # Do not add move.
                         break
-                    elif self.color != board.squares[new_square].color:
+                    elif self.color != all_squares[new_square].color:
                         # Bishop cannot jump over pieces.
                         all_moves.append(new_square)
                         break
@@ -287,14 +286,14 @@ class Bishop:
         self.moves = all_moves
     
     
-    def move_piece(self, board, new_square: int):
+    def move_piece(self, all_squares: list, new_square: int):
         if new_square in self.moves:
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            all_squares[old_square], all_squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
             
-        return board
+        return all_squares
 
 
 class Rook:
@@ -317,7 +316,7 @@ class Rook:
     has_moved: {self.has_moved})'''
         
     
-    def update_moves(self, board):
+    def update_moves(self, all_squares: list):
         all_moves = []
         
         for direction in (-8, -1, 1, 8):
@@ -325,12 +324,12 @@ class Rook:
                 new_square = self.square + direction * vert_horiz_scalar
                 if -1 < new_square < 64:
                     # Is new square empty, a friendly piece, or opposing piece?
-                    if board.squares[new_square] == ' ':
+                    if all_squares[new_square] == ' ':
                         pass
-                    elif self.color == board.squares[new_square].color:
+                    elif self.color == all_squares[new_square].color:
                         # Do not add move.
                         break
-                    elif self.color != board.squares[new_square].color:
+                    elif self.color != all_squares[new_square].color:
                         # Rook cannot jump over pieces.
                         all_moves.append(new_square)
                         break
@@ -353,7 +352,7 @@ class Rook:
         self.moves = sorted(all_moves)
     
     
-    def move_piece(self, board, new_square: int, castling=False):
+    def move_piece(self, all_squares: list, new_square: int, castling=False):
         # Do not return board here when castling. Board will be returned by
         # King.move_piece().
         if castling:
@@ -375,11 +374,11 @@ class Rook:
         elif new_square in self.moves:
             self.has_moved = True
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
-            return board
+            all_squares[old_square], all_squares[new_square] = ' ', self
+            return all_squares
         else:
             print(f'Not a valid move for {self.name}.')
-            return board
+            return all_squares
 
 
 class Queen:
@@ -400,7 +399,7 @@ class Queen:
         return f'({self.symbol}, Sq: {self.square}, {self.color})'
         
     # Could replace this with bishop.moves + rook.moves from the queen's square
-    def update_moves(self, board):
+    def update_moves(self, all_squares: list):
         all_moves = []
         
         # Prevent jumping from the A-file to H-file, vice versa.
@@ -415,12 +414,12 @@ class Queen:
                 new_square = self.square + direction * scalar
                 if -1 < new_square < 64:
                     # Is new square empty, a friendly piece, or opposing piece?
-                    if board.squares[new_square] == ' ':
+                    if all_squares[new_square] == ' ':
                         pass
-                    elif self.color == board.squares[new_square].color:
+                    elif self.color == all_squares[new_square].color:
                         # Do not add move.
                         break
-                    elif self.color != board.squares[new_square].color:
+                    elif self.color != all_squares[new_square].color:
                         # Queen cannot jump over pieces.
                         all_moves.append(new_square)
                         break
@@ -441,19 +440,18 @@ class Queen:
         self.moves = all_moves
     
     
-    def move_piece(self, board, new_square: int):
+    def move_piece(self, all_squares: list, new_square: int):
         if new_square in self.moves:
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            all_squares[old_square], all_squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
             
-        return board
+        return all_squares
 
 
-# TODO: Implement check. If king's square is in opponent's controlled squares.
-# Need to know which piece is attacking the king so capturing it is a valid
-# move when the king is in check.
+# TODO: Implement check. In game.py, limit the checked player's moves to those
+# that remove check, if any are possible.
 class King:
     def __init__(self, name: str, white_or_black: str, position: int):
         self.name = name
@@ -474,8 +472,8 @@ class King:
     has_moved: {self.has_moved}, in check: {self.in_check})'''
 
 
-    # TODO: Remove enemy-controlled squares
     def update_moves(self, board):
+        all_squares = board.squares
         all_moves = []
         directions = [7, 8, 9, -1, 1, -9, -8, -7]
         
@@ -509,112 +507,153 @@ class King:
         all_moves_copy = all_moves.copy()
         for square in all_moves_copy:
             try:
-                if board.squares[square].color == self.color:
+                if all_squares[square].color == self.color:
                     all_moves.remove(square)
             except AttributeError:
+                assert all_squares[square] == ' '
                 continue
         
         # TODO: Does an empty square that is under attack b/w rook and king
         # prevent castling?
         
         # Add any possible castling moves to all_moves.
-        # This castling block could probably be cleaner.
+        # This castling block could probably be less repetitive.
         if self.has_moved is False:
             if self.color == 'white' and self.square == 4:
                 # Check if castling kingside is possible.
                 try:
-                    supposed_h7_rook_name = board.squares[7].name
-                    supposed_h7_rook_has_moved = board.squares[7].has_moved
+                    supposed_h7_rook_name = all_squares[7].name
+                    supposed_h7_rook_has_moved = all_squares[7].has_moved
                     if supposed_h7_rook_name == 'Rh' \
                         and supposed_h7_rook_has_moved is False \
-                        and board.squares[5] == board.squares[6] == ' ':
+                        and all_squares[5] == all_squares[6] == ' ':
                             all_moves.append(6)
                 except AttributeError:
-                    assert board.squares[7] == ' '
+                    # No assert all_squares[7] == ' ' because some pieces
+                    # have a name without having the has_moved attribute.
                     pass
                 
                 try:
                     # Check if castling queenside is possible.
-                    supposed_a1_rook_name = board.squares[0].name
-                    supposed_a1_rook_has_moved = board.squares[0].has_moved
+                    supposed_a1_rook_name = all_squares[0].name
+                    supposed_a1_rook_has_moved = all_squares[0].has_moved
                     if supposed_a1_rook_name == 'Ra' \
                         and supposed_a1_rook_has_moved is False \
-                        and board.squares[1] == board.squares[2] == ' ':
+                        and all_squares[1] == all_squares[2] == ' ':
                             all_moves.append(2)
                 except AttributeError:
-                    assert board.squares[0] == ' '
+                    # No assert all_squares[0] == ' ' because some pieces
+                    # have a name without having the has_moved attribute.
                     pass
                 
             elif self.color == 'black' and self.square == 60:
                 # Check if castling kingside is possible.
                 try:
-                    supposed_h8_rook_name = board.squares[63].name
-                    supposed_h8_rook_has_moved = board.squares[63].has_moved
+                    supposed_h8_rook_name = all_squares[63].name
+                    supposed_h8_rook_has_moved = all_squares[63].has_moved
                     if supposed_h8_rook_name == 'rh' \
                         and supposed_h8_rook_has_moved is False \
-                        and board.squares[61] == board.squares[62] == ' ':
+                        and all_squares[61] == all_squares[62] == ' ':
                             all_moves.append(62)
                 except AttributeError:
-                    assert board.squares[63] == ' '
+                    # No assert all_squares[63] == ' ' because some pieces
+                    # have a name without having the has_moved attribute.
                     pass
                 
                 # Check if castling queenside is possible.
                 try:
-                    supposed_a8_rook_name = board.squares[56].name
-                    supposed_a8_rook_has_moved = board.squares[56].has_moved
+                    supposed_a8_rook_name = all_squares[56].name
+                    supposed_a8_rook_has_moved = all_squares[56].has_moved
                     if supposed_a8_rook_name == 'ra' \
                         and supposed_a8_rook_has_moved is False \
-                        and board.squares[57] == board.squares[58] == ' ':
+                        and all_squares[57] == all_squares[58] == ' ':
                             all_moves.append(58)
                 except AttributeError:
-                    assert board.squares[56] == ' '
+                    # No assert all_squares[56] == ' ' because some pieces
+                    # have a name without having the has_moved attribute.
                     pass
-                        
+        
+        self.moves = all_moves
+                
+        # Prevent checked king from moving into a square where the king
+        # would still be in check, but where the new square was not
+        # under attack previously.
+        
+        # E.g. A checked king moving from e1 to f1 with the opponent's rook
+        # on a1 would still be in check.
+        if self.in_check:
+            board.squares[self.square] = ' '
+            if self.color == 'white':
+                board.update_black_controlled_squares()
+            elif self.color == 'black':
+                board.update_white_controlled_squares()
+            board.squares[self.square] = self
+        
+        # Remove illegal moves. If in check, this includes moves that would
+        # keep the king in check (implemented in the block above).
+        self.remove_moves_to_attacked_squares(board.white_controlled_squares,
+                                              board.black_controlled_squares)
+
+
+    def remove_moves_to_attacked_squares(self, white_controlled_squares: set,
+                                         black_controlled_squares: set):
+        'Helper method to King.update_moves()'
         # Remove illegal king moves into opponent controlled squares.
         # King cannot willingly move into check.
-        #all_moves_set = set(all_moves)
-        #all_moves = list(all_moves_set)
-       # 
-        #if self.color == 'white':
-         #   for illegal_move in board.black_controlled_squares():
-          #      try:
-           #         all_moves.remove(illegal_move)
-            #    except ValueError:
-             #       continue
+        if self.color == 'white':
+            opponent_controlled_squares = black_controlled_squares
+        elif self.color == 'black':
+            opponent_controlled_squares = white_controlled_squares
+            
+        moves_copy = self.moves.copy()
+        for move in moves_copy:
+            if move in opponent_controlled_squares:
+                self.moves.remove(move)
                 
-       # elif self.color == 'black':
-        #    for illegal_move in board.white_controlled_squares():
-         #       try:
-          #          all_moves.remove(illegal_move)
-           #     except ValueError:
-            #        continue
                 
-        self.moves = all_moves
+    def check_if_in_check(self, white_controlled_squares: set,
+                                black_controlled_squares: set):
+        if self.color == 'white':
+            opponent_controlled_squares = black_controlled_squares
+        elif self.color == 'black':
+            opponent_controlled_squares = white_controlled_squares
+            
+        if self.square in opponent_controlled_squares:
+            self.in_check = True
+            return True
+        else:
+            self.in_check = False
+            return False
+                
     
-    
-    def move_piece(self, board, new_square: int):
+    def move_piece(self, all_squares: list, new_square: int):
         if new_square in self.moves:
             old_square, self.square = self.square, new_square
+                
             # Check if king is castling. If so, move the corresponding rook.
+            # Validity of castling controlled in King.update_moves().
             if self.has_moved is False:
                 if self.color == 'white':
                     if new_square == 2:
-                        #white_rook_a = board.squares[0]
+                        white_rook_a = all_squares[0]
                         white_rook_a.move_piece(3, castling=True)
                     elif new_square == 6:
+                        white_rook_h = all_squares[7]
                         white_rook_h.move_piece(5, castling=True)
                 elif self.color == 'black':
                     if new_square == 58:
+                        black_rook_a = all_squares[56]
                         black_rook_a.move_piece(59, castling=True)
                     elif new_square == 62:
+                        black_rook_h = all_squares[63]
                         black_rook_h.move_piece(61, castling=True)
                         
             self.has_moved = True
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            all_squares[old_square], all_squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
             
-        return board
+        return all_squares
 
 
 
@@ -637,24 +676,26 @@ if __name__ == '__main__':
     
     # TODO: What's up with this?
     # It seems like there needs to be a global board variable for these tests.
-    # Shouldn't a local board variable work without giving a NameError?
+    # Shouldn't a local all_squares variable work without giving a NameError?
     class SetUpTearDown(unittest.TestCase):
         
         def setUp(self):
-            global board
-            board = Board()
+            global all_squares
+            all_squares = [' '] * 64
             
         
         def tearDown(self):
-            global board
-            del board
+            global all_squares
+            del all_squares
             
             
     class TestPieceMovement(SetUpTearDown):
         
         def test_board_updates_upon_piece_movement(self):
             # The relevant code is in the move_piece method of each piece class.
-            self.assertEqual(board.squares, [' '] * 64)
+            board = Board()
+            all_squares = board.squares
+            self.assertEqual(all_squares, [' '] * 64)
             pawn = Pawn('P', 'white', 0)
             knight = Knight('N', 'white', 1)
             king = King('K', 'white', 2)
@@ -667,66 +708,69 @@ if __name__ == '__main__':
             for ind, piece in enumerate(pieces):
                 board.squares[ind] = piece
                 
-            self.assertEqual(board.squares[:6], list(pieces))
+            self.assertEqual(all_squares[:6], list(pieces))
                 
             for piece in pieces:
-                piece.update_moves(board)
+                if isinstance(piece, King):
+                    piece.update_moves(board)
+                else:
+                    piece.update_moves(all_squares)
             
             # Make sure it is possible to iteratively update the move lists.
             self.assertEqual(pawn.moves, [8, 16])
             
             new_squares = (8, 18, 10, 11, 12, 14)
             for ind, piece in enumerate(pieces):
-                piece.move_piece(board, new_squares[ind])
+                piece.move_piece(all_squares, new_squares[ind])
             
             # This test will fail if the new_squares are changed, so it works.
             for ind, piece in enumerate(pieces):
-                self.assertEqual(board.squares[new_squares[ind]], piece)
+                self.assertEqual(all_squares[new_squares[ind]], piece)
                 
         
         def test_pawn_movement(self):
             pawn = Pawn('Pa', 'white', 8)
             self.assertFalse(pawn.moves)
             self.assertFalse(pawn.has_moved)
-            pawn.update_moves(board)
+            pawn.update_moves(all_squares)
             self.assertEqual(pawn.moves, [16, 24])
-            pawn.move_piece(board, 24)
+            pawn.move_piece(all_squares, 24)
             self.assertEqual(pawn.square, 24)
             self.assertTrue(pawn.has_moved)
-            pawn.update_moves(board)
+            pawn.update_moves(all_squares)
             self.assertEqual(pawn.moves, [32])
             
             pawn = Pawn('ph', 'black', 49)
-            pawn.update_moves(board)
+            pawn.update_moves(all_squares)
             self.assertEqual(pawn.moves, [41, 33])
             
             
         def test_blocked_pawn_cannot_move_forward_by_one(self):
             pawn = Pawn('Pa', 'white', 16)
-            board.squares[16] = pawn
+            all_squares[16] = pawn
             
             # Friendly blocking piece.
             blocking_piece = Pawn('Pb', 'white', 24)
-            board.squares[24] = blocking_piece
-            pawn.update_moves(board)
+            all_squares[24] = blocking_piece
+            pawn.update_moves(all_squares)
             self.assertEqual(pawn.moves, [])
             
             # Opponent blocking piece.
             blocking_piece = Pawn('q', 'black', 24)
-            board.squares[24] = blocking_piece
-            pawn.update_moves(board)
+            all_squares[24] = blocking_piece
+            pawn.update_moves(all_squares)
             self.assertEqual(pawn.moves, [])
             
             
         def test_partially_blocked_pawn_cannot_move_forward_by_two(self):
             pawn = Pawn('Pa', 'white', 16)
-            board.squares[16] = pawn
+            all_squares[16] = pawn
             self.assertFalse(pawn.has_moved)
             
             blocking_piece = King('k', 'black', 32)
-            board.squares[32] = blocking_piece
+            all_squares[32] = blocking_piece
             
-            pawn.update_moves(board)
+            pawn.update_moves(all_squares)
             self.assertEqual(pawn.moves, [24])
             
         
@@ -735,11 +779,11 @@ if __name__ == '__main__':
             friendly_piece = Bishop('Bc', 'white', 18)
             opponent_piece = Pawn('pe', 'black', 20)
             
-            board.squares[11] = pawn
-            board.squares[18] = friendly_piece
-            board.squares[20] = opponent_piece
+            all_squares[11] = pawn
+            all_squares[18] = friendly_piece
+            all_squares[20] = opponent_piece
             
-            pawn.update_moves(board)
+            pawn.update_moves(all_squares)
             # Pawn should be able to move forward by 1 or 2 squares and
             # capture the enemy pawn.
             self.assertFalse(pawn.has_moved)
@@ -751,11 +795,11 @@ if __name__ == '__main__':
             friendly_piece = Knight('nb', 'black', 32)
             opponent_piece = Queen('Q', 'white', 41)
             
-            board.squares[48] = pawn
-            board.squares[32] = friendly_piece
-            board.squares[41] = opponent_piece
+            all_squares[48] = pawn
+            all_squares[32] = friendly_piece
+            all_squares[41] = opponent_piece
             
-            pawn.update_moves(board)
+            pawn.update_moves(all_squares)
             # Pawn can move forward by one (not two) or capture opponent queen.
             self.assertFalse(pawn.has_moved)
             self.assertEqual(set(pawn.moves), set([40, 41]))
@@ -770,13 +814,13 @@ if __name__ == '__main__':
             opponent_pawn_b.has_moved = True
             opponent_pawn_h.has_moved = True
             
-            board.squares[8] = pawn
-            board.squares[17] = opponent_pawn_b
-            board.squares[15] = opponent_pawn_h
+            all_squares[8] = pawn
+            all_squares[17] = opponent_pawn_b
+            all_squares[15] = opponent_pawn_h
             
-            pawn.update_moves(board)
-            opponent_pawn_b.update_moves(board)
-            opponent_pawn_h.update_moves(board)
+            pawn.update_moves(all_squares)
+            opponent_pawn_b.update_moves(all_squares)
+            opponent_pawn_h.update_moves(all_squares)
             
             self.assertFalse(pawn.has_moved)
             self.assertTrue(opponent_pawn_b.has_moved)
@@ -790,11 +834,11 @@ if __name__ == '__main__':
         def test_knight_movement(self):
             knight = Knight('Nb', 'white', 1)
             self.assertFalse(knight.moves)
-            knight.update_moves(board)
+            knight.update_moves(all_squares)
             self.assertEqual(set(knight.moves), set((16, 18, 11)))
-            knight.move_piece(board, 18)
+            knight.move_piece(all_squares, 18)
             self.assertEqual(knight.square, 18)
-            knight.update_moves(board)
+            knight.update_moves(all_squares)
             knight_move_directions = (-15, -17, -6, -10, 6, 10, 15, 17)
             supposed_knight_moves = [(18 + i) for i in knight_move_directions]
             self.assertEqual(set(knight.moves), set((supposed_knight_moves)))
@@ -804,10 +848,10 @@ if __name__ == '__main__':
             knight = Knight('Ng', 'white', 6)
             pawn_e2 = Pawn('Pe', 'white', 12)
             
-            board.squares[6] = knight
-            board.squares[12] = pawn_e2
+            all_squares[6] = knight
+            all_squares[12] = pawn_e2
             
-            knight.update_moves(board)
+            knight.update_moves(all_squares)
             # pawn_e2 blocks one possible move from the knight's square.
             self.assertEqual(set(knight.moves), set([21, 23]))
             
@@ -816,38 +860,38 @@ if __name__ == '__main__':
             knight = Knight('Ng', 'white', 6)
             opponent_piece = Pawn('ph', 'black', 23)
             
-            board.squares[6] = knight
-            board.squares[23] = opponent_piece
+            all_squares[6] = knight
+            all_squares[23] = opponent_piece
             
-            knight.update_moves(board)
+            knight.update_moves(all_squares)
             self.assertEqual(set(knight.moves), set([21, 23, 12]))
         
         
         def test_bishop_movement(self):
             bishop = Bishop('Bc', 'white', 2)
             self.assertFalse(bishop.moves)
-            bishop.update_moves(board)
+            bishop.update_moves(all_squares)
             supposed_bishop_moves = set((11, 20, 29, 38, 47, 9, 16))
             self.assertEqual(set(bishop.moves), supposed_bishop_moves)
             
             bishop = Bishop('bf', 'black', 52)
-            bishop.update_moves(board)
+            bishop.update_moves(all_squares)
             supposed_bishop_moves = set((61, 59, 45, 38, 31, 43, 34, 25, 16))
             self.assertEqual(set(bishop.moves), supposed_bishop_moves)
             
             # This block should prevent bishop edge cases on the corners/sides.
             bishop = Bishop('Bc', 'white', 0)
-            bishop.update_moves(board)
+            bishop.update_moves(all_squares)
             self.assertEqual(set(bishop.moves), set(list(range(9, 64, 9))))
             
         def test_bishop_friendly_piece_collision(self):
             bishop = Bishop('Bf', 'white', 7)
             friendly_piece = Rook('Ra', 'white', 35)
             
-            board.squares[7] = bishop
-            board.squares[35] = friendly_piece
+            all_squares[7] = bishop
+            all_squares[35] = friendly_piece
             
-            bishop.update_moves(board)
+            bishop.update_moves(all_squares)
             self.assertEqual(bishop.moves, [14, 21, 28])
             
         
@@ -855,10 +899,10 @@ if __name__ == '__main__':
             bishop = Bishop('Bf', 'white', 7)
             opponent_piece = Pawn('pe', 'black', 35)
             
-            board.squares[7] = bishop
-            board.squares[35] = opponent_piece
+            all_squares[7] = bishop
+            all_squares[35] = opponent_piece
             
-            bishop.update_moves(board)
+            bishop.update_moves(all_squares)
             self.assertEqual(bishop.moves, [14, 21, 28, 35])
             
             
@@ -868,11 +912,11 @@ if __name__ == '__main__':
             rook = Rook('Ra', 'white', 9)
             self.assertFalse(rook.moves)
             self.assertFalse(rook.has_moved)
-            rook.update_moves(board)
+            rook.update_moves(all_squares)
             supposed_rook_moves = [1, 8] + list(range(17, 58, 8)) \
                                 + list(range(10, 16))
             self.assertEqual(set(rook.moves), set(supposed_rook_moves))
-            rook.move_piece(board, 10)
+            rook.move_piece(all_squares, 10)
             self.assertTrue(rook.has_moved)
             
             # This block should prevent any rook edge cases on the corners/sides.
@@ -883,13 +927,13 @@ if __name__ == '__main__':
             # Also, needed to reset board variable because there were a few
             # pieces in it.
             rook = Rook('Ra', 'white', 0)
-            rook.update_moves(board)
+            rook.update_moves(all_squares)
             self.assertEqual(set(rook.moves), set(list(range(8, 57, 8)) + list(range(1, 8))))
-            rook.move_piece(board, 3, castling=True)
+            rook.move_piece(all_squares, 3, castling=True)
             self.assertEqual(rook.square, 3)
             
             rook = Rook('ra', 'black', 56)
-            rook.move_piece(board, 59, castling=True)
+            rook.move_piece(all_squares, 59, castling=True)
             self.assertEqual(rook.square, 59)
             self.assertRaises(Exception, rook.move_piece, 59, castling=True)
             
@@ -903,12 +947,12 @@ if __name__ == '__main__':
             friendly_pawn_a = Pawn('pa', 'black', 8)
             friendly_pawn_c = Pawn('pc', 'black', 10)
             
-            board.squares[9] = rook
-            board.squares[57] = friendly_knight
-            board.squares[8] = friendly_pawn_a
-            board.squares[10] = friendly_pawn_c
+            all_squares[9] = rook
+            all_squares[57] = friendly_knight
+            all_squares[8] = friendly_pawn_a
+            all_squares[10] = friendly_pawn_c
             
-            rook.update_moves(board)
+            rook.update_moves(all_squares)
             self.assertEqual(set(rook.moves), set([1] + list(range(17, 50, 8))))
         
         
@@ -918,19 +962,19 @@ if __name__ == '__main__':
             opponent_knight = Knight('Nb', 'white', 1)
             opponent_rook = Rook('Ra', 'white', 8)
             
-            board.squares[9] = rook
-            board.squares[10] = opponent_pawn
-            board.squares[1] = opponent_knight
-            board.squares[8] = opponent_rook
+            all_squares[9] = rook
+            all_squares[10] = opponent_pawn
+            all_squares[1] = opponent_knight
+            all_squares[8] = opponent_rook
             
-            rook.update_moves(board)
+            rook.update_moves(all_squares)
             self.assertEqual(set(rook.moves), set([8, 1, 10,] \
                                                   + list(range(17, 58, 8))))
             
         def test_queen_movement(self):
             queen = Queen('Q', 'white', 9)
             self.assertFalse(queen.moves)
-            queen.update_moves(board)
+            queen.update_moves(all_squares)
             # Possible rook moves plus possible bishop moves.
             supposed_queen_moves = [1, 8] + list(range(17, 58, 8)) \
                                 + list(range(10, 16))
@@ -939,7 +983,7 @@ if __name__ == '__main__':
             
             # This block should prevent queen edge cases on the corners/sides.
             queen = Queen('Q', 'white', 0)
-            queen.update_moves(board)
+            queen.update_moves(all_squares)
             self.assertEqual(set(queen.moves), set(list(range(9, 64, 9)) \
                                           + list(range(8, 57, 8)) \
                                           + list(range(1, 8))))
@@ -949,11 +993,11 @@ if __name__ == '__main__':
             friendly_knight = Knight('nb', 'black', 57)
             friendly_pawn = Pawn('pb', 'black', 49)
             
-            board.squares[56] = queen
-            board.squares[57] = friendly_knight
-            board.squares[49] = friendly_pawn
+            all_squares[56] = queen
+            all_squares[57] = friendly_knight
+            all_squares[49] = friendly_pawn
             
-            queen.update_moves(board)
+            queen.update_moves(all_squares)
             self.assertEqual(set(queen.moves), set(list(range(0, 49, 8))))
         
         
@@ -962,11 +1006,11 @@ if __name__ == '__main__':
             opponent_bishop = Bishop('Bc', 'white', 2)
             opponent_pawn = Pawn('Pb', 'white', 9)
             
-            board.squares[0] = queen
-            board.squares[2] = opponent_bishop
-            board.squares[9] = opponent_pawn
+            all_squares[0] = queen
+            all_squares[2] = opponent_bishop
+            all_squares[9] = opponent_pawn
             
-            queen.update_moves(board)
+            queen.update_moves(all_squares)
             self.assertEqual(set(queen.moves), set([1, 2, 9] \
                                                    + list(range(8, 57, 8))))            
             
@@ -974,20 +1018,23 @@ if __name__ == '__main__':
         # TODO: Implement limited king movement based on attacked squares and
         # then test it.
         # TODO: Explicitly test king castling, make sure rook moves as well
-        # and that th Board object updates.
+        # and that the Board object updates.
         def test_king_movement(self):
+            board = Board()
+            all_squares = board.squares
+            
             king = King('k', 'black', 63)
             self.assertFalse(king.has_moved)
             self.assertFalse(king.moves)
             # Rooks need to exist to check for castling possibility.
             king.update_moves(board)
             self.assertEqual(set(king.moves), set((62, 55, 54)))
-            king.move_piece(board, 55)
+            king.move_piece(all_squares, 55)
             self.assertTrue(king.has_moved)
             
             # Initialize rooks so king can add castling moves to king.moves.
-            board.squares[0] = Rook('Ra', 'white', 0)
-            board.squares[7] = Rook('Rh', 'white', 7)
+            all_squares[0] = Rook('Ra', 'white', 0)
+            all_squares[7] = Rook('Rh', 'white', 7)
         
             king = King('K', 'white', 4)
             self.assertFalse(king.moves)
@@ -1000,6 +1047,8 @@ if __name__ == '__main__':
             # Technically, we should set king.has_moved to true.
             # If not doing that affects the outcome of this test, then there
             # is a bug.
+            board = Board()
+            all_squares = board.squares
             king = King('K', 'white', 12)
             friendly_pawn_e = Pawn('Pe', 'white', 28)
             friendly_pawn_d = Pawn('Pd', 'white', 11)
@@ -1007,15 +1056,74 @@ if __name__ == '__main__':
             friendly_pawn_f = Pawn('Pf', 'white', 13)
             friendly_bishop = Bishop('Bf', 'white', 5)
             
-            board.squares[12] = king
-            board.squares[28] = friendly_pawn_e
-            board.squares[11] = friendly_pawn_d
-            board.squares[3] = friendly_queen
-            board.squares[13] = friendly_pawn_f
-            board.squares[5] = friendly_bishop
+            all_squares[12] = king
+            all_squares[28] = friendly_pawn_e
+            all_squares[11] = friendly_pawn_d
+            all_squares[3] = friendly_queen
+            all_squares[13] = friendly_pawn_f
+            all_squares[5] = friendly_bishop
             
             king.update_moves(board)
             self.assertEqual(set(king.moves), set([4, 19, 20, 21]))
+            
+        
+        def test_remove_moves_to_attacked_squares(self):
+            board = Board()
+            # Remove king moves into attacked sqaures.
+            white_king = King('K', 'white', 4)
+            black_king = King('k', 'black', 20)
+            black_rook_a = Rook('ra', 'black', 59)
+            black_rook_h = Rook('rh', 'black', 61)
+            
+            all_pieces = (white_king, black_king, black_rook_a,
+                          black_rook_h)
+                
+            for piece in all_pieces:
+                board.squares[piece.square] = piece
+            
+            for piece in all_pieces:
+                if isinstance(piece, King):
+                    piece.update_moves(board)
+                else:
+                    piece.update_moves(board.squares)
+                
+            black_controlled_squares = set(black_rook_a.moves
+                                           + black_rook_h.moves
+                                           + black_king.moves)
+            
+            white_controlled_squares = set(white_king.moves)
+                
+            for king in (white_king, black_king):
+                king.remove_moves_to_attacked_squares(white_controlled_squares,
+                                                      black_controlled_squares)
+            
+            self.assertEqual(white_king.moves, [])
+            self.assertEqual(set(black_king.moves), set([19, 21, 28, 27, 29]))
+            
+            
+        def test_check_if_in_check(self):
+            board = Board()
+            king = King('K', 'white', 4)
+            opponent_rook = Rook('ra', 'black', 0)
+            self.assertFalse(king.in_check)
+            
+            all_squares[4] = king
+            all_squares[0] = opponent_rook
+            
+            king.update_moves(board)
+            opponent_rook.update_moves(board.squares)
+            
+            king.remove_moves_to_attacked_squares(set(king.moves),
+                                                  set(opponent_rook.moves))
+            king.check_if_in_check(set(king.moves), set(opponent_rook.moves))
+            
+            self.assertTrue(king.in_check)
+            # TODO: Test below fails b/c it thinks 5 is a safe square, but the
+            # rook will still be attacking the king in square 5.
+            #self.assertEqual(set(king.moves), set([11, 12, 13]))
+            
+            
+            
 
             
     unittest.main()

@@ -1,10 +1,5 @@
-from os import chdir, getcwd
-if getcwd().split('/')[-1] != 'chess':
-    chdir('Python/chess')
-
 import pieces
 
-# TODO: notice if a piece is captured and remove it from the piece list.
 
 class Board:
     '''Holds the current board.'''
@@ -38,8 +33,6 @@ class Board:
         return ls
 
 
-    # TODO: Compare move list for all pieces to the occupied lists to cut
-    #   illegal moves.
     def find_occupied_squares(self):
         '''Gets lists of squares occupied by white and black pieces,
         respectively.
@@ -112,8 +105,6 @@ class Board:
             self.squares[piece.square] = piece
 
 
-# TODO: all moves need to be updated before attacked squares can be removed from
-# both king move lists. 
     def update_moves_white(self):
         'Helper function for update_white_controlled_squares() method.'
         for piece in self.white_pieces:
@@ -130,7 +121,27 @@ class Board:
                 piece.update_moves(self)
             else:
                 piece.update_moves(self.squares)
-
+                
+                
+    def update_king_moves(self):
+        '''The king moves are dependant on the possbile move of all opponent
+        pieces, so they must be updated last.
+        '''
+        for piece in board.white_pieces:
+            if piece.name == 'K':
+                white_king = piece
+                break
+        for piece in board.black_pieces:
+            if piece.name == 'k':
+                black_king = piece
+                break
+        
+        white_king.check_if_in_check()
+        black_king.check_if_in_check()
+        
+        white_king.update_moves()
+        black_king.update_moves()
+        
 
     def update_white_controlled_squares(self):
         '''Creates set to determine if black king is in check and limit 
@@ -161,8 +172,6 @@ class Board:
 
 if __name__ == '__main__':
     import unittest
-    
-    board = Board()
     
     
     class test_board(unittest.TestCase):
@@ -209,7 +218,7 @@ if __name__ == '__main__':
             
             # Test Pawn.move_piece() updates Board object.
             test_pawn = board.squares[8]
-            test_pawn.update_moves(board)
+            test_pawn.update_moves(board.squares)
             board = test_pawn.move_piece(board, 16)
             self.assertEqual(board.squares[8], ' ')
             self.assertIsInstance(board.squares[16], pieces.Pawn)
@@ -223,7 +232,10 @@ if __name__ == '__main__':
             board.squares[8:16] = [' '] * 8
 
             for piece in board.squares[:8]:
-                piece.update_moves(board)
+                if isinstance(piece, pieces.King):
+                    piece.update_moves(board)
+                else:
+                    piece.update_moves(board.squares)
             
             # Test all piece types beside pawn, which was tested above.
             new_squares = (48, 18, 16, 0, 12, 23, 21, 1)
@@ -231,7 +243,11 @@ if __name__ == '__main__':
                 old_square = piece.square
                 new_square = new_squares[ind]
                 
-                piece.update_moves(board)
+                if isinstance(piece, pieces.King):
+                    piece.update_moves(board)
+                else:
+                    piece.update_moves(board.squares)
+                    
                 board = piece.move_piece(board, new_square)
 
                 if board.squares[old_square] == piece:
@@ -241,16 +257,77 @@ if __name__ == '__main__':
                 self.assertEqual(board.squares[new_square], piece)
                 
                 
-        def test_integration_remove_king_moves_into_check(self):
+        def test_capture_updates_board_and_piece_lists(self):
             board = Board()
-            #TODO: is this test needed?
+            board.initialize_pieces()
+            self.assertEqual(len(board.white_pieces), len(board.black_pieces))
+            self.assertEqual(len(board.black_pieces), 16)
+            
+            # Scandinavian Defense captures
+            board.update_white_controlled_squares()
+            board.update_black_controlled_squares()
+            board = board.squares[12].move_piece(board, 28)
+            
+            board.update_black_controlled_squares()
+            board = board.squares[51].move_piece(board, 35)
+            
+            board.update_white_controlled_squares()
+            board = board.squares[28].move_piece(board, 35)
+            
+            self.assertEqual(len(board.black_pieces), 15)
+            for piece in board.black_pieces:
+                self.assertTrue(piece.name != 'pd')
+            
+            board.update_black_controlled_squares()
+            board = board.squares[59].move_piece(board, 35)
+            
+            self.assertEqual(len(board.white_pieces), 15)
+            for piece in board.white_pieces:
+                self.assertTrue(piece.name != 'Pe')
+            
+            
+        def test_checked_king_moves_must_all_escape_check(self):
+            '''Ensure that a checked king on e1 cannot move to f1 when an
+            opponent's rook is checking the king from a1.
+            
+            This functionality requires the full Board class, not the limited
+            Board class in the test section of pieces.py.
+            
+            This test is similar to one in pieces.py but this has a crucial
+            addition at the end.
+            '''
+            board = Board()
+            all_squares = board.squares
+            king = pieces.King('K', 'white', 4)
+            opponent_rook = pieces.Rook('ra', 'black', 0)
+            self.assertFalse(king.in_check)
+            
+            all_squares[4] = king
+            all_squares[0] = opponent_rook
+            board.white_pieces.append(king)
+            board.black_pieces.append(opponent_rook)
+            
+            king.update_moves(board)
+            opponent_rook.update_moves(board.squares)
+            
+            king.remove_moves_to_attacked_squares(set(king.moves),
+                                                  set(opponent_rook.moves))
+            king.check_if_in_check(set(king.moves), set(opponent_rook.moves))
+            self.assertTrue(king.in_check)
+            
+            king.update_moves(board)
+            # This test was failing because board.black_pieces was empty.
+            self.assertEqual(set(king.moves), set([11, 12 ,13]))
+            
+            
+        def test_d2_pawn_can_move_to_27_and_update_board(self):
+            board = Board()
+            board.initialize_pieces()
             
         
         
         
-        # TODO: if a piece is moved to an invalid square, the move_piece()
-        # method returns the unaltered board (implemented in pieces.py). 
-        # game.py should check if the squares have changed and if so,
+        # TODO: game.py should check if the squares have changed and if so,
         # prompt same player for a valid move.
         
         

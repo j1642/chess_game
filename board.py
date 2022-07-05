@@ -108,19 +108,13 @@ class Board:
     def update_moves_white(self):
         'Helper function for update_white_controlled_squares() method.'
         for piece in self.white_pieces:
-            if isinstance(piece, pieces.King):
                 piece.update_moves(self)
-            else:
-                piece.update_moves(self.squares)
 
 
     def update_moves_black(self):
         'Helper function for update_black_controlled_squares() method.'
         for piece in self.black_pieces:
-            if isinstance(piece, pieces.King):
                 piece.update_moves(self)
-            else:
-                piece.update_moves(self.squares)
                 
                 
     def update_king_moves(self):
@@ -284,6 +278,8 @@ if __name__ == '__main__':
             self.assertEqual(len(board.white_pieces), 15)
             for piece in board.white_pieces:
                 self.assertTrue(piece.name != 'Pe')
+                
+            self.assertEqual(len(board.squares), 64)
             
             
         def test_checked_king_moves_must_all_escape_check(self):
@@ -325,6 +321,15 @@ if __name__ == '__main__':
             board.initialize_pieces()
             
         
+        # TODO:
+        def test_pawn_promotion(self):
+            pass
+        
+        
+        # TODO: Check must end by moving king, interposition, or capturing.
+        # Double check can only be solved by moving king.
+        def test_forced_to_escape_check(self):
+            pass
         
         
         # TODO: game.py should check if the squares have changed and if so,

@@ -1,6 +1,11 @@
 import board
 import pieces
 
+import sys
+import traceback
+from random import choice
+from time import gmtime, strftime
+
 
 class Game:
     '''Controls player turns.'''
@@ -20,28 +25,57 @@ class Game:
         
         self.select_color()
         
-        self.between_moves()
-
 
     def __repr__(self):
         return f'''Playing as {self.player_color}.\nTurn: {self.turn}\n'''
         
+    
+    def white_turn(self):
+        pass
+    
+    
+    def black_turn(self):
+        pass
+    
 
     def select_color(self):
-        print('This version is a two-player game with both players using the',
-              'same computer.')
         selected_color = input('Pick your color: white or black?\n>>> ')
         if selected_color.lower() == 'white':
-            self.player_color, self.comupter_color = 'white', 'black'
+            self.player_color, self.computer_color = 'white', 'black'
+            self.white_turn, self.black_turn = self.player_turn, self.computer_turn
         elif selected_color.lower() == 'black':
-            self.player_color, self.comupter_color = 'black', 'white'
+            self.player_color, self.computer_color = 'black', 'white'
+            self.black_turn, self.white_turn = self.player_turn, self.computer_turn
         else:
             print('Input white or black.')
             
+            
+    def computer_turn(self):
+        if self.computer_color == 'white':
+            computer_pieces = self.board.white_pieces
+        elif self.computer_color == 'black':
+            computer_pieces = self.board.black_pieces
+        else:
+            raise Exception
+        
+        move_choices = []
+        while move_choices == []:
+            piece_to_move = choice(computer_pieces)
+            move_choices = piece_to_move.moves
+            
+        assert move_choices
+        assert piece_to_move
+        
+        random_move = choice(move_choices)
+        
+        piece_to_move.move_piece(self.board, random_move)
+        
+        self.turn_color = self.player_color
+            
     
-    def turn(self, turn_color: str, old_square=None):
+    def player_turn(self, old_square=None):
         print(self.board)
-        print(f'\n{turn_color.capitalize()} to move.')
+        print(f'\n{self.player_color.capitalize()} to move.')
         
         try:
             old_square = int(input('Square to move from? (int)\n>>> '))
@@ -50,7 +84,7 @@ class Game:
             old_square = int(input('Square to move from? (int)\n>>> '))
         
         try:
-            if self.board.squares[old_square].color != turn_color:
+            if self.board.squares[old_square].color != self.player_color:
                 print(f"One of your opponent's pieces is on square {old_square}.")
                 self.black_to_move()
         except AttributeError:
@@ -72,20 +106,13 @@ class Game:
                   'for the selected piece to move to. (int)')
             new_square = input('>>> ')
             self.black_to_move(old_square, new_square)
-        else:
-            self.board = result
-        
+
         self.last_move_piece = type(moving_piece)
         self.last_move_square = new_square
         # TODO: make en-passant available to adjacent pawns
         
-        if turn_color == 'white':
-            self.turn_color = 'black'
-        elif turn_color == 'black':
-            self.turn_color = 'white'
+        self.turn_color = self.computer_color
             
-        self.between_moves()
-    
     
     def between_moves(self):
         white_controlled_squares = self.board.white_controlled_squares
@@ -104,13 +131,32 @@ class Game:
         self.black_king.check_if_in_check(white_controlled_squares,
                                           black_controlled_squares)
         
-        if self.turn_color == 'white':
-            self.turn('white')
-        elif self.turn_color == 'black':
-            self.turn('black')
+            
+    def play(self):
+        checkmate = False
+        while not checkmate:
+            self.between_moves()
+            self.white_turn()
+            self.between_moves()
+            self.black_turn()
+        
         
         
 if __name__ == '__main__':
     
-    Game()
+    game = Game()
+    try:
+        game.play()
+    except Exception as e:
+        e_type, e_val, e_tb = sys.exc_info()
+        traceback.print_exception(e_type, e_val, e_tb)
+        # add error to bug tracking log
+        current_time = strftime('%Y-%m-%d %H:%M', gmtime())
+        with open('bug_log.txt', 'a') as f:
+            f.write(f'{current_time}\n')
+            traceback.print_exception(e_type, e_val, e_tb, file=f)
+            f.write('\n\n')
+        
+        # save current board config
+        # upon start, ask player if they want to load game
     

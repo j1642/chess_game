@@ -17,13 +17,15 @@
 # Equivalent integer representation.
 # | 16 | 17 | 18 | ... | 23 |
 # | 8  | 9  | 10 | ... | 15 |
-# | 0  | 1  | 2  | ... | 7  | 
+# | 0  | 1  | 2  | ... | 7  |
 
+# TODO: does piece.move_piece(board) have to return board? Aren't the
+# attribute changed in the board object already?
 
 class RanksFiles:
+    '''Holds iterables for limiting piece movement.'''
     # Certain movement directions are illegal depending on piece location.
     # E.g. a knight may not jump over the edge of the board.
-    # This class eliminates redundant creation of these iterables.
     
     # Sets have a constant time complexity for membership check, and are not
     # time intensive to create, according to timeit.timeit().
@@ -77,6 +79,7 @@ class Pawn:
     # forward, en passant is available if there is a pawn on either side of the
     # moved pawns new square.
     def update_moves(self, board):
+        '''Update pawn moves.'''
         all_squares = board.squares
         self.moves = []
         forward_direction = 8
@@ -138,11 +141,12 @@ class Pawn:
                 
                 
     def promote_pawn(self, board, debug_input='queen'):
+        '''Immediately promote pawn when it advances to its final row.'''
         all_squares = board.squares
-        print('\nPawn promotion: which piece should your pawn become?')
         if debug_input:
             new_piece_type = debug_input
         else:
+            print('\nPawn promotion: which piece should your pawn become?')
             new_piece_type = input('Input queen, rook, bishop, or knight.\n>>> ')
         new_piece_type = new_piece_type.lower()
         if new_piece_type == 'queen':
@@ -167,10 +171,9 @@ class Pawn:
             board.black_pieces.append(new_piece)
             board.black_pieces.remove(self)
             
-        return board
-            
                 
     def move_piece(self, board, new_square: int):
+        '''Move pawn.'''
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -180,15 +183,17 @@ class Pawn:
                     board.black_pieces.remove(captured_piece)
                 elif self.color == 'black':
                     board.white_pieces.remove(captured_piece)
+                    
+            elif isinstance(board.squares[new_square], King):
+                raise Exception('King should not be able to be captured.')
             
             self.has_moved = True
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
+            
         else:
             print(f'Not a valid move for {self.name}.')
         
-        return board
-    
 
 class Knight:
     def __init__(self, name: str, white_or_black: str, position: int):
@@ -209,6 +214,7 @@ class Knight:
 
 
     def update_moves(self, board):
+        '''Update knight moves.'''
         all_squares = board.squares
         # Moves ordered by move direction clockwise
         #all_moves = [self.square + delta for delta in [17, 10, -6, -15, -17, -10, 6, 15]]
@@ -267,6 +273,7 @@ class Knight:
         
         
     def move_piece(self, board, new_square: int):
+        '''Move knight.'''
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -276,15 +283,17 @@ class Knight:
                     board.black_pieces.remove(captured_piece)
                 elif self.color == 'black':
                     board.white_pieces.remove(captured_piece)
+                    
+            elif isinstance(board.squares[new_square], King):
+                raise Exception('King should not be able to be captured.')
             
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
+            
         else:
             print(f'Not a valid move for {self.name}.')
             #print(f'Not a valid move for {self.__class__.__name__}.')
             
-        return board
-
 
 class Bishop:
     def __init__(self, name: str, white_or_black: str, position: int):
@@ -305,6 +314,7 @@ class Bishop:
         
     
     def update_moves(self, board):
+        '''Update bishop moves.'''
         all_squares = board.squares
         all_moves = []
         directions = [9, -7, -9, 7]
@@ -349,6 +359,7 @@ class Bishop:
     
     
     def move_piece(self, board, new_square: int):
+        '''Move bishop.'''
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -359,13 +370,15 @@ class Bishop:
                 elif self.color == 'black':
                     board.white_pieces.remove(captured_piece)
                     
+            elif isinstance(board.squares[new_square], King):
+                raise Exception('King should not be able to be captured.')
+            
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
+            
         else:
             print(f'Not a valid move for {self.name}.')
             
-        return board
-
 
 class Rook:
     def __init__(self, name: str, white_or_black: str, position: int):
@@ -388,6 +401,7 @@ class Rook:
         
     
     def update_moves(self, board):
+        '''Update rook moves.'''
         all_squares = board.squares
         all_moves = []
         
@@ -425,6 +439,7 @@ class Rook:
     
     
     def move_piece(self, board, new_square: int, castling=False):
+        '''Move rook.'''
         # Do not return board here when castling. Board will be returned by
         # King.move_piece().
         if castling:
@@ -453,13 +468,14 @@ class Rook:
                 elif self.color == 'black':
                     board.white_pieces.remove(captured_piece)
                     
+            elif isinstance(board.squares[new_square], King):
+                raise Exception('King should not be able to be captured.')
+            
             self.has_moved = True
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
-            return board
         else:
             print(f'Not a valid move for {self.name}.')
-            return board
 
 
 class Queen:
@@ -481,6 +497,7 @@ class Queen:
         
     # Could replace this with bishop.moves + rook.moves from the queen's square
     def update_moves(self, board):
+        '''Update queen moves.'''
         all_squares = board.squares
         all_moves = []
         
@@ -523,6 +540,7 @@ class Queen:
     
     
     def move_piece(self, board, new_square: int):
+        '''Move queen.'''
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -536,15 +554,12 @@ class Queen:
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
             
-            assert board.squares[new_square] == ' '
             old_square, self.square = self.square, new_square
             board.squares[old_square], board.squares[new_square] = ' ', self
             
         else:
             print(f'Not a valid move for {self.name}.')
             
-        return board
-
 
 class King:
     def __init__(self, name: str, white_or_black: str, position: int):
@@ -609,9 +624,12 @@ class King:
         
         # TODO: King cannot castle out of, through, or into check.
         # Done: king cannot castle out of check.
+        # Done: king cannot castle through check.
+        # Probably done through move removal: king can't castle into check.
+        # TIME FOR TESTS!
         
         # Add any possible castling moves to all_moves.
-        # This castling block could probably be less repetitive.
+        # This castling block could be less repetitive. No straightforward fix.
         if self.has_moved is False and self.in_check is False:
             if self.color == 'white' and self.square == 4:
                 # Check if castling kingside is possible.
@@ -620,11 +638,14 @@ class King:
                     supposed_h7_rook_has_moved = all_squares[7].has_moved
                     if supposed_h7_rook_name == 'Rh' \
                         and supposed_h7_rook_has_moved is False \
-                        and all_squares[5] == all_squares[6] == ' ':
+                        and all_squares[5] == all_squares[6] == ' ' \
+                        and all_squares[5] not in board.black_controlled_squares \
+                        and all_squares[6] not in board.black_controlled_squares:
                             all_moves.append(6)
                 except AttributeError:
-                    # No assert all_squares[7] == ' ' because some pieces
-                    # have a name without having the has_moved attribute.
+                    # No assert all_squares[7] == ' ' because there could be a
+                    # piece present. Some pieces have a name without having the
+                    # has_moved attribute.
                     pass
                 
                 try:
@@ -633,7 +654,9 @@ class King:
                     supposed_a1_rook_has_moved = all_squares[0].has_moved
                     if supposed_a1_rook_name == 'Ra' \
                         and supposed_a1_rook_has_moved is False \
-                        and all_squares[1] == all_squares[2] == ' ':
+                        and all_squares[1] == all_squares[2] == all_squares[3] == ' ' \
+                        and all_squares[2] not in board.black_controlled_squares \
+                        and all_squares[3] not in board.black_controlled_squares:
                             all_moves.append(2)
                 except AttributeError:
                     pass
@@ -645,7 +668,9 @@ class King:
                     supposed_h8_rook_has_moved = all_squares[63].has_moved
                     if supposed_h8_rook_name == 'rh' \
                         and supposed_h8_rook_has_moved is False \
-                        and all_squares[61] == all_squares[62] == ' ':
+                        and all_squares[61] == all_squares[62] == ' ' \
+                        and all_squares[61] not in board.white_controlled_squares \
+                        and all_squares[62] not in board.white_controlled_squares:
                             all_moves.append(62)
                 except AttributeError:
                     pass
@@ -656,7 +681,9 @@ class King:
                     supposed_a8_rook_has_moved = all_squares[56].has_moved
                     if supposed_a8_rook_name == 'ra' \
                         and supposed_a8_rook_has_moved is False \
-                        and all_squares[57] == all_squares[58] == ' ':
+                        and all_squares[57] == all_squares[58] == all_squares[59] == ' ' \
+                        and all_squares[58] not in board.white_controlled_squares \
+                        and all_squares[59] not in board.white_controlled_squares:
                             all_moves.append(58)
                 except AttributeError:
                     pass
@@ -725,8 +752,11 @@ class King:
                 elif self.color == 'black':
                     board.white_pieces.remove(captured_piece)
                     
+            elif isinstance(board.squares[new_square], King):
+                raise Exception('King should not be able to be captured.')
+            
             old_square, self.square = self.square, new_square
-                
+            
             # Check if king is castling. If so, move the corresponding rook.
             # Validity of castling controlled in King.update_moves().
             if self.has_moved is False:
@@ -750,8 +780,6 @@ class King:
         else:
             print(f'Not a valid move for {self.name}.')
             
-        return board
-
 
 
 ##############################################################################
@@ -834,6 +862,7 @@ if __name__ == '__main__':
             self.assertEqual(pawn.moves, [16, 24])
             pawn.move_piece(board, 24)
             self.assertEqual(pawn.square, 24)
+            self.assertEqual(board.squares[24], pawn)
             self.assertTrue(pawn.has_moved)
             pawn.update_moves(board)
             self.assertEqual(pawn.moves, [32])
@@ -930,7 +959,7 @@ if __name__ == '__main__':
             
             
         # TODO
-        def test_promote_pawn(self):
+        def test_promote_pawn_walking_down_board(self):
             white_pawn = Pawn('Pa', 'white', 8)
             black_pawn = Pawn('ph', 'black', 63)
             
@@ -953,6 +982,40 @@ if __name__ == '__main__':
             
             self.assertTrue(isinstance(board.squares[7], Queen))
             self.assertEqual(board.black_pieces, [board.squares[7]])
+            
+            
+        def test_promote_pawn_after_capture(self):
+            # Test that pawns which just captured a piece are promoted.
+            white_pawn = Pawn('Pa', 'white', 48)
+            black_pawn = Pawn('pa', 'black', 8)
+            white_piece_to_capture = Knight('Nb', 'white', 1)
+            black_piece_to_capture = Knight('nb', 'black', 57)
+            
+            white_pawn.has_moved = True
+            black_pawn.has_moved = True
+            
+            #board = Board()
+            board.white_pieces = [white_pawn, white_piece_to_capture]
+            board.black_pieces = [black_pawn, black_piece_to_capture]
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+            
+            white_pawn.update_moves(board)
+            black_pawn.update_moves(board)
+            self.assertEqual(set(white_pawn.moves), set([56, 57]))
+            self.assertEqual(set(black_pawn.moves), set([0, 1]))
+                             
+            
+            white_pawn.move_piece(board, 57)
+            black_pawn.move_piece(board, 1)
+            
+            white_pawn.update_moves(board)
+            black_pawn.update_moves(board)
+            
+            self.assertTrue(isinstance(board.squares[57], Queen))
+            self.assertTrue(isinstance(board.squares[1], Queen))
+            
+            
             
             
         def test_knight_movement(self):

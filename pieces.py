@@ -191,6 +191,7 @@ class Pawn:
             
         else:
             print(f'Not a valid move for {self.name}.')
+            return('Not a valid move.')
         
 
 class Knight:
@@ -290,6 +291,7 @@ class Knight:
             
         else:
             print(f'Not a valid move for {self.name}.')
+            return('Not a valid move.')
             #print(f'Not a valid move for {self.__class__.__name__}.')
             
 
@@ -376,6 +378,7 @@ class Bishop:
             
         else:
             print(f'Not a valid move for {self.name}.')
+            return('Not a valid move.')
             
 
 class Rook:
@@ -402,8 +405,13 @@ class Rook:
         '''Update rook moves.'''
         all_squares = board.squares
         all_moves = []
+        directions = (-8, -1, 1, 8)
+        if self.square in ranks_files.a_file:
+            directions = (-8, 1, 8)
+        elif self.square in ranks_files.h_file:
+            directions = (-8, -1, 8)
         
-        for direction in (-8, -1, 1, 8):
+        for direction in directions:
             for vert_horiz_scalar in range(1, 8):
                 new_square = self.square + direction * vert_horiz_scalar
                 if -1 < new_square < 64:
@@ -474,6 +482,7 @@ class Rook:
             board.squares[old_square], board.squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
+            return('Not a valid move.')
 
 
 class Queen:
@@ -557,6 +566,7 @@ class Queen:
             
         else:
             print(f'Not a valid move for {self.name}.')
+            return('Not a valid move.')
             
 
 class King:
@@ -636,11 +646,6 @@ class King:
             elif self.color == 'black':
                 board.update_white_controlled_squares()
             board.squares[self.square] = self
-        
-        # TODO: King cannot castle out of, through, or into check.
-        # Done and tested: king cannot castle out of check.
-        # Done and tested: king cannot castle through check.
-        # Probably done through move removal: king can't castle into check.
         
         # Add any possible castling moves to all_moves.
         # This castling block could be less repetitive. No straightforward fix.
@@ -779,6 +784,7 @@ class King:
             board.squares[old_square], board.squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
+            return('Not a valid move.')
             
 
 
@@ -1094,15 +1100,7 @@ if __name__ == '__main__':
             rook.move_piece(board, 10)
             self.assertTrue(rook.has_moved)
             
-            # This block should prevent any rook edge cases on the corners/sides.
-            # I beleive any edge cases here would only result in a duplication
-            # of one move in self.moves. May not be important.
-            
-            # Also, needed to reset board variable because there were a few
-            # pieces in it.
             rook = Rook('Ra', 'white', 0)
-            rook.update_moves(board)
-            self.assertEqual(set(rook.moves), set(list(range(8, 57, 8)) + list(range(1, 8))))
             rook.move_piece(board, 3, castling=True)
             self.assertEqual(rook.square, 3)
             
@@ -1113,6 +1111,28 @@ if __name__ == '__main__':
             
             rook = Rook('Ra', 'white', 0)
             self.assertRaises(Exception, rook.move_piece, 100, castling=True)
+            
+            
+        def test_rook_movement_edge_cases_from_corner(self):
+            rook = Rook('Ra', 'white', 0)
+            rook.update_moves(board)
+            self.assertEqual(set(rook.moves), set(list(range(8, 57, 8))
+                                                  + list(range(1, 8))))
+            
+            rook = Rook('Rh', 'white', 7)
+            rook.update_moves(board)
+            self.assertEqual(set(rook.moves), set(list(range(15, 64, 8))
+                                                  + list(range(0, 7))))
+            
+            rook = Rook('ra', 'black', 56)
+            rook.update_moves(board)
+            self.assertEqual(set(rook.moves), set(list(range(0, 49, 8))
+                                                  + list(range(57, 64))))
+            
+            rook = Rook('rh', 'black', 63)
+            rook.update_moves(board)
+            self.assertEqual(set(rook.moves), set(list(range(7, 56, 8))
+                                                  + list(range(56, 63))))
             
             
         def test_rook_friendly_piece_collision(self):
@@ -1320,7 +1340,7 @@ if __name__ == '__main__':
                 piece.update_moves(board)
             
             # King has not yet realized he is in check. If these tests fail
-            # because of changed functionality, they can be removed.
+            # because of changed functionality, they can probably be removed.
             self.assertFalse(king.in_check)
             self.assertEqual(set(king.moves), set([2, 6, 3, 5, 11, 12, 13]))
             
@@ -1381,7 +1401,6 @@ if __name__ == '__main__':
             
             king.update_moves(board)
             self.assertEqual(set(king.moves), set([3, 5, 11, 12, 13]))
-            
             
 
             

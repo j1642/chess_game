@@ -86,12 +86,12 @@ class Game:
         try:
             if self.board.squares[old_square].color != self.player_color:
                 print(f"One of your opponent's pieces is on square {old_square}.")
-                self.black_to_move()
+                self.player_turn()
         except AttributeError:
             assert self.board.squares[old_square] == ' '
             print('There is no piece on that square. Choose a square that has',
                   'one of your pieces on it.')
-            self.black_to_move()
+            self.player_turn()
             
         new_square = int(input('Square to move to? (int)\n>>> '))
             
@@ -101,11 +101,11 @@ class Game:
         else:
             result = moving_piece.move_piece(self.board, new_square)
             
-        if isinstance(result, str) and result.split(' ')[0] == 'Not':
+        if isinstance(result, str):
             print('The selected piece cannot move there. Input a valid square',
                   'for the selected piece to move to. (int)')
             new_square = input('>>> ')
-            self.black_to_move(old_square, new_square)
+            self.player_turn()
 
         self.last_move_piece = type(moving_piece)
         self.last_move_square = new_square
@@ -121,23 +121,22 @@ class Game:
         self.board.update_white_controlled_squares()
         self.board.update_black_controlled_squares()
         
-        self.white_king.remove_moves_to_attacked_squares(white_controlled_squares,
-                                                         black_controlled_squares)
-        self.black_king.remove_moves_to_attacked_squares(white_controlled_squares,
-                                                         black_controlled_squares)
-        
-        self.white_king.check_if_in_check(white_controlled_squares,
-                                          black_controlled_squares)
-        self.black_king.check_if_in_check(white_controlled_squares,
-                                          black_controlled_squares)
+        # Update king moves again now that all other piece moves are known.
+        # Needed to determine if in check and to remove illegal king moves.
+        self.white_king.update_moves(self.board)
+        self.black_king.update_moves(self.board)
         
             
     def play(self):
         checkmate = False
         while not checkmate:
             self.between_moves()
+            if checkmate:
+                break
             self.white_turn()
             self.between_moves()
+            if checkmate:
+                break
             self.black_turn()
         
         

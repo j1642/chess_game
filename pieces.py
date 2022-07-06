@@ -19,8 +19,6 @@
 # | 8  | 9  | 10 | ... | 15 |
 # | 0  | 1  | 2  | ... | 7  |
 
-# TODO: does piece.move_piece(board) have to return board? Aren't the
-# attribute changed in the board object already?
 
 class RanksFiles:
     '''Holds iterables for limiting piece movement.'''
@@ -582,6 +580,7 @@ class King:
 
 
     def update_moves(self, board):
+        '''Update king moves, while considering castling and illegal moves.'''
         all_squares = board.squares
         all_moves = []
         directions = [7, 8, 9, -1, 1, -9, -8, -7]
@@ -621,12 +620,27 @@ class King:
             except AttributeError:
                 assert all_squares[square] == ' '
                 continue
+            
+            
+        # Prevent checked king from moving into a square where the king
+        # would still be in check, but where the new square was not
+        # under attack previously.
+        
+        # E.g. A checked king moving from e1 to f1 with the opponent's rook
+        # on a1 would still be in check.
+        if self.check_if_in_check(board.white_controlled_squares,
+                                  board.black_controlled_squares):
+            board.squares[self.square] = ' '
+            if self.color == 'white':
+                board.update_black_controlled_squares()
+            elif self.color == 'black':
+                board.update_white_controlled_squares()
+            board.squares[self.square] = self
         
         # TODO: King cannot castle out of, through, or into check.
-        # Done: king cannot castle out of check.
-        # Done: king cannot castle through check.
+        # Done and tested: king cannot castle out of check.
+        # Done and tested: king cannot castle through check.
         # Probably done through move removal: king can't castle into check.
-        # TIME FOR TESTS!
         
         # Add any possible castling moves to all_moves.
         # This castling block could be less repetitive. No straightforward fix.
@@ -639,8 +653,8 @@ class King:
                     if supposed_h7_rook_name == 'Rh' \
                         and supposed_h7_rook_has_moved is False \
                         and all_squares[5] == all_squares[6] == ' ' \
-                        and all_squares[5] not in board.black_controlled_squares \
-                        and all_squares[6] not in board.black_controlled_squares:
+                        and 5 not in board.black_controlled_squares \
+                        and 6 not in board.black_controlled_squares:
                             all_moves.append(6)
                 except AttributeError:
                     # No assert all_squares[7] == ' ' because there could be a
@@ -655,8 +669,8 @@ class King:
                     if supposed_a1_rook_name == 'Ra' \
                         and supposed_a1_rook_has_moved is False \
                         and all_squares[1] == all_squares[2] == all_squares[3] == ' ' \
-                        and all_squares[2] not in board.black_controlled_squares \
-                        and all_squares[3] not in board.black_controlled_squares:
+                        and 2 not in board.black_controlled_squares \
+                        and 3 not in board.black_controlled_squares:
                             all_moves.append(2)
                 except AttributeError:
                     pass
@@ -669,8 +683,8 @@ class King:
                     if supposed_h8_rook_name == 'rh' \
                         and supposed_h8_rook_has_moved is False \
                         and all_squares[61] == all_squares[62] == ' ' \
-                        and all_squares[61] not in board.white_controlled_squares \
-                        and all_squares[62] not in board.white_controlled_squares:
+                        and 61 not in board.white_controlled_squares \
+                        and 62 not in board.white_controlled_squares:
                             all_moves.append(62)
                 except AttributeError:
                     pass
@@ -682,28 +696,14 @@ class King:
                     if supposed_a8_rook_name == 'ra' \
                         and supposed_a8_rook_has_moved is False \
                         and all_squares[57] == all_squares[58] == all_squares[59] == ' ' \
-                        and all_squares[58] not in board.white_controlled_squares \
-                        and all_squares[59] not in board.white_controlled_squares:
+                        and 58 not in board.white_controlled_squares \
+                        and 59 not in board.white_controlled_squares:
                             all_moves.append(58)
                 except AttributeError:
                     pass
         
         self.moves = all_moves
                 
-        # Prevent checked king from moving into a square where the king
-        # would still be in check, but where the new square was not
-        # under attack previously.
-        
-        # E.g. A checked king moving from e1 to f1 with the opponent's rook
-        # on a1 would still be in check.
-        if self.in_check:
-            board.squares[self.square] = ' '
-            if self.color == 'white':
-                board.update_black_controlled_squares()
-            elif self.color == 'black':
-                board.update_white_controlled_squares()
-            board.squares[self.square] = self
-        
         # Remove illegal moves. If in check, this includes moves that would
         # keep the king in check (implemented in the block above).
         self.remove_moves_to_attacked_squares(board.white_controlled_squares,
@@ -788,20 +788,11 @@ class King:
 
 
 if __name__ == '__main__':
+    from board import Board
     import unittest
-
-
-    class Board:
-        '''Partial board class with limited functionality.'''
-        def __init__(self):
-            self.squares = [' '] * 64
-            self.white_pieces = []
-            self.black_pieces = []
-            self.white_controlled_squares = []
-            self.black_controlled_squares = []
     
-    
-    # TODO: What's up with this?
+
+    # What's up with this?
     # It seems like there needs to be a global board variable for these tests.
     # Shouldn't a local all_squares variable work without giving a NameError?
     class SetUpTearDown(unittest.TestCase):
@@ -958,7 +949,6 @@ if __name__ == '__main__':
             self.assertEqual(opponent_pawn_h.moves, [7])
             
             
-        # TODO
         def test_promote_pawn_walking_down_board(self):
             white_pawn = Pawn('Pa', 'white', 8)
             black_pawn = Pawn('ph', 'black', 63)
@@ -1199,27 +1189,23 @@ if __name__ == '__main__':
                                                    + list(range(8, 57, 8))))            
             
         
-        # TODO: Explicitly test king castling, make sure rook moves as well
-        # and that the Board object updates.
         def test_king_movement(self):
+            '''Test simple parts of King.update_moves() and King.move_piece.
+            This does not test castling.
+            '''
             king = King('k', 'black', 63)
             self.assertFalse(king.has_moved)
             self.assertFalse(king.moves)
-            # Rooks need to exist to check for castling possibility.
             king.update_moves(board)
             self.assertEqual(set(king.moves), set((62, 55, 54)))
             king.move_piece(board, 55)
             self.assertTrue(king.has_moved)
             
-            # Initialize rooks so king can add castling moves to king.moves.
-            all_squares[0] = Rook('Ra', 'white', 0)
-            all_squares[7] = Rook('Rh', 'white', 7)
-        
             king = King('K', 'white', 4)
             self.assertFalse(king.moves)
             self.assertFalse(king.has_moved)
             king.update_moves(board)
-            self.assertEqual(set(king.moves), set((3, 11, 12, 13, 5, 2, 6)))
+            self.assertEqual(set(king.moves), set((3, 11, 12, 13, 5)))
             
             
         def test_king_friendly_piece_collision(self):
@@ -1290,12 +1276,114 @@ if __name__ == '__main__':
             king.check_if_in_check(set(king.moves), set(opponent_rook.moves))
             self.assertTrue(king.in_check)
             
-        # TODO
-        def test_castling(self):
-            '''King cannot castle out of, through, or into check.'''
-            pass
+            
+        def test_castling_without_checks_present(self):
+            '''King cannot castle out of, through, or into check.
+            This is a low-level test that checks the functions themselves, not
+            how the functions are called in other files.
+            '''
+            white_king = King('K', 'white', 4)
+            white_rook_a = Rook('Ra', 'white', 0)
+            white_rook_h = Rook('Rh', 'white', 7)
+            black_king = King('k', 'black', 60)
+            black_rook_a = Rook('ra', 'black', 56)
+            black_rook_h = Rook('rh', 'black', 63)
+            
+            board.white_pieces = [white_king, white_rook_a, white_rook_h]
+            board.black_pieces = [black_king, black_rook_a, black_rook_h]
+            
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+            
+            for piece in board.white_pieces + board.black_pieces:
+                piece.update_moves(board)
+                
+            self.assertEqual(set(white_king.moves),
+                             set([2, 3, 5, 6, 11, 12, 13]))
+            self.assertEqual(set(black_king.moves),
+                             set([58, 59, 61, 62, 51, 52, 53]))
+            
+            
+        def test_castling_cannot_castle_out_of_check(self):
+            king = King('K', 'white', 4)
+            rook_a = Rook('Ra', 'white', 0)
+            rook_h = Rook('Rh', 'white', 7)
+            opponent_rook = Rook('ra', 'black', 60)
+            
+            board.white_pieces = [king, rook_a, rook_h]
+            board.black_pieces = [opponent_rook]
+            
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+            
+            for piece in board.white_pieces + board.black_pieces:
+                piece.update_moves(board)
+            
+            # King has not yet realized he is in check. If these tests fail
+            # because of changed functionality, they can be removed.
+            self.assertFalse(king.in_check)
+            self.assertEqual(set(king.moves), set([2, 6, 3, 5, 11, 12, 13]))
+            
+            supposed_opponent_rook_moves = [56, 57, 58, 59, 61, 62, 63] \
+                                            + list(range(4, 53, 8))
+                                            
+            self.assertEqual(set(opponent_rook.moves),
+                             set(supposed_opponent_rook_moves))
+            
+            board.white_controlled_squares = set(king.moves)
+            board.black_controlled_squares = set(opponent_rook.moves)
+            
+            king.update_moves(board)
+            self.assertTrue(king.in_check)
+            self.assertEqual(set(king.moves), set([3, 5, 11, 13]))
+            
+            
+        def test_castling_cannot_castle_through_check(self):
+            king = King('K', 'white', 4)
+            rook_a = Rook('Ra', 'white', 0)
+            rook_h = Rook('Rh', 'white', 7)
+            opponent_rook_a = Rook('ra', 'black', 59)
+            opponent_rook_h = Rook('rh', 'black', 61)
+            
+            board.white_pieces = [king, rook_a, rook_h]
+            board.black_pieces = [opponent_rook_a, opponent_rook_h]
+            
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+            
+            board.update_white_controlled_squares()
+            board.update_black_controlled_squares()
+            self.assertTrue(3 in board.black_controlled_squares)
+            self.assertTrue(5 in board.black_controlled_squares)
+            
+            king.update_moves(board)
+            
+            self.assertEqual(king.moves, [12])
+        
+        
+        def test_castling_cannot_castle_into_check(self):
+            king = King('K', 'white', 4)
+            rook_a = Rook('Ra', 'white', 0)
+            rook_h = Rook('Rh', 'white', 7)
+            opponent_rook_a = Rook('ra', 'black', 58)
+            opponent_rook_h = Rook('rh', 'black', 62)
+            
+            board.white_pieces = [king, rook_a, rook_h]
+            board.black_pieces = [opponent_rook_a, opponent_rook_h]
+            
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+            
+            board.update_white_controlled_squares()
+            board.update_black_controlled_squares()
+            self.assertTrue(2 in board.black_controlled_squares)
+            self.assertTrue(6 in board.black_controlled_squares)
+            
+            king.update_moves(board)
+            self.assertEqual(set(king.moves), set([3, 5, 11, 12, 13]))
             
             
 
             
     unittest.main()
+    

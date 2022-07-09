@@ -148,6 +148,8 @@ class Board:
         for piece in self.white_pieces:
             for move in piece.moves:
                 white_controlled_squares.append(move)
+            for square in piece.protected_squares:
+                white_controlled_squares.append(square)
         self.add_en_passant_moves()
 
         self.white_controlled_squares = set(white_controlled_squares)
@@ -162,6 +164,9 @@ class Board:
         for piece in self.black_pieces:
             for move in piece.moves:
                 black_controlled_squares.append(move)
+            for square in piece.protected_squares:
+                black_controlled_squares.append(square)
+                
         self.add_en_passant_moves()
 
         self.black_controlled_squares = set(black_controlled_squares)
@@ -225,16 +230,18 @@ if __name__ == '__main__':
             board = Board()
             board.initialize_pieces()
             board.update_white_controlled_squares()
-            self.assertEqual(board.white_controlled_squares,
-                             set(list(range(16, 32))))
+            squares = list(range(1, 32))
+            squares.remove(7)
+            self.assertEqual(board.white_controlled_squares, set(squares))
         
         
         def test_update_black_controlled_squares(self):
             board = Board()
             board.initialize_pieces()
             board.update_black_controlled_squares()
-            self.assertEqual(board.black_controlled_squares,
-                             set(list(range(32, 48))))
+            squares = list(range(32, 63))
+            squares.remove(56)
+            self.assertEqual(board.black_controlled_squares, set(squares))
             
         
         def test_board_updates_upon_piece_movement(self):
@@ -383,9 +390,6 @@ if __name__ == '__main__':
             self.assertTrue(white_king.in_check)
             self.assertEqual(white_king.moves, [0])
             
-        # TODO: in piece.update_moves(), when there is a friendly collision,
-        # add collision square to piece.protected_squares.
-        # This should prevent king.moves from including protected squares.
         
         def test_king_must_escape_check_by_capturing_nonchecking_piece(self):
             board = Board()
@@ -452,20 +456,20 @@ if __name__ == '__main__':
             
             self.assertTrue(white_king.in_check)
             self.assertEqual(board.black_controlled_squares,
-                             set(black_rook_a.moves + black_rook_h.moves))
+                             set(black_rook_a.moves
+                                 + black_rook_h.moves
+                                 + [0, 7]))
             # black_rook_a temporarily has extra moves b/c white king is in
-            # check. In game.py, between_moves() should clear out the extras
-            # before black's turn by using update_moves().
+            # check.
             #self.assertEqual(set(black_rook_a.moves),
              #                set([1] + list(range(8, 57, 8))))
             self.assertEqual(set(black_rook_h.moves),
                              set(list(range(1, 7)) + list(range(15, 64, 8))))
-            # TODO: test fails b/c king thinks black_rook_a is unprotected and
+            # Test was failing b/c king thought black_rook_a was unprotected and
             # capturable.
-            #self.assertEqual(set(white_king.moves), set([9, 10]))
+            self.assertEqual(set(white_king.moves), set([9, 10]))
         
         
-        # TODO: Add more enpassant tests.
         def test_en_passant_a_file(self):
             '''Test black can capture white in the A file.'''
             board = Board()

@@ -60,6 +60,7 @@ class Pawn:
         self.moves = []
         self.has_moved = False
         self.giving_check = False
+        self.protected_squares = []
         
         if self.color == 'white':
             self.symbol = 'P'
@@ -76,8 +77,9 @@ class Pawn:
         '''Update pawn moves.'''
         all_squares = board.squares
         self.moves = []
-        forward_direction = 8
+        self.protected_squares = []
         
+        forward_direction = 8
         if self.color == 'black':
             forward_direction = -8
         
@@ -112,15 +114,17 @@ class Pawn:
                     capture_directions = (-7, -9)
                     
                     
-            # Check for valid captures.
+            # Check for valid captures and if pawn is protecting any friendly
+            # pieces.
             for direction in capture_directions:
                 examined_square = self.square + direction
                 try:
-                    # Check if piece in examined_square is the opponent's.
                     square_contents = all_squares[examined_square].color
                     if square_contents != self.color:
                         # Capturing opponent's piece is a legal move.
                         self.moves.append(examined_square)
+                    elif square_contents == self.color:
+                        self.protected_squares.append(examined_square)
                 except AttributeError:
                     # examined_square is empty
                     assert all_squares[examined_square] == ' '
@@ -197,6 +201,7 @@ class Knight:
         self.square = position
         self.moves = []
         self.giving_check = False
+        self.protected_squares = []
 
         if self.color == 'white':
             self.symbol = 'N'
@@ -211,6 +216,7 @@ class Knight:
     def update_moves(self, board):
         '''Update knight moves.'''
         all_squares = board.squares
+        self.protected_squares = []
         # Moves ordered by move direction clockwise
         #all_moves = [self.square + delta for delta in [17, 10, -6, -15, -17, -10, 6, 15]]
 
@@ -254,12 +260,14 @@ class Knight:
                     continue
         
         # Remove moves where there is a friendly piece.
+        # Add these moves to protected_squares attribute.
         all_moves_copy = all_moves.copy()
         for square in all_moves_copy:
             try:
                 square_contents = all_squares[square].color
                 if square_contents == self.color:
                     all_moves.remove(square)
+                    self.protected_squares.append(square)
             except AttributeError:
                 assert all_squares[square] == ' '
                 continue
@@ -298,6 +306,7 @@ class Bishop:
         self.square = position
         self.moves = []
         self.giving_check = False
+        self.protected_squares = []
         
         if self.color == 'white':
             self.symbol = 'B'
@@ -313,6 +322,8 @@ class Bishop:
         '''Update bishop moves.'''
         all_squares = board.squares
         all_moves = []
+        self.protected_squares = []
+        
         directions = [9, -7, -9, 7]
         if self.square in ranks_files.a_file:
             directions = directions[:2]
@@ -327,7 +338,7 @@ class Bishop:
                     if all_squares[new_square] == ' ':
                         pass
                     elif self.color == all_squares[new_square].color:
-                        # Do not add move.
+                        self.protected_squares.append(new_square)
                         break
                     elif self.color != all_squares[new_square].color:
                         # Bishop cannot jump over pieces.
@@ -385,6 +396,7 @@ class Rook:
         self.moves = []
         self.has_moved = False
         self.giving_check = False
+        self.protected_squares = []
         
         if self.color == 'white':
             self.symbol = 'R'
@@ -401,6 +413,8 @@ class Rook:
         '''Update rook moves.'''
         all_squares = board.squares
         all_moves = []
+        self.protected_squares = []
+        
         directions = (-8, -1, 1, 8)
         if self.square in ranks_files.a_file:
             directions = (-8, 1, 8)
@@ -415,7 +429,7 @@ class Rook:
                     if all_squares[new_square] == ' ':
                         pass
                     elif self.color == all_squares[new_square].color:
-                        # Do not add move.
+                        self.protected_squares.append(new_square)
                         break
                     elif self.color != all_squares[new_square].color:
                         # Rook cannot jump over pieces.
@@ -442,8 +456,6 @@ class Rook:
     
     def move_piece(self, board, new_square: int, castling=False):
         '''Move rook.'''
-        # Do not return board here when castling. Board will be returned by
-        # King.move_piece().
         if castling:
             if not self.has_moved:
                 # Do not check if new_square is in self.moves
@@ -488,6 +500,7 @@ class Queen:
         self.square = position
         self.moves = []
         self.giving_check = False
+        self.protected_squares = []
         
         if self.color == 'white':
             self.symbol = 'Q'
@@ -503,6 +516,7 @@ class Queen:
         '''Update queen moves.'''
         all_squares = board.squares
         all_moves = []
+        self.protected_squares = []
         
         # Prevent jumping from the A-file to H-file, vice versa.
         directions = [9, -7, 1, 8, -8, -1, 7, -9]
@@ -519,7 +533,7 @@ class Queen:
                     if all_squares[new_square] == ' ':
                         pass
                     elif self.color == all_squares[new_square].color:
-                        # Do not add move.
+                        self.protected_squares.append(new_square)
                         break
                     elif self.color != all_squares[new_square].color:
                         # Queen cannot jump over pieces.
@@ -573,6 +587,7 @@ class King:
         self.moves = []
         self.has_moved = False
         self.in_check = False
+        self.protected_squares = []
         
         if self.color == 'white':
             self.symbol = 'K'
@@ -589,6 +604,8 @@ class King:
         '''Update king moves, while considering castling and illegal moves.'''
         all_squares = board.squares
         all_moves = []
+        self.protected_squares = []
+        
         directions = [7, 8, 9, -1, 1, -9, -8, -7]
         
         # Separate if/elif for ranks (rows) and files (columns).
@@ -623,6 +640,7 @@ class King:
             try:
                 if all_squares[square].color == self.color:
                     all_moves.remove(square)
+                    self.protected_squares.append(square)
             except AttributeError:
                 assert all_squares[square] == ' '
                 continue
@@ -853,10 +871,12 @@ if __name__ == '__main__':
             self.assertFalse(pawn.has_moved)
             pawn.update_moves(board)
             self.assertEqual(pawn.moves, [16, 24])
+            
             pawn.move_piece(board, 24)
             self.assertEqual(pawn.square, 24)
             self.assertEqual(board.squares[24], pawn)
             self.assertTrue(pawn.has_moved)
+            
             pawn.update_moves(board)
             self.assertEqual(pawn.moves, [32])
             
@@ -1398,6 +1418,13 @@ if __name__ == '__main__':
             king.update_moves(board)
             self.assertEqual(set(king.moves), set([3, 5, 11, 12, 13]))
             
+            
+        # TODO: test piece.protected_squares updates
+        # For tests, must update moves for all pieces b/w turns to if you want
+        # to know the protected pieces.
+        # This is already implemented in game.py.
+        def test_protected_squares_updates(self):
+            pass
 
             
     unittest.main()

@@ -14,8 +14,6 @@ class Game:
         self.player_color = ''
         self.computer_color = ''
         self.turn_color = 'white'
-        self.last_move_piece = None
-        self.last_move_square = None
         self.board = board.Board()
         
         self.board.initialize_pieces()
@@ -39,6 +37,10 @@ class Game:
     
 
     def select_color(self):
+        self.player_color, self.computer_color = 'white', 'black'
+        self.white_turn, self.black_turn = self.player_turn, self.computer_turn
+        return
+        
         selected_color = input('Pick your color: white or black?\n>>> ')
         if selected_color.lower() == 'white':
             self.player_color, self.computer_color = 'white', 'black'
@@ -66,10 +68,15 @@ class Game:
         assert move_choices
         assert piece_to_move
         
+        old_square = piece_to_move.square
         random_move = choice(move_choices)
         
         piece_to_move.move_piece(self.board, random_move)
         
+        assert old_square != piece_to_move.square
+        
+        self.board.last_move_piece = piece_to_move
+        self.board.last_move_from_to = (old_square, random_move)
         self.turn_color = self.player_color
             
     
@@ -107,10 +114,8 @@ class Game:
             new_square = input('>>> ')
             self.player_turn()
 
-        self.last_move_piece = type(moving_piece)
-        self.last_move_square = new_square
-        # TODO: make en-passant available to adjacent pawns
-        
+        self.board.last_move_piece = moving_piece
+        self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.computer_color
             
     
@@ -120,6 +125,7 @@ class Game:
         
         self.board.update_white_controlled_squares()
         self.board.update_black_controlled_squares()
+        self.board.add_en_passant_moves()
         
         # Update king moves again now that all other piece moves are known.
         # Needed to determine if in check and to remove illegal king moves.
@@ -138,24 +144,26 @@ class Game:
             if checkmate:
                 break
             self.black_turn()
-        
-        
-        
+
+
+
 if __name__ == '__main__':
-    
-    game = Game()
-    try:
-        game.play()
-    except Exception as e:
-        e_type, e_val, e_tb = sys.exc_info()
-        traceback.print_exception(e_type, e_val, e_tb)
-        # add error to bug tracking log
-        current_time = strftime('%Y-%m-%d %H:%M', gmtime())
-        with open('bug_log.txt', 'a') as f:
-            f.write(f'{current_time}\n')
-            traceback.print_exception(e_type, e_val, e_tb, file=f)
-            f.write('\n\n')
-        
-        # save current board config
-        # upon start, ask player if they want to load game
-    
+
+    def main():
+        game = Game()
+        try:
+            game.play()
+        except Exception as e:
+            e_type, e_val, e_tb = sys.exc_info()
+            traceback.print_exception(e_type, e_val, e_tb)
+            # Add error to bug tracking log
+            current_time = strftime('%Y-%m-%d %H:%M', gmtime())
+            with open('chess_bug_log.txt', 'a') as f:
+                f.write(f'{current_time}\n')
+                traceback.print_exception(e_type, e_val, e_tb, file=f)
+                f.write('\n\n')
+
+            # save current board config
+            # upon start, ask player if they want to load game
+
+    main()

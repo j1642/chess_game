@@ -72,10 +72,6 @@ class Pawn:
     has_moved: {self.has_moved})'''
 
 
-    # TODO: En passant, with sides of board boundary)
-    # Keep record of last move. If last move was a pawn moving two squares
-    # forward, en passant is available if there is a pawn on either side of the
-    # moved pawns new square.
     def update_moves(self, board):
         '''Update pawn moves.'''
         all_squares = board.squares

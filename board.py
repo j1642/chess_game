@@ -10,6 +10,8 @@ class Board:
         self.black_pieces = []
         self.white_controlled_squares = []
         self.black_controlled_squares = []
+        self.last_move_piece = None
+        self.last_move_from_to = (None, None)
 
 
     def __repr__(self):
@@ -49,7 +51,7 @@ class Board:
                 self.squares_occ_black.append(ind)
 
 
-    # Variable suffix corresponds to starting file (column) of a piece.
+    # Variable suffix corresponds to starting file (column) of the piece.
     def initialize_pieces(self):
         white_rook_a = pieces.Rook('Ra', 'white', 0)
         white_knight_b = pieces.Knight('Nb', 'white', 1)
@@ -146,6 +148,7 @@ class Board:
         for piece in self.white_pieces:
             for move in piece.moves:
                 white_controlled_squares.append(move)
+        self.add_en_passant_moves()
 
         self.white_controlled_squares = set(white_controlled_squares)
 
@@ -159,9 +162,38 @@ class Board:
         for piece in self.black_pieces:
             for move in piece.moves:
                 black_controlled_squares.append(move)
+        self.add_en_passant_moves()
 
         self.black_controlled_squares = set(black_controlled_squares)
+        
+        
+    def add_en_passant_moves(self):
+        # Pawns must be enemies, pawns must be adjacent, and the previous move
+        # must have been one of these pawns advancing by two squares.
+        last_move_from = self.last_move_from_to[0]
+        last_move_to = self.last_move_from_to[1]
+        if not isinstance(self.last_move_piece, pieces.Pawn):
+            return
+        elif abs(last_move_from - last_move_to) != 16:
+            return
+        # Last piece moved was a pawn and it advanced two squares.
+        en_passant_squares = []
+        a_file = list(range(0, 57, 8))
+        h_file = list(range(7, 64, 8))
+        
+        if last_move_to in a_file:
+            en_passant_squares = [last_move_to + 1]
+        elif last_move_to in h_file:
+            en_passant_squares = [last_move_to - 1]
+        else:
+            en_passant_squares = [last_move_to + 1, last_move_to - 1]
 
+        for en_passant_square in en_passant_squares:
+            en_passant_piece = self.squares[en_passant_square]
+            if isinstance(en_passant_piece, pieces.Pawn):
+                if self.last_move_piece.color != en_passant_piece.color:
+                    #assert self.last_move_piece.square == last_move_to
+                    en_passant_piece.moves.append(last_move_to)
 
 
 if __name__ == '__main__':
@@ -433,6 +465,85 @@ if __name__ == '__main__':
             #self.assertEqual(set(white_king.moves), set([9, 10]))
         
         
+        # TODO: Add more enpassant tests.
+        def test_en_passant_a_file(self):
+            '''Test black can capture white in the A file.'''
+            board = Board()
+            white_pawn_a = pieces.Pawn('Pa', 'white', 8)
+            black_pawn_b = pieces.Pawn('pb', 'black', 25)
+            black_pawn_b.has_moved = True
+            
+            board.white_pieces = [white_pawn_a]
+            board.black_pieces = [black_pawn_b]
+            
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+            
+            board.update_white_controlled_squares()
+            white_pawn_a.move_piece(board, 24)
+            self.assertEqual(white_pawn_a.square, 24)
+            self.assertEqual(board.squares[24], white_pawn_a)
+            
+            board.last_move_piece = white_pawn_a
+            board.last_move_from_to = (8, 24)
+            
+            board.update_black_controlled_squares()
+            self.assertEqual(black_pawn_b.moves, [17, 24])
+            
+            
+        def test_en_passant_h_file(self):
+            '''Test white can capture black in the H file.'''
+            board = Board()
+            white_pawn_g = pieces.Pawn('Pg', 'white', 38)
+            black_pawn_h = pieces.Pawn('ph', 'black', 55)
+            white_pawn_g.has_moved = True
+            
+            board.white_pieces = [white_pawn_g]
+            board.black_pieces = [black_pawn_h]
+            
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+                
+            board.update_black_controlled_squares()
+            self.assertEqual(black_pawn_h.moves, [47, 39])
+            black_pawn_h.move_piece(board, 39)
+            board.last_move_piece = black_pawn_h
+            board.last_move_from_to = (55, 39)
+            
+            self.assertEqual(board.last_move_piece, black_pawn_h)
+            self.assertEqual(board.last_move_from_to, (55, 39))
+            
+            board.update_white_controlled_squares()
+            self.assertEqual(white_pawn_g.moves, [46, 39])
+            
+            
+        def test_double_en_passant_middle(self):
+            '''Test black can capture white in the E file with either pawn.'''
+            board = Board()
+            white_pawn_e = pieces.Pawn('Pe', 'white', 12)
+            black_pawn_d = pieces.Pawn('pd', 'black', 27)
+            black_pawn_f = pieces.Pawn('pf', 'black', 29)
+            black_pawn_d.has_moved = True
+            black_pawn_f.has_moved = True
+            
+            board.white_pieces = [white_pawn_e]
+            board.black_pieces = [black_pawn_d, black_pawn_f]
+            
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+                
+            board.update_white_controlled_squares()
+            self.assertEqual(white_pawn_e.moves, [20, 28])
+            white_pawn_e.move_piece(board, 28)
+            board.last_move_piece = white_pawn_e
+            board.last_move_from_to = (12, 28)
+            
+            board.update_black_controlled_squares()
+            self.assertEqual(black_pawn_d.moves, [19, 28])
+            self.assertEqual(black_pawn_f.moves, [21, 28])
+            
+            
+            
         
         # TODO: test game flow, make sure everything updates as it should,
         # particularly check and legal king moves.

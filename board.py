@@ -1,15 +1,23 @@
+'''
+The Board class represents the chessboard, storing piece locations, the
+previous move, and methods which broadly operate on each piece color.
+'''
 import pieces
 
 
 class Board:
-    '''Holds the current board.'''
-
+    '''Holds the current state of the board and provides methods for updating
+    the board state.
+    '''
     def __init__(self):
         self.squares = [' '] * 64
         self.white_pieces = []
         self.black_pieces = []
         self.white_controlled_squares = []
         self.black_controlled_squares = []
+        self.white_king = None
+        self.black_king = None
+
         self.last_move_piece = None
         self.last_move_from_to = (None, None)
 
@@ -30,9 +38,8 @@ class Board:
                 rank_x.append('|')
             ranks_to_print.append(''.join(rank_x))
 
-        ls = '\n'.join(ranks_to_print)  # Looks nice w/ print( <board_object> )
-
-        return ls
+        # Looks nice w/ print( <board_object> )
+        return '\n'.join(ranks_to_print)
 
 
     # Variable suffix corresponds to starting file (column) of the piece.
@@ -89,6 +96,10 @@ class Board:
 
         for piece in self.white_pieces + self.black_pieces:
             self.squares[piece.square] = piece
+
+        self.white_king = white_king
+
+        self.black_king = black_king
 
 
     def update_moves_white(self):
@@ -158,9 +169,15 @@ class Board:
         self.black_controlled_squares = set(black_controlled_squares)
 
 
+    # Move this into Pawn.update_moves() which has board as argument?
+    # It would still give access to board.last_move_from_to.
     def add_en_passant_moves(self):
-        # Pawns must be enemies, pawns must be adjacent, and the previous move
-        # must have been one of these pawns advancing by two squares.
+        '''Check for any valid en passant captures.
+
+        If the last move was a pawn advancing two squares, check if there are
+        any pawns of the opposite color adjacent to the moved pawn's current
+        square.
+        '''
         last_move_from = self.last_move_from_to[0]
         last_move_to = self.last_move_from_to[1]
         if not isinstance(self.last_move_piece, pieces.Pawn):
@@ -169,12 +186,10 @@ class Board:
             return
         # Last piece moved was a pawn and it advanced two squares.
         en_passant_squares = []
-        a_file = list(range(0, 57, 8))
-        h_file = list(range(7, 64, 8))
 
-        if last_move_to in a_file:
+        if last_move_to in pieces.ranks_files.a_file:
             en_passant_squares = [last_move_to + 1]
-        elif last_move_to in h_file:
+        elif last_move_to in pieces.ranks_files.h_file:
             en_passant_squares = [last_move_to - 1]
         else:
             en_passant_squares = [last_move_to + 1, last_move_to - 1]
@@ -187,13 +202,121 @@ class Board:
                     en_passant_piece.moves.append(last_move_to)
 
 
+    def find_checking_pieces(self) -> tuple:
+        '''If a king is in check, find which piece(s) is/are checking the king.
+        Helper function for self.king_escapes_check_or_checkmate().
+        '''
+        # Only one king may be in check at any time.
+        # TODO: how to best identify checked piece?
+        if self.last_move_piece.color == white:
+            checked_king = black_king
+            opponent_controlled_squares = self.white_controlled_squares
+            opponent_pieces = self.white_pieces
+        else:
+            checked_king = white_king
+            opponent_controlled_squares = self.black_controlled_squares
+            opponent_pieces = self.black_pieces
+
+        checked_square = checked_king.square
+        assert checked_square in opponent_controlled_squares
+
+        checking_pieces = []
+        # TODO: Should piece moves be sets or stay as lists?
+        # Should update_moves() notice if the opponent's king is attacked?
+        for piece in opponent_pieces:
+            if checked_square in piece.moves:
+                piece.giving_check = True
+                checking_pieces.append(piece)
+
+        return checking_pieces, checked_king
+
+
+    def moves_must_escape_check_or_checkmate(self):
+        '''Run when a king is in check. Limits all piece moves to those which
+        escape check or ends game by checkmate.'''
+        checking_pieces, checked_king = self.find_checking_pieces()
+        squares_checking_pieces = [piece.square for piece in checking_pieces]
+
+        # King in double check must move or is in checkmate.
+        if len(checking_pieces) > 1:
+            if checked_king.moves == []:
+                return f'{checked_king.color.upper()} loses by checkmate.'
+
+        # Find squares to capture checking piece(s)
+
+        # Find interposition squares which will block check.
+        interpose_squares = self.find_interposition_squares(checking_pieces,
+                                                            checked_king)
+
+
+
+    def find_interposition_squares(checking_pieces: list, checked_king)-> list:
+        interposition_squares = []
+        # Pawns and knights cannot be blocked, and kings cannot give check.
+        brq_directions = [[+-9, +-7], ...]
+        for checking_piece in checking_pieces:
+            delta = checked_king.square - checking_piece.square
+            # max/min of +-7 in same row
+            # Modulo ignores integer sign, whether positive or negative.
+            delta_is_neg = False
+            if delta < 0:
+                delta_is_neg = True
+            # Do not add checking piece square or king square to interposing
+            # moves list.
+            #
+            # All interposable bishop/rook/queen move deltas should be
+            # divisible by an integer from 9 to 2, inclusive.
+            #
+            # Moves with a delta of 1 are not interposable.
+            # TODO: if step is < 8, pieces may be on same row, in which case
+            # the scalar_step must be +- 1.
+            for rank in pieces.ranks_files.ranks:
+                if checked_king.square in rank and checking_piece.square in rank:
+                    scalar_step = 1
+                    break
+            else:
+                for move_direction in range(9, 6, -1):
+                    if delta % move_direction == 0:
+                        scalar_step = move_direction
+
+            assert scalar_step
+
+            if delta_is_neg:
+                # Lower king square, higher piece square.
+                for square in range(checking_piece.square - scalar_step,
+                                    checked_king.square,
+                                    -1 * scalar_step):
+                    interposition_squares.append(square)
+            else:
+                # Higher king square, lower piece square.
+                for square in range(checking_piece.square + scalar_step,
+                                    checked_king.square,
+                                    scalar_step):
+                    interposition_squares.append(square)
+
+            return interposition_squares
+
+
+
+
+
+# TODO: stalemate. when all pieces in board.x_pieces have moves == [].
+
+
 if __name__ == '__main__':
     import unittest
 
 
     class TestBoard(unittest.TestCase):
+        '''Test: Board methods, piece movement updates Board.squares, captures
+        update Board.squares, check escape scenarios, and en passant scenarios.
 
+        Consider moving check escaping and en passant to pieces.py tests,
+        or moving tests to a separate file because there are about 1000 lines
+        of tests now.
+        '''
         def test_repr_and_initialize_pieces(self):
+            '''Test Board.__repr__() and Board.initialize_pieces().'''
             board = Board()
             board.initialize_pieces()
             self.assertEqual(len(board.white_pieces), len(board.black_pieces))
@@ -213,6 +336,12 @@ if __name__ == '__main__':
 
 
         def test_update_white_controlled_squares(self):
+            '''Test Board.update_white_controlled_squares, which updates and
+            centralizes all white piece moves currently possible.
+
+            Board.white_controlled_squares also includes all of the protected
+            squares which white pieces are on (friendly collision).
+            '''
             board = Board()
             board.initialize_pieces()
             board.update_white_controlled_squares()
@@ -222,6 +351,12 @@ if __name__ == '__main__':
 
 
         def test_update_black_controlled_squares(self):
+            '''Test Board.update_black_controlled_squares, which updates and
+            centralizes all black piece moves currently possible.
+
+            Board.black_controlled_squares also includes all of the protected
+            squares which black pieces are on (friendly collision).
+            '''
             board = Board()
             board.initialize_pieces()
             board.update_black_controlled_squares()
@@ -231,6 +366,7 @@ if __name__ == '__main__':
 
 
         def test_board_updates_upon_piece_movement(self):
+            '''Test that Board.squares updates appropriately as pieces move.'''
             board = Board()
             board.initialize_pieces()
 
@@ -270,12 +406,15 @@ if __name__ == '__main__':
 
 
         def test_capture_updates_board_and_piece_lists(self):
+            '''Test Board.squares, Board.white_pieces, and Board.black_pieces
+            update when pieces are captured.
+            '''
             board = Board()
             board.initialize_pieces()
             self.assertEqual(len(board.white_pieces), len(board.black_pieces))
             self.assertEqual(len(board.black_pieces), 16)
 
-            # Scandinavian Defense captures
+            # Scandinavian Defense move and capture sequence.
             board.update_white_controlled_squares()
             board.update_black_controlled_squares()
             board.squares[12].move_piece(board, 28)
@@ -305,7 +444,7 @@ if __name__ == '__main__':
             opponent's rook is checking the king from a1.
 
             This functionality requires the full Board class, not the limited
-            Board class in the test section of pieces.py.
+            Board class previously used in the test section of pieces.py.
 
             This test is similar to one in pieces.py but this has a crucial
             addition at the end.
@@ -331,7 +470,7 @@ if __name__ == '__main__':
 
 
         def test_escape_check_by_rook_captures_rook(self):
-            '''The white king has no legal moves, but the white rook can
+            '''The white king has no legal moves, so the white rook must
             capture the black piece which is checking the white king.
             '''
             board = Board()
@@ -357,7 +496,8 @@ if __name__ == '__main__':
 
 
         def test_escape_check_by_king_capturing_checking_piece(self):
-            '''King must capture the checking piece to escape check.'''
+            '''The white king must capture the checking piece to escape check.
+            '''
             board = Board()
             white_king = pieces.King('K', 'white', 1)
             black_rook_a = pieces.Rook('ra', 'black', 0)
@@ -378,6 +518,9 @@ if __name__ == '__main__':
 
 
         def test_king_must_escape_check_by_capturing_nonchecking_piece(self):
+            '''The white king must escape check by capturing a non-checking
+            piece.
+            '''
             board = Board()
             white_king = pieces.King('K', 'white', 7)
             black_rook_a = pieces.Rook('ra', 'black', 0)
@@ -398,7 +541,8 @@ if __name__ == '__main__':
 
 
         def test_escape_check_by_interposition(self):
-            '''Test check scenario where only legal move is interposition.'''
+            '''Test check scenario where only legal move is interposition.
+            The white rook must block check.'''
             board = Board()
             white_king = pieces.King('K', 'white', 15)
             white_rook = pieces.Rook('Ra', 'white', 25)
@@ -532,10 +676,9 @@ if __name__ == '__main__':
             self.assertEqual(black_pawn_f.moves, [21, 28])
 
 
-        # TODO: figure out which enemy piece is causing check, change
-        # piece.giving_check, and limit all moves to king moves, interposition,
-        # and moves which capture the piece giving check.
-        # Note double check can only be resolved by king movement.
+        # TODO: test find_interposition_squares, find_checking_pieces, and
+        # umbrella method moves_must_escape_check_or_checkmate
+
 
         # TODO: How to test overall game flow? It seems to work well. There
         # are too many board possibilities to test them all.

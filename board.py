@@ -203,17 +203,19 @@ class Board:
 
 
     def find_checking_pieces(self) -> tuple:
-        '''If a king is in check, find which piece(s) is/are checking the king.
+        '''Assumes a king is in check. Return which piece(s) is/are checking
+        the king and the checked king object.
+
         Helper function for self.king_escapes_check_or_checkmate().
         '''
         # Only one king may be in check at any time.
         # TODO: how to best identify checked piece?
-        if self.last_move_piece.color == white:
-            checked_king = black_king
+        if self.last_move_piece.color == 'white':
+            checked_king = self.black_king
             opponent_controlled_squares = self.white_controlled_squares
             opponent_pieces = self.white_pieces
         else:
-            checked_king = white_king
+            checked_king = self.white_king
             opponent_controlled_squares = self.black_controlled_squares
             opponent_pieces = self.black_pieces
 
@@ -221,11 +223,11 @@ class Board:
         assert checked_square in opponent_controlled_squares
 
         checking_pieces = []
-        # TODO: Should piece moves be sets or stay as lists?
+        # Should piece move lists be sets instead?
         # Should update_moves() notice if the opponent's king is attacked?
         for piece in opponent_pieces:
             if checked_square in piece.moves:
-                piece.giving_check = True
+                #piece.giving_check = True
                 checking_pieces.append(piece)
 
         return checking_pieces, checked_king
@@ -248,16 +250,17 @@ class Board:
         interpose_squares = self.find_interposition_squares(checking_pieces,
                                                             checked_king)
 
+        # TODO: finish
 
 
-    def find_interposition_squares(checking_pieces: list, checked_king)-> list:
+    def find_interposition_squares(self, checking_pieces: list,
+                                   checked_king)-> list:
         interposition_squares = []
         # Pawns and knights cannot be blocked, and kings cannot give check.
-        brq_directions = [[+-9, +-7], ...]
+        #brq_directions = [[+-9, +-7], ...]
         for checking_piece in checking_pieces:
             delta = checked_king.square - checking_piece.square
             # max/min of +-7 in same row
-            # Modulo ignores integer sign, whether positive or negative.
             delta_is_neg = False
             if delta < 0:
                 delta_is_neg = True
@@ -272,29 +275,29 @@ class Board:
             # the scalar_step must be +- 1.
             for rank in pieces.ranks_files.ranks:
                 if checked_king.square in rank and checking_piece.square in rank:
-                    scalar_step = 1
+                    move_direction = 1
                     break
             else:
                 for move_direction in range(9, 6, -1):
                     if delta % move_direction == 0:
-                        scalar_step = move_direction
+                        break
 
-            assert scalar_step
+            assert move_direction
 
             if delta_is_neg:
                 # Lower king square, higher piece square.
-                for square in range(checking_piece.square - scalar_step,
+                for square in range(checking_piece.square - move_direction,
                                     checked_king.square,
-                                    -1 * scalar_step):
+                                    -1 * move_direction):
                     interposition_squares.append(square)
             else:
                 # Higher king square, lower piece square.
-                for square in range(checking_piece.square + scalar_step,
+                for square in range(checking_piece.square + move_direction,
                                     checked_king.square,
-                                    scalar_step):
+                                    move_direction):
                     interposition_squares.append(square)
 
-            return interposition_squares
+        return interposition_squares
 
 
 
@@ -676,9 +679,65 @@ if __name__ == '__main__':
             self.assertEqual(black_pawn_f.moves, [21, 28])
 
 
-        # TODO: test find_interposition_squares, find_checking_pieces, and
+        # TODO: test find_checking_pieces, and
         # umbrella method moves_must_escape_check_or_checkmate
+        def test_find_interposition_squares_same_rank(self):
+            board = Board()
+            white_rook_a = pieces.Rook('Ra', 'white', 63)
+            white_rook_h = pieces.Rook('Rh', 'white', 56)
+            black_king = pieces.King('k', 'black', 58)
 
+            interpose_sqrs = board.find_interposition_squares([white_rook_a,
+                                                               white_rook_h],
+                                                               black_king)
+
+            self.assertEqual(set(interpose_sqrs), set([57, 59, 60, 61, 62]))
+
+
+        def test_find_interposition_squares_same_file(self):
+            board = Board()
+            white_rook_a = pieces.Rook('Ra', 'white', 0)
+            white_rook_h = pieces.Rook('Rh', 'white', 24)
+            black_king = pieces.King('k', 'black', 16)
+
+            interpose_sqrs = board.find_interposition_squares([white_rook_a,
+                                                               white_rook_h],
+                                                               black_king)
+            self.assertEqual(interpose_sqrs, [8])
+
+
+        def test_find_interposition_squares_diagonal(self):
+            board = Board()
+            white_queen = pieces.Queen('Q', 'white', 0)
+            black_king = pieces.King('k', 'black', 63)
+
+            interpose_squares = board.find_interposition_squares([white_queen],
+                                                                 black_king)
+            # scalar getting set to 7
+            self.assertEqual(set(interpose_squares), set(range(9, 63, 9)))
+
+
+        def test_find_checking_pieces(self):
+            board = Board()
+            white_king = pieces.King('K', 'white', 4)
+            black_rook_a = pieces.Rook('ra', 'black', 0)
+            black_rook_h = pieces.Rook('rh', 'black', 7)
+            black_queen = pieces.Queen('q', 'black', 60)
+
+            board.white_king = white_king
+            board.last_move_piece = black_rook_a
+            board.white_pieces = [white_king]
+            board.black_pieces = [black_rook_a, black_rook_h, black_queen]
+
+            for piece in board.white_pieces + board.black_pieces:
+                board.squares[piece.square] = piece
+
+            board.update_white_controlled_squares()
+            board.update_black_controlled_squares()
+
+            checking_pieces, checked_king = board.find_checking_pieces()
+            self.assertEqual(checking_pieces, board.black_pieces)
+            self.assertEqual(checked_king, white_king)
 
         # TODO: How to test overall game flow? It seems to work well. There
         # are too many board possibilities to test them all.

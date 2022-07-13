@@ -15,6 +15,8 @@ class Board:
         self.black_pieces = []
         self.white_controlled_squares = []
         self.black_controlled_squares = []
+        self.white_moves = []
+        self.black_moves = []
         self.white_king = None
         self.black_king = None
 
@@ -140,14 +142,15 @@ class Board:
         '''Creates set to determine if black king is in check and limit
         black king moves which would put it in check.'''
         white_controlled_squares = []
+        self.white_moves = []
 
         self.update_moves_white()
         for piece in self.white_pieces:
             for move in piece.moves:
+                self.white_moves.append(move)
                 white_controlled_squares.append(move)
             for square in piece.protected_squares:
                 white_controlled_squares.append(square)
-        self.add_en_passant_moves()
 
         self.white_controlled_squares = set(white_controlled_squares)
 
@@ -156,50 +159,17 @@ class Board:
         '''Creates set to determine if white king is in check and limit
         white king moves which would put it in check.'''
         black_controlled_squares = []
+        self.black_moves = []
 
         self.update_moves_black()
         for piece in self.black_pieces:
             for move in piece.moves:
+                self.black_moves.append(move)
                 black_controlled_squares.append(move)
             for square in piece.protected_squares:
                 black_controlled_squares.append(square)
 
-        self.add_en_passant_moves()
-
         self.black_controlled_squares = set(black_controlled_squares)
-
-
-    # Move this into Pawn.update_moves() which has board as argument?
-    # It would still give access to board.last_move_from_to.
-    def add_en_passant_moves(self):
-        '''Check for any valid en passant captures.
-
-        If the last move was a pawn advancing two squares, check if there are
-        any pawns of the opposite color adjacent to the moved pawn's current
-        square.
-        '''
-        last_move_from = self.last_move_from_to[0]
-        last_move_to = self.last_move_from_to[1]
-        if not isinstance(self.last_move_piece, pieces.Pawn):
-            return
-        elif abs(last_move_from - last_move_to) != 16:
-            return
-        # Last piece moved was a pawn and it advanced two squares.
-        en_passant_squares = []
-
-        if last_move_to in pieces.ranks_files.a_file:
-            en_passant_squares = [last_move_to + 1]
-        elif last_move_to in pieces.ranks_files.h_file:
-            en_passant_squares = [last_move_to - 1]
-        else:
-            en_passant_squares = [last_move_to + 1, last_move_to - 1]
-
-        for en_passant_square in en_passant_squares:
-            en_passant_piece = self.squares[en_passant_square]
-            if isinstance(en_passant_piece, pieces.Pawn):
-                if self.last_move_piece.color != en_passant_piece.color:
-                    #assert self.last_move_piece.square == last_move_to
-                    en_passant_piece.moves.append(last_move_to)
 
 
     def find_checking_pieces(self) -> tuple:
@@ -209,7 +179,6 @@ class Board:
         Helper function for self.king_escapes_check_or_checkmate().
         '''
         # Only one king may be in check at any time.
-        # TODO: how to best identify checked piece?
         if self.last_move_piece.color == 'white':
             checked_king = self.black_king
             opponent_controlled_squares = self.white_controlled_squares
@@ -233,28 +202,13 @@ class Board:
         return checking_pieces, checked_king
 
 
-    def moves_must_escape_check_or_checkmate(self):
-        '''Run when a king is in check. Limits all piece moves to those which
-        escape check or ends game by checkmate.'''
-        checking_pieces, checked_king = self.find_checking_pieces()
-        squares_checking_pieces = [piece.square for piece in checking_pieces]
-
-        # King in double check must move or is in checkmate.
-        if len(checking_pieces) > 1:
-            if checked_king.moves == []:
-                return f'{checked_king.color.upper()} loses by checkmate.'
-
-        # Find squares to capture checking piece(s)
-
-        # Find interposition squares which will block check.
-        interpose_squares = self.find_interposition_squares(checking_pieces,
-                                                            checked_king)
-
-        # TODO: finish
-
-
     def find_interposition_squares(self, checking_pieces: list,
                                    checked_king)-> list:
+        '''Assumes a king is in check. Return set of interposition squares
+        which block check.
+
+        Helper function for self.king_escapes_check_or_checkmate().
+        '''
         interposition_squares = []
         # Pawns and knights cannot be blocked, and kings cannot give check.
         #brq_directions = [[+-9, +-7], ...]
@@ -271,8 +225,6 @@ class Board:
             # divisible by an integer from 9 to 2, inclusive.
             #
             # Moves with a delta of 1 are not interposable.
-            # TODO: if step is < 8, pieces may be on same row, in which case
-            # the scalar_step must be +- 1.
             for rank in pieces.ranks_files.ranks:
                 if checked_king.square in rank and checking_piece.square in rank:
                     move_direction = 1
@@ -300,10 +252,44 @@ class Board:
         return interposition_squares
 
 
+    def moves_must_escape_check_or_checkmate(self, board):
+        '''Run when a king is in check. Limits all moves to those which escape
+        check. If no moves escape check, the game ends by checkmate.'''
+        checking_pieces, checked_king = self.find_checking_pieces()
+        interpose_squares = self.find_interposition_squares(checking_pieces,
+                                                            checked_king)
 
+        # King in double check must move or is in checkmate.
+        if len(checking_pieces) > 1:
+            if checked_king.moves == []:
+                print(f'{checked_king.color.upper()} loses by checkmate.')
+                return f'{checked_king.color.upper()} loses by checkmate.'
 
+        checking_pieces_squares = [piece.square for piece in checking_pieces]
 
-# TODO: stalemate. when all pieces in board.x_pieces have moves == [].
+        if checked_king.color == 'white':
+            friendly_pieces = board.white_pieces
+        else:
+            friendly_pieces = board.black_pieces
+
+        # Limit moves for pieces (excluding king) to interposition, and
+        # capturing the checking piece.
+        all_legal_moves_in_check = set(interpose_squares
+                                       + checking_pieces_squares)
+
+        piece_types_minus_king = (pieces.Pawn, pieces.Knight, pieces.Bishop,
+                                  pieces.Rook, pieces.Queen)
+
+        for piece in friendly_pieces:
+            if isinstance(piece, piece_types_minus_king):
+                if len(checking_pieces) == 1:
+                    legal_moves = all_legal_moves_in_check & set(piece.moves)
+                    piece.moves = list(legal_moves)
+                elif len(checking_pieces) > 1:
+                    piece.moves = list(interpose_squares & set(piece.moves))
+                else:
+                    raise Exception('Length of checking_pieces should be >= 1')
+
 
 
 if __name__ == '__main__':
@@ -494,8 +480,13 @@ if __name__ == '__main__':
 
             self.assertTrue(white_king.in_check)
             self.assertEqual(white_king.moves, [])
-            # TODO: This test must pass.
-            #self.assertEqual(white_rook_a.moves, [0])
+
+            # This portion tests moves_must_escape_check_or_checkmate().
+            board.white_king = white_king
+            board.last_move_piece = black_rook_a
+            board.moves_must_escape_check_or_checkmate(board)
+
+            self.assertEqual(white_rook_a.moves, [0])
 
 
         def test_escape_check_by_king_capturing_checking_piece(self):
@@ -565,8 +556,14 @@ if __name__ == '__main__':
 
             self.assertTrue(white_king.in_check)
             self.assertEqual(white_king.moves, [])
-            # TODO: test should pass as rook interposition is the only move.
-            #self.assertEqual(white_rook.moves, [9])
+
+            # This portion tests moves_must_escape_check_or_checkmate().
+            board.white_king = white_king
+            board.last_move_piece = black_rook_3
+
+            # Test should pass because of rook interposition.
+            board.moves_must_escape_check_or_checkmate(board)
+            self.assertEqual(white_rook.moves, [9])
 
 
         def test_king_must_move_to_escape_double_check(self):
@@ -624,7 +621,7 @@ if __name__ == '__main__':
             board.last_move_from_to = (8, 24)
 
             board.update_black_controlled_squares()
-            self.assertEqual(black_pawn_b.moves, [17, 24])
+            self.assertEqual(set(black_pawn_b.moves), set([17, 24]))
 
 
         def test_en_passant_h_file(self):
@@ -650,7 +647,7 @@ if __name__ == '__main__':
             self.assertEqual(board.last_move_from_to, (55, 39))
 
             board.update_white_controlled_squares()
-            self.assertEqual(white_pawn_g.moves, [46, 39])
+            self.assertEqual(set(white_pawn_g.moves), set([46, 39]))
 
 
         def test_double_en_passant_middle(self):
@@ -675,12 +672,10 @@ if __name__ == '__main__':
             board.last_move_from_to = (12, 28)
 
             board.update_black_controlled_squares()
-            self.assertEqual(black_pawn_d.moves, [19, 28])
-            self.assertEqual(black_pawn_f.moves, [21, 28])
+            self.assertEqual(set(black_pawn_d.moves), set([19, 28]))
+            self.assertEqual(set(black_pawn_f.moves), set([21, 28]))
 
 
-        # TODO: test find_checking_pieces, and
-        # umbrella method moves_must_escape_check_or_checkmate
         def test_find_interposition_squares_same_rank(self):
             board = Board()
             white_rook_a = pieces.Rook('Ra', 'white', 63)
@@ -738,6 +733,9 @@ if __name__ == '__main__':
             checking_pieces, checked_king = board.find_checking_pieces()
             self.assertEqual(checking_pieces, board.black_pieces)
             self.assertEqual(checked_king, white_king)
+
+
+
 
         # TODO: How to test overall game flow? It seems to work well. There
         # are too many board possibilities to test them all.

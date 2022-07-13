@@ -1,3 +1,12 @@
+'''
+The six chess piece types each have their own class here. The common piece
+methods are update_moves() and move_piece(), with more specialized methods
+including promote_pawn() (pawn), check_if_in_check() (king), and
+remove_moves_to_attacked_squares() (king).
+
+The RanksFiles class acts as iterable storage which assists all of the
+update_moves() methods.
+'''
 # The squares of a chessboard are represented here as integers from 0 to 63.
 # Square 0 is the a1 square, which is the bottom-left square from white's
 # perspective, and the top-right square from black's perspective.
@@ -28,16 +37,19 @@ class RanksFiles:
     # Sets have a constant time complexity for membership check, and are not
     # time intensive to create, according to timeit.timeit().
     def __init__(self):
-        self.a_file = set([i * 8 for i in range(8)])
-        self.b_file = set([i * 8 + 1 for i in range(8)])
-        self.c_file = set([i * 8 + 2 for i in range(8)])
-        self.d_file = set([i * 8 + 3 for i in range(8)])
-        self.e_file = set([i * 8 + 4 for i in range(8)])
-        self.f_file = set([i * 8 + 5 for i in range(8)])
-        self.g_file = set([i * 8 + 6 for i in range(8)])
-        self.h_file = set([i * 8 + 7 for i in range(8)])
+        self.a_file = {i * 8 for i in range(8)}
+        self.b_file = {i * 8 + 1 for i in range(8)}
+        self.c_file = {i * 8 + 2 for i in range(8)}
+        self.d_file = {i * 8 + 3 for i in range(8)}
+        self.e_file = {i * 8 + 4 for i in range(8)}
+        self.f_file = {i * 8 + 5 for i in range(8)}
+        self.g_file = {i * 8 + 6 for i in range(8)}
+        self.h_file = {i * 8 + 7 for i in range(8)}
 
-        # If x is small, list(range(x)) seems to be slightly faster than list
+        self.files = (self.a_file, self.b_file, self.c_file, self.d_file,
+                      self.e_file, self.f_file, self.g_file, self.h_file)
+
+        # Here, set(range()) seems to be slightly faster than set
         # comprehensions.
         self.rank_1 = set(range(8))
         self.rank_2 = set(range(8, 16))
@@ -47,6 +59,9 @@ class RanksFiles:
         self.rank_6 = set(range(40, 48))
         self.rank_7 = set(range(48, 56))
         self.rank_8 = set(range(56, 64))
+
+        self.ranks = (self.rank_1, self.rank_2, self.rank_3, self.rank_4,
+                      self.rank_5, self.rank_6, self.rank_7, self.rank_8)
 
 
 ranks_files = RanksFiles()
@@ -86,6 +101,7 @@ class Pawn:
         square_in_front = self.square + forward_direction
 
         if 0 <= square_in_front <= 63:
+            self.add_en_passant_moves(board)
             # Prevent forward moves if there is a piece blocking the way.
             if all_squares[square_in_front] == ' ':
                 if self.has_moved:
@@ -136,6 +152,37 @@ class Pawn:
                 self.promote_pawn(board)
             elif self.color == 'black' and self.square in list(range(0, 8)):
                 self.promote_pawn(board)
+
+
+    def add_en_passant_moves(self, board):
+        '''Check for any valid en passant captures.
+
+        If the last move was a pawn advancing two squares, check if there are
+        any pawns of the opposite color adjacent to the moved pawn's current
+        square.
+        '''
+        last_move_from = board.last_move_from_to[0]
+        last_move_to = board.last_move_from_to[1]
+        if not isinstance(board.last_move_piece, Pawn):
+            return
+        elif abs(last_move_from - last_move_to) != 16:
+            return
+        # Last piece moved was a pawn and it advanced two squares.
+        en_passant_squares = []
+
+        if last_move_to in ranks_files.a_file:
+            en_passant_squares = [last_move_to + 1]
+        elif last_move_to in ranks_files.h_file:
+            en_passant_squares = [last_move_to - 1]
+        else:
+            en_passant_squares = [last_move_to + 1, last_move_to - 1]
+
+        for en_passant_square in en_passant_squares:
+            en_passant_piece = board.squares[en_passant_square]
+            if isinstance(en_passant_piece, Pawn):
+                if board.last_move_piece.color != en_passant_piece.color:
+                    #assert self.last_move_piece.square == last_move_to
+                    en_passant_piece.moves.append(last_move_to)
 
 
     def promote_pawn(self, board, debug_input='queen'):
@@ -227,6 +274,7 @@ class Knight:
 
         if self.square in ranks_files.rank_1:
             del all_moves[:4] # was index 3 (incorrect)
+        elif self.square in ranks_files.rank_2:
             del all_moves[:2] # was 1, see comment above.
         elif self.square in ranks_files.rank_7:
             del all_moves[6:]
@@ -747,6 +795,7 @@ class King:
 
     def check_if_in_check(self, white_controlled_squares: set,
                                 black_controlled_squares: set):
+        '''Check if self (king) is in check.'''
         if self.color == 'white':
             opponent_controlled_squares = black_controlled_squares
         elif self.color == 'black':
@@ -761,6 +810,7 @@ class King:
 
 
     def move_piece(self, board, new_square: int):
+        '''Move the king.'''
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -1028,8 +1078,6 @@ if __name__ == '__main__':
             self.assertTrue(isinstance(board.squares[1], Queen))
 
 
-
-
         def test_knight_movement(self):
             knight = Knight('Nb', 'white', 1)
             self.assertFalse(knight.moves)
@@ -1081,7 +1129,7 @@ if __name__ == '__main__':
             # This block should prevent bishop edge cases on the corners/sides.
             bishop = Bishop('Bc', 'white', 0)
             bishop.update_moves(board)
-            self.assertEqual(set(bishop.moves), set(list(range(9, 64, 9))))
+            self.assertEqual(set(bishop.moves), set(range(9, 64, 9)))
 
         def test_bishop_friendly_piece_collision(self):
             bishop = Bishop('Bf', 'white', 7)
@@ -1208,7 +1256,7 @@ if __name__ == '__main__':
             all_squares[49] = friendly_pawn
 
             queen.update_moves(board)
-            self.assertEqual(set(queen.moves), set(list(range(0, 49, 8))))
+            self.assertEqual(set(queen.moves), set(range(0, 49, 8)))
 
 
         def test_queen_opponent_piece_collision(self):
@@ -1341,6 +1389,7 @@ if __name__ == '__main__':
 
 
         def test_castling_cannot_castle_out_of_check(self):
+            '''Confirm that a king cannot castle to escape check.'''
             king = King('K', 'white', 4)
             rook_a = Rook('Ra', 'white', 0)
             rook_h = Rook('Rh', 'white', 7)
@@ -1375,6 +1424,7 @@ if __name__ == '__main__':
 
 
         def test_castling_cannot_castle_through_check(self):
+            '''Confirm a king cannot castle through an attacked square.'''
             king = King('K', 'white', 4)
             rook_a = Rook('Ra', 'white', 0)
             rook_h = Rook('Rh', 'white', 7)
@@ -1398,6 +1448,7 @@ if __name__ == '__main__':
 
 
         def test_castling_cannot_castle_into_check(self):
+            '''Confirm that the king cannot castle into an attacked square.'''
             king = King('K', 'white', 4)
             rook_a = Rook('Ra', 'white', 0)
             rook_h = Rook('Rh', 'white', 7)
@@ -1418,13 +1469,6 @@ if __name__ == '__main__':
             king.update_moves(board)
             self.assertEqual(set(king.moves), set([3, 5, 11, 12, 13]))
 
-
-        # TODO: test piece.protected_squares updates
-        # For tests, must update moves for all pieces b/w turns to if you want
-        # to know the protected pieces.
-        # This is already implemented in game.py.
-        def test_protected_squares_updates(self):
-            pass
 
 
     unittest.main()

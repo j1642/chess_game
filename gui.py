@@ -17,7 +17,7 @@ class GUI:
 
         self.chessboard.initialize_pieces()
 
-        self.update_gui(self.chessboard)
+        self.update_gui()
 
 
     def find_dark_light_squares(self) -> tuple:
@@ -57,8 +57,7 @@ class GUI:
 
     def update_gui(self, selected_piece=None):
         '''Update the GUI based on current state of chessboard.squares.'''
-        # Need to store Photoimage object reference to display it after the for
-        # loop and function end.
+
         for ind, square in enumerate(self.chessboard.squares):
             IS_DARK_SQUARE = ind in self.dark_squares
             row_num = abs(ind // 8 - 8)
@@ -83,33 +82,49 @@ class GUI:
                 raise Exception(f'Square {ind}: contents invalid.')
 
             image_path = tk.PhotoImage(file=image_path)
+            # Need to store Photoimage object reference to display it after the
+            # for loop and function end.
             self.image_references[ind] = image_path
 
-            # TODO: attribute error b/c selected_piece type is Board?
-            #print(type(self.chessboard.squares[ind]))
-            if selected_piece is None:
-                all_squares = self.chessboard.squares
-                command = lambda : self.update_gui(selected_piece=all_squares[ind])
-                if square == ' ':
-                    command = lambda : self.empty_function()
-            else:
-                command = lambda : selected_piece.move_piece(ind, self.chessboard)
+            self.helper((image_path, column_num, row_num, ind, square),
+                        selected_piece)
 
 
-            button = tk.Button(
-                root,
-                image=image_path,
-                highlightthickness=0,
-                bd=0,
-                borderwidth=0,
-                command=command
-                )
+    def helper(self, image_column_row_index_square: tuple, selected_piece):
+        '''Makes buttons and adds them to the grid.
 
-            button.grid(column=column_num, row=row_num)
+        Helper method for update_gui().
+
+        Having this method removes bug where all buttons with pieces on them
+        refer to the black h rook, due to the final value of ind from
+        enumerate() being 63.
+        '''
+        image, column, row, index, square = image_column_row_index_square
+
+        if selected_piece is None:
+            all_squares = self.chessboard.squares
+            command = lambda : self.update_gui(selected_piece=all_squares[index])
+            if square == ' ':
+                command = lambda : self.empty_function()
+        else:
+            command = lambda : selected_piece.move_piece(self.chessboard, index)
+
+
+        button = tk.Button(
+            root,
+            image=image,
+            highlightthickness=0,
+            bd=0,
+            borderwidth=0,
+            command=command
+            )
+
+        button.grid(column=column, row=row)
+
 
 
 root = tk.Tk()
-root.geometry('380x380+400+300')
+root.geometry('380x380+500+500')
 root.title('Chess')
 
 gui = GUI()

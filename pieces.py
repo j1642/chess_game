@@ -77,14 +77,9 @@ class Pawn:
         self.giving_check = False
         self.protected_squares = []
 
-        if self.color == 'white':
-            self.symbol = 'P'
-        elif self.color == 'black':
-            self.symbol = 'p'
-
 
     def __repr__(self):
-        return f'''({self.symbol}, Sq: {self.square}, {self.color}, \
+        return f'''({self.name}, Sq: {self.square}, {self.color}, \
     has_moved: {self.has_moved})'''
 
 
@@ -223,6 +218,8 @@ class Pawn:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
                 captured_piece = board.squares[new_square]
+                # TODO: remove print
+                print(captured_piece)
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
@@ -237,7 +234,7 @@ class Pawn:
             board.squares[old_square], board.squares[new_square] = ' ', self
 
         else:
-            print(f'Not a valid move for {self.name}.')
+            print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
 
 
@@ -250,14 +247,9 @@ class Knight:
         self.giving_check = False
         self.protected_squares = []
 
-        if self.color == 'white':
-            self.symbol = 'N'
-        elif self.color == 'black':
-            self.symbol = 'n'
-
 
     def __repr__(self):
-        return f'({self.symbol}, Sq: {self.square}, {self.color})'
+        return f'({self.name}, Sq: {self.square}, {self.color})'
 
 
     def update_moves(self, board):
@@ -356,14 +348,9 @@ class Bishop:
         self.giving_check = False
         self.protected_squares = []
 
-        if self.color == 'white':
-            self.symbol = 'B'
-        elif self.color == 'black':
-            self.symbol = 'b'
-
 
     def __repr__(self):
-        return f'({self.symbol}, Sq: {self.square}, {self.color})'
+        return f'({self.name}, Sq: {self.square}, {self.color})'
 
 
     def update_moves(self, board):
@@ -446,14 +433,9 @@ class Rook:
         self.giving_check = False
         self.protected_squares = []
 
-        if self.color == 'white':
-            self.symbol = 'R'
-        elif self.color == 'black':
-            self.symbol = 'r'
-
 
     def __repr__(self):
-        return f'''({self.symbol}, Sq: {self.square}, {self.color}, \
+        return f'''({self.name}, Sq: {self.square}, {self.color}, \
     has_moved: {self.has_moved})'''
 
 
@@ -550,14 +532,9 @@ class Queen:
         self.giving_check = False
         self.protected_squares = []
 
-        if self.color == 'white':
-            self.symbol = 'Q'
-        elif self.color == 'black':
-            self.symbol = 'q'
-
 
     def __repr__(self):
-        return f'({self.symbol}, Sq: {self.square}, {self.color})'
+        return f'({self.name}, Sq: {self.square}, {self.color})'
 
     # Could replace this with bishop.moves + rook.moves from the queen's square
     def update_moves(self, board):
@@ -637,14 +614,9 @@ class King:
         self.in_check = False
         self.protected_squares = []
 
-        if self.color == 'white':
-            self.symbol = 'K'
-        elif self.color == 'black':
-            self.symbol = 'k'
-
 
     def __repr__(self):
-        return f'''({self.symbol}, Sq: {self.square}, {self.color}, \
+        return f'''({self.name}, Sq: {self.square}, {self.color}, \
     has_moved: {self.has_moved}, in check: {self.in_check})'''
 
 

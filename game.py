@@ -6,12 +6,13 @@ Dependencies (must be in same directory):
     pieces.py
 '''
 
-import sys
-import traceback
 from random import choice
+import sys
 from time import gmtime, strftime
+import traceback
 
 import board
+import gui
 import pieces
 
 
@@ -22,13 +23,14 @@ class Game:
         self.player_color = ''
         self.computer_color = ''
         self.turn_color = 'white'
+        self.white_wins = False
+        self.black_wins = False
         self.board = board.Board()
 
         self.board.initialize_pieces()
-        self.white_king = [i for i in self.board.white_pieces if isinstance(i, pieces.King)][0]
-        self.black_king = [i for i in self.board.black_pieces if isinstance(i, pieces.King)][0]
-
         self.select_color()
+
+        self.display = gui.GUI(self.board)
 
 
     def __repr__(self):
@@ -83,6 +85,8 @@ class Game:
         self.board.last_move_from_to = (old_square, random_move)
         self.turn_color = self.player_color
 
+        self.display.update_gui(self.board)
+
 
     def player_turn(self, old_square=None):
         '''Human turn.'''
@@ -123,6 +127,8 @@ class Game:
         self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.computer_color
 
+        self.display.update_gui(self.board)
+
 
     def between_moves(self):
         '''All moves must be updated between turns so pieces know where they
@@ -130,16 +136,24 @@ class Game:
         '''
         self.board.update_white_controlled_squares()
         self.board.update_black_controlled_squares()
-        self.board.add_en_passant_moves()
 
         # Update king moves again now that all other piece moves are known.
         # Needed to determine if in check and to remove illegal king moves.
-        self.white_king.update_moves(self.board)
-        self.black_king.update_moves(self.board)
+        self.board.white_king.update_moves(self.board)
+        self.board.black_king.update_moves(self.board)
+
+        # TODO: self.check_for_stalemate(self.board)
+        #
+        # check if a piece is pinned to the king before moving it:
+        #   - Update a dummy board and check if friendly king is in check.
+
+
+        # TODO: choose terminal or GUI
 
 
     def play(self):
         '''Play chess.'''
+        self.display.update_gui(self.board)
         checkmate = False
         while not checkmate:
             self.between_moves()

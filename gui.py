@@ -4,20 +4,23 @@ ASCII graphics.
 '''
 import tkinter as tk
 
-import board
-import pieces
 
 
 class GUI:
-    def __init__(self):
-        self.chessboard = board.Board()
+    def __init__(self, chessboard):
+        self.dark_squares, self.light_squares = self.find_dark_light_squares()
         self.image_references = [0] * 64
 
-        self.dark_squares, self.light_squares = self.find_dark_light_squares()
+        self.root = tk.Tk()
+        self.root.geometry('380x380+480+400')
+        self.root.title('Chess')
 
-        self.chessboard.initialize_pieces()
+        self.update_gui(chessboard)
+        self.root.mainloop()
 
-        self.update_gui()
+
+
+
 
 
     def find_dark_light_squares(self) -> tuple:
@@ -51,14 +54,10 @@ class GUI:
         pass
 
 
-    def return_piece(self, square):
-        return square
-
-
-    def update_gui(self, selected_piece=None):
+    def update_gui(self, chessboard, selected_piece=None):
         '''Update the GUI based on current state of chessboard.squares.'''
 
-        for ind, square in enumerate(self.chessboard.squares):
+        for ind, square in enumerate(chessboard.squares):
             IS_DARK_SQUARE = ind in self.dark_squares
             row_num = abs(ind // 8 - 8)
             column_num = ind % 8
@@ -86,11 +85,14 @@ class GUI:
             # for loop and function end.
             self.image_references[ind] = image_path
 
-            self.helper((image_path, column_num, row_num, ind, square),
-                        selected_piece)
+            self.find_command_make_button(chessboard,
+                                          (image_path, column_num, row_num, ind, square),
+                                          selected_piece)
 
 
-    def helper(self, image_column_row_index_square: tuple, selected_piece):
+    def find_command_make_button(self, chessboard,
+                                 image_column_row_index_square: tuple,
+                                 selected_piece):
         '''Makes buttons and adds them to the grid.
 
         Helper method for update_gui().
@@ -102,16 +104,15 @@ class GUI:
         image, column, row, index, square = image_column_row_index_square
 
         if selected_piece is None:
-            all_squares = self.chessboard.squares
-            command = lambda : self.update_gui(selected_piece=all_squares[index])
+            all_squares = chessboard.squares
+            command = lambda : self.update_gui(chessboard, selected_piece=all_squares[index])
             if square == ' ':
                 command = lambda : self.empty_function()
         else:
-            command = lambda : selected_piece.move_piece(self.chessboard, index)
-
+            command = lambda : selected_piece.move_piece(chessboard, index)
 
         button = tk.Button(
-            root,
+            self.root,
             image=image,
             highlightthickness=0,
             bd=0,
@@ -122,10 +123,10 @@ class GUI:
         button.grid(column=column, row=row)
 
 
+if __name__ == '__main__':
+    root = tk.Tk()
+    root.geometry('380x380+500+500')
+    root.title('Chess')
 
-root = tk.Tk()
-root.geometry('380x380+500+500')
-root.title('Chess')
-
-gui = GUI()
-root.mainloop()
+    gui = GUI()
+    root.mainloop()

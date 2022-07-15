@@ -5,9 +5,8 @@ ASCII graphics.
 import tkinter as tk
 
 
-
 class GUI:
-    def __init__(self, chessboard):
+    def __init__(self): #chessboard):
         self.dark_squares, self.light_squares = self.find_dark_light_squares()
         self.image_references = [0] * 64
 
@@ -15,12 +14,8 @@ class GUI:
         self.root.geometry('380x380+480+400')
         self.root.title('Chess')
 
-        self.update_gui(chessboard)
-        self.root.mainloop()
-
-
-
-
+        #self.update_gui(chessboard)
+        #self.root.mainloop()
 
 
     def find_dark_light_squares(self) -> tuple:
@@ -88,6 +83,9 @@ class GUI:
             self.find_command_make_button(chessboard,
                                           (image_path, column_num, row_num, ind, square),
                                           selected_piece)
+
+        #self.root.quit()
+        self.root.mainloop()
 
 
     def find_command_make_button(self, chessboard,

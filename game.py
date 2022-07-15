@@ -30,7 +30,7 @@ class Game:
         self.board.initialize_pieces()
         self.select_color()
 
-        self.display = gui.GUI(self.board)
+        self.display = gui.GUI()
 
 
     def __repr__(self):
@@ -85,8 +85,6 @@ class Game:
         self.board.last_move_from_to = (old_square, random_move)
         self.turn_color = self.player_color
 
-        self.display.update_gui(self.board)
-
 
     def player_turn(self, old_square=None):
         '''Human turn.'''
@@ -127,8 +125,6 @@ class Game:
         self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.computer_color
 
-        self.display.update_gui(self.board)
-
 
     def between_moves(self):
         '''All moves must be updated between turns so pieces know where they
@@ -153,16 +149,21 @@ class Game:
 
     def play(self):
         '''Play chess.'''
-        self.display.update_gui(self.board)
         checkmate = False
         while not checkmate:
             self.between_moves()
+            if self.board.squares[8].moves == [16, 24]:
+                print('True: self.board.squares[8].moves == [16, 24]')
             if checkmate:
+                print('Checkmate after game.black_turn()')
                 break
+            self.display.update_gui(self.board)
             self.white_turn()
             self.between_moves()
             if checkmate:
+                print('Checkmate after game.white_turn()')
                 break
+            self.display.update_gui(self.board)
             self.black_turn()
 
 

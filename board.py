@@ -621,7 +621,7 @@ if __name__ == '__main__':
             board.last_move_from_to = (8, 24)
 
             board.update_black_controlled_squares()
-            self.assertEqual(set(black_pawn_b.moves), set([17, 24]))
+            self.assertEqual(set(black_pawn_b.moves), set([17, 16]))
 
 
         def test_en_passant_h_file(self):
@@ -647,7 +647,7 @@ if __name__ == '__main__':
             self.assertEqual(board.last_move_from_to, (55, 39))
 
             board.update_white_controlled_squares()
-            self.assertEqual(set(white_pawn_g.moves), set([46, 39]))
+            self.assertEqual(set(white_pawn_g.moves), set([46, 47]))
 
 
         def test_double_en_passant_middle(self):
@@ -672,8 +672,8 @@ if __name__ == '__main__':
             board.last_move_from_to = (12, 28)
 
             board.update_black_controlled_squares()
-            self.assertEqual(set(black_pawn_d.moves), set([19, 28]))
-            self.assertEqual(set(black_pawn_f.moves), set([21, 28]))
+            self.assertEqual(set(black_pawn_d.moves), set([19, 20]))
+            self.assertEqual(set(black_pawn_f.moves), set([21, 20]))
 
 
         def test_find_interposition_squares_same_rank(self):

@@ -1,11 +1,13 @@
 '''
 The six chess piece types each have their own class here. The common piece
 methods are update_moves() and move_piece(), with more specialized methods
-including promote_pawn() (pawn), check_if_in_check() (king), and
-remove_moves_to_attacked_squares() (king).
+including promote_pawn(), check_if_in_check(), and
+remove_moves_to_attacked_squares().
 
 The RanksFiles class acts as iterable storage which assists all of the
 update_moves() methods.
+
+Running this file runs approximately 30 unit tests.
 '''
 # The squares of a chessboard are represented here as integers from 0 to 63.
 # Square 0 is the a1 square, which is the bottom-left square from white's
@@ -177,7 +179,7 @@ class Pawn:
             if isinstance(en_passant_piece, Pawn):
                 if board.last_move_piece.color != en_passant_piece.color:
                     #assert self.last_move_piece.square == last_move_to
-                    en_passant_piece.moves.append(last_move_to)
+                    en_passant_piece.moves.append((last_move_from + last_move_to) // 2)
 
 
     def promote_pawn(self, board, debug_input='queen'):

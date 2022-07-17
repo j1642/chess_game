@@ -3,6 +3,7 @@ Run this file to play chess.
 
 Dependencies (must be in same directory):
     board.py
+    gui.py
     pieces.py
 '''
 
@@ -42,15 +43,18 @@ class Game:
         # Delete this block when done testing and debuging.
         self.player_color, self.computer_color = 'white', 'black'
         self.white_turn, self.black_turn = self.player_turn, self.computer_turn
+        self.player_moves = self.board.white_moves
         return
 
         selected_color = input('Pick your color: white or black?\n>>> ')
         if selected_color.lower() == 'white':
             self.player_color, self.computer_color = 'white', 'black'
             self.white_turn, self.black_turn = self.player_turn, self.computer_turn
+            self.player_moves = self.board.white_moves
         elif selected_color.lower() == 'black':
             self.player_color, self.computer_color = 'black', 'white'
             self.black_turn, self.white_turn = self.player_turn, self.computer_turn
+            self.player_moves = self.board.black_moves
         else:
             print('Input white or black.')
 
@@ -61,10 +65,17 @@ class Game:
         '''
         if self.computer_color == 'white':
             computer_pieces = self.board.white_pieces
+            computer_moves = self.board.white_moves
         elif self.computer_color == 'black':
             computer_pieces = self.board.black_pieces
+            computer_moves = self.board.black_moves
         else:
             raise Exception
+
+        # Stalemate if computer has no possible moves to play.
+        if computer_moves = []:
+            print('Draw by stalemate. Game over.')
+            sys.exit()
 
         move_choices = []
         while move_choices == []:
@@ -89,6 +100,11 @@ class Game:
     def player_turn(self, old_square=None):
         '''Human turn.'''
         print(self.board)
+        # Check for stalemate.
+        if self.player_moves = []:
+            print('Draw by stalemate. Game over.')
+            sys.exit()
+
         print(f'\n{self.player_color.capitalize()} to move.')
 
         try:
@@ -152,8 +168,6 @@ class Game:
         checkmate = False
         while not checkmate:
             self.between_moves()
-            if self.board.squares[8].moves == [16, 24]:
-                print('True: self.board.squares[8].moves == [16, 24]')
             if checkmate:
                 print('Checkmate after game.black_turn()')
                 break
@@ -179,10 +193,10 @@ if __name__ == '__main__':
             traceback.print_exception(e_type, e_val, e_tb)
             # Add error to bug tracking log
             current_time = strftime('%Y-%m-%d %H:%M', gmtime())
-            with open('chess_bug_log.txt', 'a') as f:
-                f.write(f'{current_time}\n')
-                traceback.print_exception(e_type, e_val, e_tb, file=f)
-                f.write('\n\n')
+            with open('chess_bug_log.txt', 'a') as log:
+                log.write(f'{current_time}\n')
+                traceback.print_exception(e_type, e_val, e_tb, file=log)
+                log.write('\n\n')
 
             # save current board config
             # upon start, ask player if they want to load game

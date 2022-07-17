@@ -290,6 +290,6 @@ class Board:
                     legal_moves = all_legal_moves_in_check & set(piece.moves)
                     piece.moves = list(legal_moves)
                 elif len(checking_pieces) > 1:
-                    piece.moves = list(interpose_squares & set(piece.moves))
+                    piece.moves = []#list(interpose_squares & set(piece.moves))
                 else:
                     raise Exception('Length of checking_pieces should be >= 1')

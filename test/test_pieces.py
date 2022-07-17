@@ -1,6 +1,7 @@
 import unittest
 
 import board
+import chess_utilities
 import pieces
 
 
@@ -541,6 +542,9 @@ class TestPieceMovement(SetUpTearDown):
         rook_h = pieces.Rook('Rh', 'white', 7)
         opponent_rook = pieces.Rook('ra', 'black', 60)
 
+        chessboard.white_king = king
+        chessboard.last_move_piece = opponent_rook
+
         chessboard.white_pieces = [king, rook_a, rook_h]
         chessboard.black_pieces = [opponent_rook]
 
@@ -627,10 +631,12 @@ class TestPieceMovement(SetUpTearDown):
         This test is similar to one in pieces.py but this has a crucial
         addition at the end.
         '''
-        chessboard = board.Board()
         king = pieces.King('K', 'white', 4)
         opponent_rook = pieces.Rook('ra', 'black', 0)
         self.assertFalse(king.in_check)
+
+        chessboard.white_king = king
+        chessboard.last_move_piece = opponent_rook
 
         chessboard.white_pieces.append(king)
         chessboard.black_pieces.append(opponent_rook)
@@ -651,11 +657,13 @@ class TestPieceMovement(SetUpTearDown):
         '''The white king has no legal moves, so the white rook must
         capture the black piece which is checking the white king.
         '''
-        chessboard = board.Board()
         white_king = pieces.King('K', 'white', 4)
         white_rook_a = pieces.Rook('Ra', 'white', 8)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 15)
+
+        chessboard.white_king = white_king
+        chessboard.last_move_piece = black_rook_h
 
         chessboard.white_pieces = [white_king, white_rook_a]
         chessboard.black_pieces = [black_rook_a, black_rook_h]
@@ -681,10 +689,12 @@ class TestPieceMovement(SetUpTearDown):
     def test_escape_check_by_king_capturing_checking_piece(self):
         '''The white king must capture the checking piece to escape check.
         '''
-        chessboard = board.Board()
         white_king = pieces.King('K', 'white', 1)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 15)
+
+        chessboard.last_move_piece = black_rook_h
+        chessboard.white_king = white_king
 
         chessboard.white_pieces = [white_king]
         chessboard.black_pieces = [black_rook_a, black_rook_h]
@@ -704,10 +714,12 @@ class TestPieceMovement(SetUpTearDown):
         '''The white king must escape check by capturing a non-checking
         piece.
         '''
-        chessboard = board.Board()
         white_king = pieces.King('K', 'white', 7)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 15)
+
+        chessboard.white_king = white_king
+        chessboard.last_move_piece = black_rook_h
 
         chessboard.white_pieces = [white_king]
         chessboard.black_pieces = [black_rook_a, black_rook_h]
@@ -726,12 +738,14 @@ class TestPieceMovement(SetUpTearDown):
     def test_escape_check_by_interposition(self):
         '''Test check scenario where only legal move is interposition.
         The white rook must block check.'''
-        chessboard = board.Board()
         white_king = pieces.King('K', 'white', 15)
         white_rook = pieces.Rook('Ra', 'white', 25)
         black_rook_1 = pieces.Rook('r1', 'black', 0)
         black_rook_2 = pieces.Rook('r2', 'black', 8)
         black_rook_3 = pieces.Rook('r3', 'black', 16)
+
+        chessboard.last_move_piece = black_rook_3
+        chessboard.white_king = white_king
 
         chessboard.white_pieces = [white_king, white_rook]
         chessboard.black_pieces = [black_rook_1, black_rook_2, black_rook_3]
@@ -747,8 +761,6 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(white_king.moves, [])
 
         # This portion tests moves_must_escape_check_or_checkmate().
-        chessboard.white_king = white_king
-        chessboard.last_move_piece = black_rook_3
 
         # Test should pass because of rook interposition.
         chessboard.moves_must_escape_check_or_checkmate(chessboard)
@@ -757,11 +769,12 @@ class TestPieceMovement(SetUpTearDown):
 
     def test_king_must_move_to_escape_double_check(self):
         '''Test double check scenario where king must move to escape.'''
-        chessboard = board.Board()
         white_king = pieces.King('K', 'white', 1)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 7)
 
+        chessboard.last_move_piece = black_rook_h
+        chessboard.white_king = white_king
         chessboard.white_pieces = [white_king]
         chessboard.black_pieces = [black_rook_a, black_rook_h]
 
@@ -788,9 +801,53 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(set(white_king.moves), set([9, 10]))
 
 
+    def test_why_black_king_did_not_escape_check(self):
+        '''Recreate game scenario where black king did not escape check.
+
+        Results: Game did not call the move-limiting method after finding
+        that a king was in check (Board.moves_must_escape_check_or_checkmate).
+        '''
+        check_test_fen = 'rnbB2kr/1p1p3p/8/2pP2Q1/p3P3/P7/1PP2PPP/RN2KBNR b'
+        chessboard = chess_utilities.import_fen_to_board(check_test_fen)
+
+        for piece in chessboard.squares:
+            try:
+                if piece.color == 'white':
+                    chessboard.white_pieces.append(piece)
+                elif piece.color == 'black':
+                    chessboard.black_pieces.append(piece)
+            except AttributeError:
+                continue
+
+        for black_piece in chessboard.black_pieces:
+            if isinstance(black_piece, pieces.King):
+                chessboard.black_king = black_piece
+                black_king = chessboard.black_king
+                break
+
+        self.assertEqual(black_king.square, 62)
+        self.assertIsInstance(chessboard.squares[38], pieces.Queen)
+        self.assertEqual(chessboard.squares[38].color, 'white')
+        chessboard.last_move_piece = chessboard.squares[38]
+
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        black_king.check_if_in_check(chessboard.white_controlled_squares,
+                                     chessboard.black_controlled_squares)
+
+        self.assertTrue(black_king.in_check)
+        black_king.update_moves(chessboard)
+        #chessboard.moves_must_escape_check_or_checkmate(chessboard)
+
+        for piece in chessboard.black_pieces:
+            if isinstance(piece, pieces.King):
+                self.assertEqual(set(piece.moves), set([61, 53]))
+            else:
+                self.assertEqual(piece.moves, [])
+
+
     def test_en_passant_a_file(self):
         '''Test black can capture white in the A file.'''
-        chessboard = board.Board()
         white_pawn_a = pieces.Pawn('Pa', 'white', 8)
         black_pawn_b = pieces.Pawn('pb', 'black', 25)
         black_pawn_b.has_moved = True
@@ -815,7 +872,6 @@ class TestPieceMovement(SetUpTearDown):
 
     def test_en_passant_h_file(self):
         '''Test white can capture black in the H file.'''
-        chessboard = board.Board()
         white_pawn_g = pieces.Pawn('Pg', 'white', 38)
         black_pawn_h = pieces.Pawn('ph', 'black', 55)
         white_pawn_g.has_moved = True
@@ -841,7 +897,6 @@ class TestPieceMovement(SetUpTearDown):
 
     def test_double_en_passant_middle(self):
         '''Test black can capture white in the E file with either pawn.'''
-        chessboard = board.Board()
         white_pawn_e = pieces.Pawn('Pe', 'white', 12)
         black_pawn_d = pieces.Pawn('pd', 'black', 27)
         black_pawn_f = pieces.Pawn('pf', 'black', 29)
@@ -866,4 +921,4 @@ class TestPieceMovement(SetUpTearDown):
 
 
 # Must be removed or commented out to runs tests in command line.
-#unittest.main()
+unittest.main()

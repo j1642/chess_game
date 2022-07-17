@@ -160,10 +160,14 @@ class Pawn:
         '''
         last_move_from = board.last_move_from_to[0]
         last_move_to = board.last_move_from_to[1]
-        if not isinstance(board.last_move_piece, Pawn):
-            return
-        elif abs(last_move_from - last_move_to) != 16:
-            return
+        try:
+            if not isinstance(board.last_move_piece, Pawn):
+                return
+            elif abs(last_move_from - last_move_to) != 16:
+                return
+        except TypeError:
+            print('TypeError in Pawn.add_en_passant_moves(). Caused by ',
+                  'chessboard.last_move_from_to being (None, None).')
         # Last piece moved was a pawn and it advanced two squares.
         en_passant_squares = []
 
@@ -681,6 +685,8 @@ class King:
                 board.update_white_controlled_squares()
             board.squares[self.square] = self
 
+            board.moves_must_escape_check_or_checkmate(board)
+
         self.moves = all_moves
 
         self.add_castling_moves(board)
@@ -689,7 +695,6 @@ class King:
         # keep the king in check (implemented in the block above).
         self.remove_moves_to_attacked_squares(board.white_controlled_squares,
                                               board.black_controlled_squares)
-
 
 
     def add_castling_moves(self, board) -> bool:

@@ -13,6 +13,7 @@ from time import gmtime, strftime
 import traceback
 
 import board
+import chess_utilities
 import gui
 import pieces
 
@@ -44,6 +45,7 @@ class Game:
         self.player_color, self.computer_color = 'white', 'black'
         self.white_turn, self.black_turn = self.player_turn, self.computer_turn
         self.player_moves = self.board.white_moves
+        self.player_king = self.board.white_king
         return
 
         selected_color = input('Pick your color: white or black?\n>>> ')
@@ -51,10 +53,12 @@ class Game:
             self.player_color, self.computer_color = 'white', 'black'
             self.white_turn, self.black_turn = self.player_turn, self.computer_turn
             self.player_moves = self.board.white_moves
+            self.player_king = self.board.white_king
         elif selected_color.lower() == 'black':
             self.player_color, self.computer_color = 'black', 'white'
             self.black_turn, self.white_turn = self.player_turn, self.computer_turn
             self.player_moves = self.board.black_moves
+            self.player_king = self.board.black_king
         else:
             print('Input white or black.')
 
@@ -71,10 +75,15 @@ class Game:
             computer_moves = self.board.black_moves
         else:
             raise Exception
+        computer_king = [piece for piece in computer_pieces \
+                         if isinstance(piece, pieces.King)]
 
-        # Stalemate if computer has no possible moves to play.
-        if computer_moves = []:
-            print('Draw by stalemate. Game over.')
+        # Checkmate or stalemate.
+        if computer_moves == []:
+            if computer_king.in_check:
+                print('Player wins by checkmate. Game over.')
+            else:
+                print('Draw by stalemate. Game over.')
             sys.exit()
 
         move_choices = []
@@ -100,9 +109,15 @@ class Game:
     def player_turn(self, old_square=None):
         '''Human turn.'''
         print(self.board)
-        # Check for stalemate.
-        if self.player_moves = []:
-            print('Draw by stalemate. Game over.')
+        if self.player_color == 'white':
+            self.player_moves = self.board.white_moves
+        elif self.player_color == black:
+            self.player_moves = self.board.black_moves
+        if self.player_moves == []:
+            if self.player_king.in_check:
+                print('Computer wins by checkmate. Game over.')
+            else:
+                print('Draw by stalemate. Game over.')
             sys.exit()
 
         print(f'\n{self.player_color.capitalize()} to move.')
@@ -154,10 +169,8 @@ class Game:
         self.board.white_king.update_moves(self.board)
         self.board.black_king.update_moves(self.board)
 
-        # TODO: self.check_for_stalemate(self.board)
-        #
-        # check if a piece is pinned to the king before moving it:
-        #   - Update a dummy board and check if friendly king is in check.
+        # TODO: check if a piece is pinned to the king before moving it:
+        #   - by Updating dummy board and check if friendly king is in check.
 
 
         # TODO: choose terminal or GUI
@@ -196,8 +209,9 @@ if __name__ == '__main__':
             with open('chess_bug_log.txt', 'a') as log:
                 log.write(f'{current_time}\n')
                 traceback.print_exception(e_type, e_val, e_tb, file=log)
+                log.write('\n')
+                log.write(chess_utilities.export_board_to_fen(game.board))
                 log.write('\n\n')
-
             # save current board config
             # upon start, ask player if they want to load game
 

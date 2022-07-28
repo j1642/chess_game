@@ -127,20 +127,17 @@ class Pawn:
                     capture_directions = (-7, -9)
 
 
-            # Check for valid captures and if pawn is protecting any friendly
-            # pieces.
+            # Check for valid captures and protected squares.
             for direction in capture_directions:
-                examined_square = self.square + direction
+                diagonal_square = self.square + direction
+                self.protected_squares.append(diagonal_square)
                 try:
-                    square_contents = all_squares[examined_square].color
+                    square_contents = all_squares[diagonal_square].color
                     if square_contents != self.color:
                         # Capturing opponent's piece is a legal move.
-                        self.moves.append(examined_square)
-                    elif square_contents == self.color:
-                        self.protected_squares.append(examined_square)
+                        self.moves.append(diagonal_square)
                 except AttributeError:
-                    # examined_square is empty
-                    assert all_squares[examined_square] == ' '
+                    assert all_squares[diagonal_square] == ' '
                     continue
 
         # Promote pawn immediately once it reaches its final row.

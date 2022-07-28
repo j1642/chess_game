@@ -1,6 +1,7 @@
 import unittest
 
 import board
+import chess_utilities
 import pieces
 
 
@@ -46,8 +47,9 @@ class TestBoard(unittest.TestCase):
         chessboard = board.Board()
         chessboard.initialize_pieces()
         chessboard.update_white_controlled_squares()
-        squares = list(range(1, 32))
+        squares = list(range(1, 24))
         squares.remove(7)
+
         self.assertEqual(chessboard.white_controlled_squares, set(squares))
 
 
@@ -61,9 +63,9 @@ class TestBoard(unittest.TestCase):
         chessboard = board.Board()
         chessboard.initialize_pieces()
         chessboard.update_black_controlled_squares()
-        squares = list(range(32, 63))
+        squares = list(range(40, 63))
         squares.remove(56)
-        self.assertEqual(chessboard.black_controlled_squares, set(squares))
+        self.assertEqual(set(chessboard.black_controlled_squares), set(squares))
 
 
     def test_board_updates_upon_piece_movement(self):
@@ -174,7 +176,7 @@ class TestBoard(unittest.TestCase):
 
         interpose_squares = chessboard.find_interposition_squares([white_queen],
                                                              black_king)
-        # scalar getting set to 7
+
         self.assertEqual(set(interpose_squares), set(range(9, 63, 9)))
 
 
@@ -184,11 +186,14 @@ class TestBoard(unittest.TestCase):
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 7)
         black_queen = pieces.Queen('q', 'black', 60)
+        black_king = pieces.King('k', 'black', 63)
 
         chessboard.white_king = white_king
+        chessboard.black_king = black_king
         chessboard.last_move_piece = black_rook_a
         chessboard.white_pieces = [white_king]
-        chessboard.black_pieces = [black_rook_a, black_rook_h, black_queen]
+        chessboard.black_pieces = [black_rook_a, black_rook_h, black_queen,
+                                   black_king]
 
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
@@ -196,10 +201,92 @@ class TestBoard(unittest.TestCase):
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
 
-        checking_pieces, checked_king = chessboard.find_checking_pieces()
-        self.assertEqual(checking_pieces, chessboard.black_pieces)
-        self.assertEqual(checked_king, white_king)
+        checking_pieces = chessboard.find_checking_pieces()
+        self.assertEqual(checking_pieces, chessboard.black_pieces[:-1])
+        # Deprecated
+        # self.assertEqual(checked_king, white_king)
 
 
-# Must be removed or commented out to runs tests in command line.
+    def test_why_assertion_error_triggers_in_find_checking_pieces(self):
+        '''Causes:
+            1. chess_utilities.import_fen_to_board had bug where
+               Board.last_piece_move is always the wrong color, leading to
+               the incorrect king being selected as checked_king in
+               Board.find_checking_pieces.
+
+            2. In Board.find_checking_pieces, the checked_square is not in
+               opponent_controlled_squares because Board.squares[52] == ' '
+               instead of the checked king object.
+
+               The "invisible" king in King.update_moves is undetected by the
+               pawn which is checking the king.
+
+               This bug has only appeared when a pawn is checking the king.
+               It may have also been bugged when a knight is checking the king.
+
+            Fix: Call Board.find_checking_pieces immediately upon learning a
+               king is in check (in King.update_moves). Later on, add the
+               checked king's square to the moves list of each of the checking
+               pieces.
+        '''
+        position = 'rnbq1b1r/ppppkppp/5P2/6B1/5P2/6P1/PPP1P2P/RN1QKBNR b'
+        chessboard = chess_utilities.import_fen_to_board(position)
+
+        chessboard.last_move_from_to = (36, 45)
+        chessboard.update_white_controlled_squares()
+
+        self.assertTrue(52 in chessboard.white_controlled_squares)
+        self.assertEqual(chessboard.black_king, chessboard.squares[52])
+        chessboard.update_black_controlled_squares()
+
+        # Alternative plan: if piece type is pawn, do not update moves if
+        # opponent king is in check (b/c pawn does not attack unlimited
+        # distances).
+
+
+    def test_fix_assertion_error_in_find_checking_pieces_again(self):
+        '''AssertionError: checked_square not in opponent_controlled_squares.
+
+        Bugs:
+            1. Pawn forward moves treated as attacking moves which block
+            opponent king movement.
+
+            2. Pawn diagonal captures do not prevent king from moving into
+            check there.
+
+        Same assertion error as in the test above.
+        '''
+        position = 'r2q3r/p2pkP1p/b1p2P1b/1B3p1Q/1P3P2/4P3/PP5P/R1B1K1NR b'
+        position_from_log = 'r2q3r/p2pkP1p/b1p2P2/1B3p1Q/1P3b2/4P3/PP5P/R1B1K1NR w'
+
+        chessboard = chess_utilities.import_fen_to_board(position)
+        print('\n')
+        #print(chessboard)
+        print('\n')
+        #print(chess_utilities.import_fen_to_board(position_from_log))
+
+        chessboard.last_move_piece = chessboard.squares[45]
+        chessboard.last_move_from_to = (36, 45)
+
+        chessboard.squares[53].has_moved = True
+        chessboard.update_white_controlled_squares()
+
+        self.assertTrue(52 in chessboard.white_controlled_squares)
+        self.assertEqual(chessboard.black_king, chessboard.squares[52])
+
+        chessboard.update_black_controlled_squares()
+        self.assertTrue(chessboard.black_king.in_check)
+        chessboard.black_king.update_moves(chessboard)
+        #print(chessboard.black_king.moves)
+
+        for piece in chessboard.white_pieces:
+            if 61 in piece.moves:
+                print(piece.square)
+
+        self.assertEqual(set(chessboard.black_king.moves),
+                         set([61, 43, 44, 45]))
+
+
+
+# Must be removed or commented out to run tests in command line.
 #unittest.main()

@@ -678,6 +678,9 @@ class King:
         # on a1 would still be in check.
         if self.check_if_in_check(board.white_controlled_squares,
                                   board.black_controlled_squares):
+
+            checking_pieces = board.find_checking_pieces()
+
             board.squares[self.square] = ' '
             if self.color == 'white':
                 board.update_black_controlled_squares()
@@ -685,7 +688,14 @@ class King:
                 board.update_white_controlled_squares()
             board.squares[self.square] = self
 
-            board.moves_must_escape_check_or_checkmate(board)
+            # If a pawn is checking the king, the pawn cannot detect the
+            # "invisible" checked king when the pawn's moves are updated in the
+            # block above.
+            for checking_piece in checking_pieces:
+                checking_piece.moves.append(self.square)
+
+            board.moves_must_escape_check_or_checkmate(board, self,
+                                                       checking_pieces)
 
         self.moves = all_moves
 

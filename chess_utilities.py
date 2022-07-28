@@ -23,20 +23,6 @@ def print_fen_to_terminal(fen_string):
 
     return_ls = []
 
-    #for i in range(len(fen_ls[0][0])):
-     #   if fen_ls[0][i].isalpha():
-      #      return_ls.append('|'+ '|'.join(fen_ls[0][i]) + '|')
-       # elif fen_ls[0][i].isnumeric():
-        #    return_ls.append('| ' * int(fen_ls[0][i]) + '|')
-        #elif fen_ls[0][i].isalnum():
-         #   row_str = '|'
-          #  for char in fen_ls[0][i]:
-           #     if char.isalpha():
-            #        row_str += char + '|'
-             #   elif char.isnumeric():
-              #      row_str += ' |' * int(char)
-            #return_ls.append(row_str)
-
     for row in fen_ls[0]:
         row_out = ['|']
         for char in row:

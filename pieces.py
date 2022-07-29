@@ -163,8 +163,8 @@ class Pawn:
             elif abs(last_move_from - last_move_to) != 16:
                 return
         except TypeError:
-            print('TypeError in Pawn.add_en_passant_moves(). Caused by ',
-                  'chessboard.last_move_from_to being (None, None).')
+            print('TypeError in Pawn.add_en_passant_moves(). Possibly caused',
+                  'by chessboard.last_move_from_to being (None, None).')
         # Last piece moved was a pawn and it advanced two squares.
         en_passant_squares = []
 
@@ -492,10 +492,8 @@ class Rook:
                 # Do not check if new_square is in self.moves
                 if self.color == 'white' and new_square in (3, 5):
                     old_square, self.square = self.square, new_square
-                    self.has_moved = True
                 elif self.color == 'black' and new_square in (59, 61):
                     old_square, self.square = self.square, new_square
-                    self.has_moved = True
                 else:
             # Next two exceptions should only appear if castling code has a bug.
                     raise Exception('Rook', self.name, 'cannot castle to', new_square)
@@ -516,12 +514,13 @@ class Rook:
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
 
-            self.has_moved = True
-            old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
         else:
             print(f'Not a valid move for {self.name}.')
             return 'Not a valid move.'
+
+        self.has_moved = True
+        old_square, self.square = self.square, new_square
+        board.squares[old_square], board.squares[new_square] = ' ', self
 
 
 class Queen:
@@ -725,12 +724,12 @@ class King:
                 supposed_h7_rook_name = all_squares[7].name
                 supposed_h7_rook_has_moved = all_squares[7].has_moved
                 if supposed_h7_rook_name == 'Rh' \
-                    and supposed_h7_rook_has_moved is False \
-                    and all_squares[5] == all_squares[6] == ' ' \
-                    and 5 not in board.black_controlled_squares \
-                    and 6 not in board.black_controlled_squares:
-                        self.moves.append(6)
-                        white_castle_kingside = True
+                and supposed_h7_rook_has_moved is False \
+                and all_squares[5] == all_squares[6] == ' ' \
+                and 5 not in board.black_controlled_squares \
+                and 6 not in board.black_controlled_squares:
+                    self.moves.append(6)
+                    white_castle_kingside = True
             except AttributeError:
                 # No assert all_squares[7] == ' ' because there could be a
                 # piece present. Some pieces have a name without having the
@@ -742,12 +741,12 @@ class King:
                 supposed_a1_rook_name = all_squares[0].name
                 supposed_a1_rook_has_moved = all_squares[0].has_moved
                 if supposed_a1_rook_name == 'Ra' \
-                    and supposed_a1_rook_has_moved is False \
-                    and all_squares[1] == all_squares[2] == all_squares[3] == ' ' \
-                    and 2 not in board.black_controlled_squares \
-                    and 3 not in board.black_controlled_squares:
-                        self.moves.append(2)
-                        white_castle_queenside = True
+                and supposed_a1_rook_has_moved is False \
+                and all_squares[1] == all_squares[2] == all_squares[3] == ' ' \
+                and 2 not in board.black_controlled_squares \
+                and 3 not in board.black_controlled_squares:
+                    self.moves.append(2)
+                    white_castle_queenside = True
             except AttributeError:
                 pass
 
@@ -757,12 +756,12 @@ class King:
                 supposed_h8_rook_name = all_squares[63].name
                 supposed_h8_rook_has_moved = all_squares[63].has_moved
                 if supposed_h8_rook_name == 'rh' \
-                    and supposed_h8_rook_has_moved is False \
-                    and all_squares[61] == all_squares[62] == ' ' \
-                    and 61 not in board.white_controlled_squares \
-                    and 62 not in board.white_controlled_squares:
-                        self.moves.append(62)
-                        black_castle_kingside = True
+                and supposed_h8_rook_has_moved is False \
+                and all_squares[61] == all_squares[62] == ' ' \
+                and 61 not in board.white_controlled_squares \
+                and 62 not in board.white_controlled_squares:
+                    self.moves.append(62)
+                    black_castle_kingside = True
             except AttributeError:
                 pass
 
@@ -771,12 +770,12 @@ class King:
                 supposed_a8_rook_name = all_squares[56].name
                 supposed_a8_rook_has_moved = all_squares[56].has_moved
                 if supposed_a8_rook_name == 'ra' \
-                    and supposed_a8_rook_has_moved is False \
-                    and all_squares[57] == all_squares[58] == all_squares[59] == ' ' \
-                    and 58 not in board.white_controlled_squares \
-                    and 59 not in board.white_controlled_squares:
-                        self.moves.append(58)
-                        black_castle_queenside = True
+                and supposed_a8_rook_has_moved is False \
+                and all_squares[57] == all_squares[58] == all_squares[59] == ' ' \
+                and 58 not in board.white_controlled_squares \
+                and 59 not in board.white_controlled_squares:
+                    self.moves.append(58)
+                    black_castle_queenside = True
             except AttributeError:
                 pass
 
@@ -843,17 +842,17 @@ class King:
                 if self.color == 'white':
                     if new_square == 2:
                         white_rook_a = board.squares[0]
-                        white_rook_a.move_piece(3, castling=True)
+                        white_rook_a.move_piece(board, 3, castling=True)
                     elif new_square == 6:
                         white_rook_h = board.squares[7]
-                        white_rook_h.move_piece(5, castling=True)
+                        white_rook_h.move_piece(board, 5, castling=True)
                 elif self.color == 'black':
                     if new_square == 58:
                         black_rook_a = board.squares[56]
-                        black_rook_a.move_piece(59, castling=True)
+                        black_rook_a.move_piece(board, 59, castling=True)
                     elif new_square == 62:
                         black_rook_h = board.squares[63]
-                        black_rook_h.move_piece(61, castling=True)
+                        black_rook_h.move_piece(board, 61, castling=True)
 
             self.has_moved = True
             board.squares[old_square], board.squares[new_square] = ' ', self

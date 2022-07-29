@@ -1,3 +1,6 @@
+#from os import chdir, getcwd
+#if getcwd().split('/')[-1] != 'chess':
+#    chdir('..')
 import unittest
 
 import board
@@ -439,6 +442,40 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(set(king.moves), set((3, 11, 12, 13, 5)))
 
 
+    def test_king_castling_also_moves_rook(self):
+        white_king = pieces.King('K', 'white', 4)
+        white_rook_a = pieces.Rook('Ra', 'white', 0)
+        white_rook_h = pieces.Rook('Rh', 'white', 7)
+        chessboard.white_pieces = [white_king, white_rook_a, white_rook_h]
+
+        black_king = pieces.King('k', 'black', 60)
+        black_rook_a = pieces.Rook('ra', 'black', 56)
+        black_rook_h = pieces.Rook('rh', 'black', 63)
+        chessboard.black_pieces = [black_king, black_rook_a, black_rook_h]
+
+        for piece in chessboard.white_pieces + chessboard.black_pieces:
+            chessboard.squares[piece.square] = piece
+
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+
+        self.assertEqual(set(white_king.moves), set([3, 5, 11, 12, 13, 2, 6]))
+        self.assertEqual(set(black_king.moves),
+                         set([59, 61, 51, 52, 53, 58, 62]))
+
+        white_king.move_piece(chessboard, 2)
+        self.assertEqual(chessboard.squares[2], white_king)
+        self.assertEqual(chessboard.squares[3], white_rook_a)
+        self.assertTrue(white_king.has_moved)
+        self.assertTrue(white_rook_a.has_moved)
+
+        black_king.move_piece(chessboard, 62)
+        self.assertEqual(chessboard.squares[62], black_king)
+        self.assertEqual(chessboard.squares[61], black_rook_h)
+        self.assertTrue(black_king.has_moved)
+        self.assertTrue(black_rook_h.has_moved)
+
+
     def test_king_friendly_piece_collision(self):
         # Technically, we should set king.has_moved to true.
         # If not doing that affects the outcome of this test, then there
@@ -681,7 +718,12 @@ class TestPieceMovement(SetUpTearDown):
         # This portion tests moves_must_escape_check_or_checkmate().
         chessboard.white_king = white_king
         chessboard.last_move_piece = black_rook_a
-        chessboard.moves_must_escape_check_or_checkmate(chessboard)
+
+        checking_pieces = chessboard.find_checking_pieces()
+
+        chessboard.moves_must_escape_check_or_checkmate(chessboard,
+                                                        white_king,
+                                                        checking_pieces)
 
         self.assertEqual(white_rook_a.moves, [0])
 
@@ -761,14 +803,16 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(white_king.moves, [])
 
         # This portion tests moves_must_escape_check_or_checkmate().
-
+        checking_pieces = chessboard.find_checking_pieces()
         # Test should pass because of rook interposition.
-        chessboard.moves_must_escape_check_or_checkmate(chessboard)
+        chessboard.moves_must_escape_check_or_checkmate(chessboard,
+                                                        white_king,
+                                                        checking_pieces)
         self.assertEqual(white_rook.moves, [9])
 
 
     def test_king_must_move_to_escape_double_check(self):
-        '''Test double check scenario where king must move to escape.'''
+        '''Test double check scenario. King must move to escape.'''
         white_king = pieces.King('K', 'white', 1)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 7)
@@ -806,6 +850,7 @@ class TestPieceMovement(SetUpTearDown):
 
         Results: Game did not call the move-limiting method after finding
         that a king was in check (Board.moves_must_escape_check_or_checkmate).
+        The issue is resolved.
         '''
         check_test_fen = 'rnbB2kr/1p1p3p/8/2pP2Q1/p3P3/P7/1PP2PPP/RN2KBNR b'
         chessboard = chess_utilities.import_fen_to_board(check_test_fen)
@@ -920,5 +965,5 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(set(black_pawn_f.moves), set([21, 20]))
 
 
-# Must be removed or commented out to runs tests in command line.
-unittest.main()
+# Must be removed or commented out to run tests in command line.
+#unittest.main()

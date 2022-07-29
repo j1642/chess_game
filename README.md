@@ -1,7 +1,15 @@
 # chess_game
 This will have everything you need to play a game of chess.
 
-The current version can be played against a computer which moves randomly.
-However, checkmate is not implemented and check is incomplete.
+The current computer algorithm plays a random, legal move each turn.
 
-To play, run game.py with all three .py files in the same directory.
+The game display is both in the terminal and in a non-interactive Tkinter window. The game is played through terminal commands. A GUI is in progress.
+
+To play, run game.py with all four .py files in the same directory (board.py, chess_utilities.py, game.py, and pieces.py).
+
+Next steps:
+1. Reliably end the game (checkmate and stalemate).
+2. Option to play competely in a Tkinter GUI.
+3. Pieces pinned to king should not be able to move.
+4. Bug fixes for king in check.
+

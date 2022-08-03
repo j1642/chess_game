@@ -2,11 +2,14 @@
 Import and export board states to and from a truncated version of Forsyth-
 Edwards Notation (FEN).
 
-Primarily written to easily transfer complex board positions into
-board.Board.squares list for testing.
+Primarily written to convert board positions into board.Board objects for
+debugging.
 '''
 import copy
-#from time import gmtime, strftime
+import pickle
+import sqlite3
+from time import gmtime, strftime
+
 import board
 import pieces
 
@@ -148,7 +151,70 @@ def export_board_to_fen(chessboard):
     return fen
 
 
+def pickle_and_add_board_to_db(chessboard, e_type, e_val):
+    '''Serialize and store board.Board object in an sqlite database.
+
+    Called after an error has occurred so the board object can be debugged
+    easily.
+
+    Note: Traceback object can't be stored in the database. ("InterfaceError...
+    probably unsupported type." It would be nice to include but it is not
+    a major problem. Consider manually adding traceback as string after error.
+    '''
+    current_time = strftime('%Y-%m-%d %H:%M', gmtime())
+    pickled_board = pickle.dumps(chessboard)
+
+    con = sqlite3.connect('chessboards.sqlite')
+    cur = con.cursor()
+    fields = (current_time, e_type, e_val, pickled_board)
+    cur.execute('''INSERT INTO chessboards
+                ('date', 'error_type', 'error_value', 'board_obj')
+                VALUES (?, ?, ?, ?)''', fields)
+
+    con.commit()
+    con.close()
+
+
+def load_board_from_db(row_id=None):
+    '''As a default, pulls the most recent board.Board object and associated information from the
+    database. The row_id parameter can select a specific row from the table if
+    needed.
+
+    Should this istead return cur.fetchall() for more obvious bugs where
+    multiple rows are returned? Or is that an unrealistic outcome from this.
+    '''
+    con = sqlite3.connect('chessboards.sqlite')
+    cur = con.cursor()
+    # There could be a row with an id of 0. Need to avoid "if 0:" scenario.
+    if row_id is not None:
+        cur.execute('SELECT * FROM chessboards WHERE id = ?', (row_id,))
+        return cur.fetchone()
+    else:
+        cur.execute('''SELECT * FROM chessboards
+                          WHERE id = (SELECT MAX(id) FROM chessboards)''')
+        return cur.fetchone()
+
+    con.close()
+
+
+def create_board_database():
+    con = sqlite3.connect('chessboards.sqlite')
+    cur = con.cursor()
+    cur.execute('''CREATE TABLE IF NOT EXISTS chessboards
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     date text,
+                     error_type text,
+                     error_value text,
+                     board_obj)
+                    ''')
+
+    con.commit()
+    con.close()
+
+
+
 if __name__ == '__main__':
+    import sys
     import unittest
 
     class TestChessUtilities(unittest.TestCase):
@@ -177,6 +243,54 @@ if __name__ == '__main__':
             self.assertIsInstance(chessboard.squares[0], pieces.Rook)
             self.assertEqual(chessboard.squares[0].color, 'white')
 
+
+        def setUp(self):
+            try:
+                raise Exception('Raise Exception for tests.')
+            except Exception:
+                e_type, e_val, _ = sys.exc_info()
+                self.e_type = str(e_type).split("'")[1]
+                self.e_val = str(e_val)
+
+                self.assertEqual(self.e_type, 'Exception')
+                self.assertEqual(self.e_val, 'Raise Exception for tests.')
+
+
+        def test_pickle_and_add_board_to_db(self):
+            chessboard = board.Board()
+            chessboard.initialize_pieces()
+            chessboard.squares[8].update_moves(chessboard)
+            chessboard.squares[8].move_piece(chessboard, 24)
+
+            con = sqlite3.connect('chessboards.sqlite')
+            cur = con.cursor()
+            cur.execute('SELECT COUNT(id) FROM chessboards')
+            old_rows_in_db_count = cur.fetchall()[0][0]
+
+            pickle_and_add_board_to_db(chessboard, self.e_type,
+                                             self.e_val)
+
+            cur.execute('SELECT COUNT(id) FROM chessboards')
+            new_rows_in_db_count = cur.fetchall()[0][0]
+
+            self.assertEqual(new_rows_in_db_count, old_rows_in_db_count + 1)
+
+
+        def test_load_board_from_db(self):
+            _, _, error_type, error_value, chessboard = load_board_from_db()
+            chessboard = pickle.loads(chessboard)
+
+            self.assertEqual(error_type, 'Exception')
+            self.assertEqual(error_value, 'Raise Exception for tests.')
+            self.assertIsInstance(chessboard.squares[24], pieces.Pawn)
+
+            # Clean up database after tests.
+            con = sqlite3.connect('chessboards.sqlite')
+            cur = con.cursor()
+            cur.execute('''DELETE FROM chessboards
+                           WHERE id = (SELECT MAX(id) FROM chessboards)''')
+            con.commit()
+            con.close()
 
 
     unittest.main()

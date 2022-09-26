@@ -1,3 +1,11 @@
+'''
+All tests for board.py.
+'''
+
+#from os import chdir, getcwd
+#if getcwd().split('/')[-1] != 'chess':
+#    chdir('..')
+import pickle
 import unittest
 
 import board
@@ -65,7 +73,8 @@ class TestBoard(unittest.TestCase):
         chessboard.update_black_controlled_squares()
         squares = list(range(40, 63))
         squares.remove(56)
-        self.assertEqual(set(chessboard.black_controlled_squares), set(squares))
+        self.assertEqual(set(chessboard.black_controlled_squares),
+                         set(squares))
 
 
     def test_board_updates_upon_piece_movement(self):
@@ -145,6 +154,11 @@ class TestBoard(unittest.TestCase):
 
 
     def test_find_interposition_squares_same_rank(self):
+        '''Find squares (in the same row) where check can be blocked.
+
+        Note that the king is in double check here. Double check is already
+        accounted for in the code.
+        '''
         chessboard = board.Board()
         white_rook_a = pieces.Rook('Ra', 'white', 63)
         white_rook_h = pieces.Rook('Rh', 'white', 56)
@@ -158,6 +172,11 @@ class TestBoard(unittest.TestCase):
 
 
     def test_find_interposition_squares_same_file(self):
+        '''Find squares (in the same column) where check can be blocked.
+
+        Note that the king is in double check here. Double check is already
+        accounted for in the code.
+        '''
         chessboard = board.Board()
         white_rook_a = pieces.Rook('Ra', 'white', 0)
         white_rook_h = pieces.Rook('Rh', 'white', 24)
@@ -170,6 +189,11 @@ class TestBoard(unittest.TestCase):
 
 
     def test_find_interposition_squares_diagonal(self):
+        '''Find squares (in the same diagonal) where check can be blocked.
+
+        Note that the king is in double check here. Double check is already
+        accounted for in the code.
+        '''
         chessboard = board.Board()
         white_queen = pieces.Queen('Q', 'white', 0)
         black_king = pieces.King('k', 'black', 63)
@@ -181,6 +205,7 @@ class TestBoard(unittest.TestCase):
 
 
     def test_find_checking_pieces(self):
+        '''Pieces checking a king can be identified.'''
         chessboard = board.Board()
         white_king = pieces.King('K', 'white', 4)
         black_rook_a = pieces.Rook('ra', 'black', 0)
@@ -203,12 +228,10 @@ class TestBoard(unittest.TestCase):
 
         checking_pieces = chessboard.find_checking_pieces()
         self.assertEqual(checking_pieces, chessboard.black_pieces[:-1])
-        # Deprecated
-        # self.assertEqual(checked_king, white_king)
 
 
     def test_why_assertion_error_triggers_in_find_checking_pieces(self):
-        '''Causes:
+        '''Test Causes:
             1. chess_utilities.import_fen_to_board had bug where
                Board.last_piece_move is always the wrong color, leading to
                the incorrect king being selected as checked_king in
@@ -254,15 +277,19 @@ class TestBoard(unittest.TestCase):
             2. Pawn diagonal captures do not prevent king from moving into
             check there.
 
+        Fixed: Bug 1 above in pieces.Pawn. Bug 2 is not ocurring, perhaps due
+        to the entire code running without inturruption due to an error.
+
         Same assertion error as in the test above.
         '''
         position = 'r2q3r/p2pkP1p/b1p2P1b/1B3p1Q/1P3P2/4P3/PP5P/R1B1K1NR b'
-        position_from_log = 'r2q3r/p2pkP1p/b1p2P2/1B3p1Q/1P3b2/4P3/PP5P/R1B1K1NR w'
+        # position_from_log =
+        # 'r2q3r/p2pkP1p/b1p2P2/1B3p1Q/1P3b2/4P3/PP5P/R1B1K1NR w'
 
         chessboard = chess_utilities.import_fen_to_board(position)
-        print('\n')
+        #print('\n')
         #print(chessboard)
-        print('\n')
+        #print('\n')
         #print(chess_utilities.import_fen_to_board(position_from_log))
 
         chessboard.last_move_piece = chessboard.squares[45]
@@ -279,14 +306,50 @@ class TestBoard(unittest.TestCase):
         chessboard.black_king.update_moves(chessboard)
         #print(chessboard.black_king.moves)
 
-        for piece in chessboard.white_pieces:
-            if 61 in piece.moves:
-                print(piece.square)
 
         self.assertEqual(set(chessboard.black_king.moves),
                          set([61, 43, 44, 45]))
 
+        chessboard.white_king.update_moves(chessboard)
+        chessboard.black_king.update_moves(chessboard)
 
 
-# Must be removed or commented out to run tests in command line.
+    def test_fix_assertion_error_when_king_is_checked(self):
+        '''When error occurred, 'BLACK loses by checkmate' was printed to
+        standard output, indicating that len(checking_pieces) was more than 1.
+
+        Fixes: 1. (May not help but is a code improvement. There likely is a
+                   better way to accomplish the same change.)
+                  In board.moves_must_escape_check_or_checkmate(),
+                  escape call stack immediately with sys.exit() instead of
+                  finishing King.update_moves(), etc.
+        '''
+        db_row = chess_utilities.load_board_from_db(row_id=16)
+        row_id, _, error_type, error_value, pickled_chessboard = db_row
+
+        self.assertEqual(row_id, 16)
+
+        chessboard = pickle.loads(pickled_chessboard)
+        # Return black A pawn to where it was during white's turn.
+        chessboard.squares[24], chessboard.squares[32] = ' ', chessboard.squares[24]
+        print('\n')
+        print(chessboard)
+
+        self.assertEqual(chessboard.black_king.square, 52)
+        self.assertTrue(52 in chessboard.white_controlled_squares)
+        chessboard.last_move_piece = chessboard.squares[53]
+        chessboard.last_move_from_to = (39, 53)
+
+        chessboard.update_white_controlled_squares()
+        # Next two lines cause the two pieces in checking_pieces when
+        # black_king updates.
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
+
+        # checking pieces == [(Q, Sq: 53, white), (Pg, Sq: 44, white, has_moved: True)]
+        # Pawn of 44.moves == [52], where black king is. Checking piece is
+        # determined by piece.moves, not piece.protected_squares.
+        chessboard.black_king.update_moves(chessboard)
+
+# Must be removed or commented out to run tests in the terminal.
 #unittest.main()

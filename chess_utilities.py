@@ -198,6 +198,9 @@ def load_board_from_db(row_id=None):
 
 
 def create_board_database():
+    '''Creates a SQLite database in the current directory, if a file named
+    "chessboards.sqlite" does not already exist.
+    '''
     con = sqlite3.connect('chessboards.sqlite')
     cur = con.cursor()
     cur.execute('''CREATE TABLE IF NOT EXISTS chessboards
@@ -219,6 +222,7 @@ if __name__ == '__main__':
 
     class TestChessUtilities(unittest.TestCase):
         def test_export_board_to_fen(self):
+            '''Board object is exportable to Forsyth-Edwards Notation (FEN).'''
             chessboard = board.Board()
             chessboard.initialize_pieces()
             #original_board = copy.deepcopy(chessboard)
@@ -257,6 +261,7 @@ if __name__ == '__main__':
 
 
         def test_pickle_and_add_board_to_db(self):
+            '''Serialize the Board object and add it to the SQLite database.'''
             chessboard = board.Board()
             chessboard.initialize_pieces()
             chessboard.squares[8].update_moves(chessboard)
@@ -277,6 +282,9 @@ if __name__ == '__main__':
 
 
         def test_load_board_from_db(self):
+            '''Load the serialized Board object from the database to a useable
+            object.
+            '''
             _, _, error_type, error_value, chessboard = load_board_from_db()
             chessboard = pickle.loads(chessboard)
 

@@ -15,11 +15,8 @@ import pieces
 
 class TestBoard(unittest.TestCase):
     '''Test: Board methods, piece movement updates Board.squares, captures
-    update Board.squares, check escape scenarios, and en passant scenarios.
-
-    Consider moving check escaping and en passant to pieces.py tests,
-    or moving tests to a separate file because there are about 1000 lines
-    of tests now.
+    update Board.squares, finding interposition squares blocking check, and
+    identifying checking pieces.
     '''
 
     def test_repr_and_initialize_pieces(self):

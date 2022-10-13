@@ -1,5 +1,6 @@
 # chess_game
 ![image](assets/chessboard.png)
+
 This will have everything you need to play a game of chess.
 
 The current computer algorithm plays a random, legal move each turn.

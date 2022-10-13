@@ -1,4 +1,5 @@
 # chess_game
+![image](assets/chessboard.png)
 This will have everything you need to play a game of chess.
 
 The current computer algorithm plays a random, legal move each turn.
@@ -12,4 +13,3 @@ Next steps:
 2. Test checkmate and stalemate.
 3. Option to play competely in a Tkinter GUI.
 4. Test that pieces pinned to king should not be able to move.
-

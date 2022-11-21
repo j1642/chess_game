@@ -1,5 +1,5 @@
-The dark_square.png and light_square.png images are the author's original work. Hopefully such simple blocks of color are not subject to copyright.
+The dark_square.png and light_square.png images are the author's original work.
 
-The rest of the images are licensed under the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation (https://www.gnu.org/licenses/old-licenses/fdl-1.2.html) and the Creative Commons Attribution-Share Alike 3.0 Unported license (https://creativecommons.org/licenses/by-sa/3.0/legalcode). The Creative Commons license is summarized here: https://creativecommons.org/licenses/by-sa/3.0/deed.en.
+The rest of the images are used under the GNU General Public License, version 2 or later (https://www.gnu.org/licenses/old-licenses/gpl-2.0.html).
 
 The authors of the rest of the images are Cburnett (https://commons.wikimedia.org/wiki/User:Cburnett), Antonsusi (https://commons.wikimedia.org/wiki/User:Antonsusi), and Sarang (https://commons.wikimedia.org/wiki/User:Sarang). No changes were made to their images.

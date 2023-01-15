@@ -12,7 +12,7 @@ class GUI:
         self.image_references = [0] * 64
 
         self.root = tk.Tk()
-        self.root.geometry('375x380+440+400')
+        self.root.geometry('400x405+440+400')
         self.root.title('Chess')
 
         # TODO: Closing the window exits the program in the terminal.
@@ -67,6 +67,19 @@ class GUI:
 
     def update_gui(self, chessboard, selected_piece=None):
         '''Update the GUI based on current state of chessboard.squares.'''
+        for ind, char in enumerate('abcdefgh'):
+            label = tk.Label(self.root,
+                             text=char,
+                             font = ('Helvetica', 11)
+                             )
+            label.grid(column=ind + 1, row=8)
+
+        for ind, num in enumerate(range(8, 0, -1)):
+            label = tk.Label(self.root,
+                             text=str(num),
+                             font = ('Helvetica', 11)
+                             )
+            label.grid(column=0, row=ind)
 
         for ind, square in enumerate(chessboard.squares):
             IS_DARK_SQUARE = ind in self.dark_squares
@@ -137,13 +150,11 @@ class GUI:
             command=command
             )
 
-        button.grid(column=column, row=row)
+        # Column plus 1 makes space for row labels in column 0
+        # Row number calculations give a minimum result of 1, not 0.
+        button.grid(column=column + 1, row=row - 1)
 
 
 if __name__ == '__main__':
-    root = tk.Tk()
-    root.geometry('380x380+500+500')
-    root.title('Chess')
-
     gui = GUI()
     root.mainloop()

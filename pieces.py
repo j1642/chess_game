@@ -7,29 +7,26 @@ remove_moves_to_attacked_squares().
 The RanksFiles class acts as iterable storage which assists all of the
 update_moves() methods.
 
-Running this file runs approximately 30 unit tests.
+The squares of a chessboard are represented here as integers from 0 to 63.
+Square 0 is the a1 square, which is the bottom-left square from white's
+perspective, and the top-right square from black's perspective.
+
+The integer values of the squares increase within a rank (row).
+E.g. a1 is square 0, h1 is square 7.
+
+The values also increase with increasing rank number.
+E.g. a2 is square 8, while a1 is square 0.
+
+Algebraic notation of the squares.
+| a3 | b3 | c3 | ... | h3 |
+| a2 | b2 | c2 | ... | h2 |
+| a1 | b1 | c1 | ... | h1 |
+
+Equivalent integer representation.
+| 16 | 17 | 18 | ... | 23 |
+| 8  | 9  | 10 | ... | 15 |
+| 0  | 1  | 2  | ... | 7  |
 '''
-# The squares of a chessboard are represented here as integers from 0 to 63.
-# Square 0 is the a1 square, which is the bottom-left square from white's
-# perspective, and the top-right square from black's perspective.
-
-# The integer values of the squares increase within a rank (row).
-# E.g. a1 is square 0, h1 is square 7.
-
-# The values also increase with increasing rank number.
-# E.g. a2 is square 8, while a1 is square 0.
-
-
-# Algebraic notation of the squares.
-# | a3 | b3 | c3 | ... | h3 |
-# | a2 | b2 | c2 | ... | h2 |
-# | a1 | b1 | c1 | ... | h1 |
-
-# Equivalent integer representation.
-# | 16 | 17 | 18 | ... | 23 |
-# | 8  | 9  | 10 | ... | 15 |
-# | 0  | 1  | 2  | ... | 7  |
-
 
 class RanksFiles:
     '''Holds iterables for limiting piece movement.'''
@@ -173,6 +170,11 @@ class Pawn:
         elif last_move_to in ranks_files.h_file:
             en_passant_squares = [last_move_to - 1]
         else:
+            # TODO: Line below causes TypeError when last_move_to or
+            # last_move_from is '', which happens through improperly
+            # handling incorrect input.
+            # E.g. Trying to move a piece illegally (to square not in
+            # piece_x.moves.
             en_passant_squares = [last_move_to + 1, last_move_to - 1]
 
         for en_passant_square in en_passant_squares:

@@ -3,19 +3,35 @@ This module provides an alternative to playing chess in the terminal with
 ASCII graphics.
 '''
 import tkinter as tk
-
+# GUI could have all the logic to run the game with GUI display?
+# And all terminal-displa logic in game?
 
 class GUI:
-    def __init__(self): #chessboard):
+    def __init__(self):
         self.dark_squares, self.light_squares = self.find_dark_light_squares()
         self.image_references = [0] * 64
 
         self.root = tk.Tk()
-        self.root.geometry('380x380+480+400')
+        self.root.geometry('375x380+440+400')
         self.root.title('Chess')
 
-        #self.update_gui(chessboard)
-        #self.root.mainloop()
+        # TODO: Closing the window exits the program in the terminal.
+        # TODO: Remove exit button and delete button blocks.
+        # exit_button = tk.Button(self.root,
+        #                   text='Exit',
+        #                   command= lambda : self.root.destroy())
+        # exit_button.grid(column=9, row=1) #sticky='se')
+
+        # delete_button = tk.Button(self.root,
+        #                          text='Click to delete',
+        #                          command= lambda : delete_button.destroy())
+        # delete_button.grid(column=9, row=2) #sticky='se')
+
+        # for i in self.root:
+        print(self.root)
+
+        # self.update_gui(chessboard)
+        # self.root.mainloop()
 
 
     def find_dark_light_squares(self) -> tuple:
@@ -83,9 +99,12 @@ class GUI:
             self.find_command_make_button(chessboard,
                                           (image_path, column_num, row_num, ind, square),
                                           selected_piece)
+        # mainloop() blocks flow from moving on.
+        # self.root.mainloop()
 
-        #self.root.quit()
-        self.root.mainloop()
+        # update_idletasks() makes GUI unable to be clicked.
+        # Updates display based on terminal inputs.
+        self.root.update_idletasks()
 
 
     def find_command_make_button(self, chessboard,

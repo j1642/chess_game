@@ -1,8 +1,8 @@
-'''
-The six chess piece types each have their own class here. The common piece
-methods are update_moves() and move_piece(), with more specialized methods
-including promote_pawn(), check_if_in_check(), and
-remove_moves_to_attacked_squares().
+"""The six chess piece types each have their own class.
+
+The common piece methods are update_moves() and move_piece(), with more
+specialized methods including Pawn.promote_pawn(), King.check_if_in_check(),
+and King.remove_moves_to_attacked_squares().
 
 The RanksFiles class acts as iterable storage which assists all of the
 update_moves() methods.
@@ -26,15 +26,18 @@ Equivalent integer representation.
 | 16 | 17 | 18 | ... | 23 |
 | 8  | 9  | 10 | ... | 15 |
 | 0  | 1  | 2  | ... | 7  |
-'''
+"""
+
 
 class RanksFiles:
-    '''Holds iterables for limiting piece movement.'''
+    """Holds iterables for limiting piece movement."""
+
     # Certain movement directions are illegal depending on piece location.
     # E.g. a knight may not jump over the edge of the board.
 
-    # Sets have a constant time complexity for membership check, and are not
-    # time intensive to create, according to timeit.timeit().
+    # Sets have a constant time complexity for membership check, and are
+    # not time intensive to create, according to timeit.timeit().
+
     def __init__(self):
         self.a_file = {i * 8 for i in range(8)}
         self.b_file = {i * 8 + 1 for i in range(8)}
@@ -67,6 +70,19 @@ ranks_files = RanksFiles()
 
 
 class Pawn:
+    """The pawn piece.
+
+    Methods
+    -------
+        __init__()
+        __repr__()
+        update_moves()
+        add_en_passant_moves()
+        promote()
+        move_piece()
+
+    """
+
     def __init__(self, name: str, white_or_black: str, position: int):
         self.name = name
         self.color = white_or_black
@@ -76,14 +92,12 @@ class Pawn:
         self.giving_check = False
         self.protected_squares = []
 
-
     def __repr__(self):
         return f'''({self.name}, Sq: {self.square}, {self.color}, \
     has_moved: {self.has_moved})'''
 
-
     def update_moves(self, board):
-        '''Update pawn moves.'''
+        """Update pawn moves."""
         all_squares = board.squares
         self.moves = []
         self.protected_squares = []
@@ -123,7 +137,6 @@ class Pawn:
                 elif self.color == 'black':
                     capture_directions = (-7, -9)
 
-
             # Check for valid captures and protected squares.
             for direction in capture_directions:
                 diagonal_square = self.square + direction
@@ -144,14 +157,13 @@ class Pawn:
             elif self.color == 'black' and self.square in list(range(0, 8)):
                 self.promote_pawn(board)
 
-
     def add_en_passant_moves(self, board):
-        '''Check for any valid en passant captures.
+        """Check for any valid en passant captures.
 
-        If the last move was a pawn advancing two squares, check if there are
-        any pawns of the opposite color adjacent to the moved pawn's current
-        square.
-        '''
+        If the last move was a pawn advancing two squares, check if there
+        are any pawns of the opposite color adjacent to the moved pawn's
+        current square.
+        """
         last_move_from = board.last_move_from_to[0]
         last_move_to = board.last_move_from_to[1]
         try:
@@ -181,18 +193,20 @@ class Pawn:
             en_passant_piece = board.squares[en_passant_square]
             if isinstance(en_passant_piece, Pawn):
                 if board.last_move_piece.color != en_passant_piece.color:
-                    #assert self.last_move_piece.square == last_move_to
-                    en_passant_piece.moves.append((last_move_from + last_move_to) // 2)
-
+                    # assert self.last_move_piece.square == last_move_to
+                    en_passant_piece.moves.append(
+                        (last_move_from + last_move_to) // 2)
 
     def promote_pawn(self, board, debug_input='queen'):
-        '''Immediately promote pawn when it advances to its final row.'''
+        """Immediately promote pawn when it advances to its final row."""
         all_squares = board.squares
         if debug_input:
             new_piece_type = debug_input
         else:
             print('\nPawn promotion: which piece should your pawn become?')
-            new_piece_type = input('Input queen, rook, bishop, or knight.\n>>> ')
+            print('Input queen, rook, bishop, or knight.')
+            new_piece_type = input('>>> ')
+        # TODO: small fix so black piece nams are lowercase when promoted
         new_piece_type = new_piece_type.lower()
         if new_piece_type == 'queen':
             all_squares[self.square] = Queen('Q', self.color, self.square)
@@ -216,9 +230,8 @@ class Pawn:
             board.black_pieces.append(new_piece)
             board.black_pieces.remove(self)
 
-
     def move_piece(self, board, new_square: int):
-        '''Move pawn.'''
+        """Move the pawn."""
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -242,6 +255,17 @@ class Pawn:
 
 
 class Knight:
+    """The knight piece.
+
+    Methods
+    -------
+        __init__()
+        __repr__()
+        update_moves()
+        move_piece()
+
+    """
+
     def __init__(self, name: str, white_or_black: str, position: int):
         self.name = name
         self.color = white_or_black
@@ -250,17 +274,15 @@ class Knight:
         self.giving_check = False
         self.protected_squares = []
 
-
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color})'
 
-
     def update_moves(self, board):
-        '''Update knight moves.'''
+        """Update knight moves."""
         all_squares = board.squares
         self.protected_squares = []
         # Moves ordered by move direction clockwise
-        #all_moves = [self.square + delta for delta in [17, 10, -6, -15, -17,
+        # all_moves = [self.square + delta for delta in [17, 10, -6, -15, -17,
         #                                              -10, 6, 15]]
 
         # Moves ordered from downward (toward 1st rank) to upward knight moves
@@ -268,13 +290,13 @@ class Knight:
         all_moves = [self.square + delta for delta in knight_move_directions]
 
         if self.square in ranks_files.rank_1:
-            del all_moves[:4] # was index 3 (incorrect)
+            del all_moves[:4]  # was index 3 (incorrect)
         elif self.square in ranks_files.rank_2:
-            del all_moves[:2] # was 1, see comment above.
+            del all_moves[:2]  # was 1, see comment above.
         elif self.square in ranks_files.rank_7:
             del all_moves[6:]
         elif self.square in ranks_files.rank_8:
-            del all_moves[4:] # was 3, see comment above.
+            del all_moves[4:]  # was 3, see comment above.
 
         # Some of items may be missing due to the the previous del statements.
         if self.square in ranks_files.a_file:
@@ -317,9 +339,8 @@ class Knight:
 
         self.moves = all_moves
 
-
     def move_piece(self, board, new_square: int):
-        '''Move knight.'''
+        """Move the knight."""
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -339,10 +360,21 @@ class Knight:
         else:
             print(f'Not a valid move for {self.name}.')
             return 'Not a valid move.'
-            #print(f'Not a valid move for {self.__class__.__name__}.')
+            # print(f'Not a valid move for {self.__class__.__name__}.')
 
 
 class Bishop:
+    """The bishop piece.
+
+    Methods
+    -------
+        __init__()
+        __repr__()
+        update_moves()
+        move_piece()
+
+    """
+
     def __init__(self, name: str, white_or_black: str, position: int):
         self.name = name
         self.color = white_or_black
@@ -351,13 +383,11 @@ class Bishop:
         self.giving_check = False
         self.protected_squares = []
 
-
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color})'
 
-
     def update_moves(self, board):
-        '''Update bishop moves.'''
+        """Update bishop moves."""
         all_squares = board.squares
         all_moves = []
         self.protected_squares = []
@@ -383,9 +413,9 @@ class Bishop:
                         all_moves.append(new_square)
                         break
                     else:
-                        raise Exception('Square is not empty, however it is' \
-                                        'also not occupied by a friendly or ' \
-                                        'opponent piece.')
+                        raise Exception('Square is not empty, but it is'
+                                        'also not occupied by a friendly '
+                                        'or opponent piece.')
 
                     all_moves.append(new_square)
                     # Do not allow piece to move over the side of the board.
@@ -402,9 +432,8 @@ class Bishop:
 
         self.moves = all_moves
 
-
     def move_piece(self, board, new_square: int):
-        '''Move bishop.'''
+        """Move bishop."""
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -427,6 +456,17 @@ class Bishop:
 
 
 class Rook:
+    """The rook piece.
+
+    Methods
+    -------
+        __init__()
+        __repr__()
+        update_moves()
+        move_piece()
+
+    """
+
     def __init__(self, name: str, white_or_black: str, position: int):
         self.name = name
         self.color = white_or_black
@@ -436,14 +476,12 @@ class Rook:
         self.giving_check = False
         self.protected_squares = []
 
-
     def __repr__(self):
         return f'''({self.name}, Sq: {self.square}, {self.color}, \
     has_moved: {self.has_moved})'''
 
-
     def update_moves(self, board):
-        '''Update rook moves.'''
+        """Update rook moves."""
         all_squares = board.squares
         all_moves = []
         self.protected_squares = []
@@ -469,8 +507,8 @@ class Rook:
                         all_moves.append(new_square)
                         break
                     else:
-                        raise Exception('Square is not empty, however also' \
-                                        'is not occupied by a friendly or ' \
+                        raise Exception('Square is not empty, but also is'
+                                        ' not occupied by a friendly or '
                                         'opponent piece.')
 
                     all_moves.append(new_square)
@@ -486,9 +524,8 @@ class Rook:
 
         self.moves = sorted(all_moves)
 
-
     def move_piece(self, board, new_square: int, castling=False):
-        '''Move rook.'''
+        """Move rook."""
         if castling:
             if not self.has_moved:
                 # Do not check if new_square is in self.moves
@@ -496,11 +533,13 @@ class Rook:
                     old_square, self.square = self.square, new_square
                 elif self.color == 'black' and new_square in (59, 61):
                     old_square, self.square = self.square, new_square
+                # Next two exceptions should only appear if castling code
+                # has a bug.
                 else:
-            # Next two exceptions should only appear if castling code has a bug.
-                    raise Exception('Rook', self.name, 'cannot castle to', new_square)
+                    raise Exception('Rook', self.name, 'cannot castle to',
+                                    new_square)
             else:
-                raise Exception(f'Castling rook "{self.name}" is illegal. ' \
+                raise Exception(f'Castling rook "{self.name}" is illegal. '
                                 f'Rook "{self.name}" has already moved.')
 
         elif new_square in self.moves:
@@ -526,6 +565,17 @@ class Rook:
 
 
 class Queen:
+    """The queen piece.
+
+    Methods
+    -------
+        __init__()
+        __repr__()
+        update_moves()
+        move_piece()
+
+    """
+
     def __init__(self, name: str, white_or_black: str, position: int):
         self.name = name
         self.color = white_or_black
@@ -534,13 +584,12 @@ class Queen:
         self.giving_check = False
         self.protected_squares = []
 
-
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color})'
 
     # Could replace this with bishop.moves + rook.moves from the queen's square
     def update_moves(self, board):
-        '''Update queen moves.'''
+        """Update queen moves."""
         all_squares = board.squares
         all_moves = []
         self.protected_squares = []
@@ -567,14 +616,16 @@ class Queen:
                         all_moves.append(new_square)
                         break
                     else:
-                        raise Exception('Square is not empty, however also' \
-                                        'is not occupied by a friendly or ' \
+                        raise Exception('Square is not empty, but is '
+                                        'not occupied by a friendly or '
                                         'opponent piece.')
                     all_moves.append(new_square)
                     # Prevent crossing board sides.
-                    if new_square in ranks_files.a_file and direction in (-9, -1, 7):
+                    if new_square in ranks_files.a_file \
+                            and direction in (-9, -1, 7):
                         break
-                    elif new_square in ranks_files.h_file and direction in (9, 1, -7):
+                    elif new_square in ranks_files.h_file \
+                            and direction in (9, 1, -7):
                         break
                 # Prevent move calculations past top or bottom of board.
                 else:
@@ -582,9 +633,8 @@ class Queen:
 
         self.moves = all_moves
 
-
     def move_piece(self, board, new_square: int):
-        '''Move queen.'''
+        """Move queen."""
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -607,6 +657,20 @@ class Queen:
 
 
 class King:
+    """The king piece.
+
+    Methods
+    -------
+        __init__()
+        __repr__()
+        update_moves()
+        add_castling_moves()
+        remove_moves_to_attacked_squares()
+        check_if_in_check()
+        move_piece()
+
+    """
+
     def __init__(self, name: str, white_or_black: str, position: int):
         self.name = name
         self.color = white_or_black
@@ -616,14 +680,12 @@ class King:
         self.in_check = False
         self.protected_squares = []
 
-
     def __repr__(self):
         return f'''({self.name}, Sq: {self.square}, {self.color}, \
-    has_moved: {self.has_moved}, in check: {self.in_check})'''
-
+            has_moved: {self.has_moved}, in check: {self.in_check})'''
 
     def update_moves(self, board):
-        '''Update king moves, while considering castling and illegal moves.'''
+        """Update king moves, while considering castling and illegal moves."""
         all_squares = board.squares
         all_moves = []
         self.protected_squares = []
@@ -652,7 +714,7 @@ class King:
 
         for direction in directions:
             new_square = self.square + direction
-            if  -1 < new_square < 64:
+            if -1 < new_square < 64:
                 all_moves.append(self.square + direction)
 
         # Remove moves where a friendly piece is. Castling checks this within
@@ -666,7 +728,6 @@ class King:
             except AttributeError:
                 assert all_squares[square] == ' '
                 continue
-
 
         # Prevent checked king from moving into a square where the king
         # would still be in check, but where the new square was not
@@ -704,9 +765,8 @@ class King:
         self.remove_moves_to_attacked_squares(board.white_controlled_squares,
                                               board.black_controlled_squares)
 
-
     def add_castling_moves(self, board) -> bool:
-        '''Add any possible castling moves to self.moves.'''
+        """Add any possible castling moves to self.moves."""
         # Could be less repetitive. What is the straightforward fix?
         all_squares = board.squares
 
@@ -726,10 +786,10 @@ class King:
                 supposed_h7_rook_name = all_squares[7].name
                 supposed_h7_rook_has_moved = all_squares[7].has_moved
                 if supposed_h7_rook_name == 'Rh' \
-                and supposed_h7_rook_has_moved is False \
-                and all_squares[5] == all_squares[6] == ' ' \
-                and 5 not in board.black_controlled_squares \
-                and 6 not in board.black_controlled_squares:
+                        and supposed_h7_rook_has_moved is False \
+                        and all_squares[5] == all_squares[6] == ' ' \
+                        and 5 not in board.black_controlled_squares \
+                        and 6 not in board.black_controlled_squares:
                     self.moves.append(6)
                     white_castle_kingside = True
             except AttributeError:
@@ -743,10 +803,11 @@ class King:
                 supposed_a1_rook_name = all_squares[0].name
                 supposed_a1_rook_has_moved = all_squares[0].has_moved
                 if supposed_a1_rook_name == 'Ra' \
-                and supposed_a1_rook_has_moved is False \
-                and all_squares[1] == all_squares[2] == all_squares[3] == ' ' \
-                and 2 not in board.black_controlled_squares \
-                and 3 not in board.black_controlled_squares:
+                        and supposed_a1_rook_has_moved is False \
+                        and all_squares[1] == all_squares[2] \
+                        and all_squares[1] == all_squares[3] == ' ' \
+                        and 2 not in board.black_controlled_squares \
+                        and 3 not in board.black_controlled_squares:
                     self.moves.append(2)
                     white_castle_queenside = True
             except AttributeError:
@@ -758,10 +819,10 @@ class King:
                 supposed_h8_rook_name = all_squares[63].name
                 supposed_h8_rook_has_moved = all_squares[63].has_moved
                 if supposed_h8_rook_name == 'rh' \
-                and supposed_h8_rook_has_moved is False \
-                and all_squares[61] == all_squares[62] == ' ' \
-                and 61 not in board.white_controlled_squares \
-                and 62 not in board.white_controlled_squares:
+                        and supposed_h8_rook_has_moved is False \
+                        and all_squares[61] == all_squares[62] == ' ' \
+                        and 61 not in board.white_controlled_squares \
+                        and 62 not in board.white_controlled_squares:
                     self.moves.append(62)
                     black_castle_kingside = True
             except AttributeError:
@@ -772,10 +833,11 @@ class King:
                 supposed_a8_rook_name = all_squares[56].name
                 supposed_a8_rook_has_moved = all_squares[56].has_moved
                 if supposed_a8_rook_name == 'ra' \
-                and supposed_a8_rook_has_moved is False \
-                and all_squares[57] == all_squares[58] == all_squares[59] == ' ' \
-                and 58 not in board.white_controlled_squares \
-                and 59 not in board.white_controlled_squares:
+                        and supposed_a8_rook_has_moved is False \
+                        and all_squares[57] == all_squares[58] \
+                        and all_squares[57] == all_squares[59] == ' ' \
+                        and 58 not in board.white_controlled_squares \
+                        and 59 not in board.white_controlled_squares:
                     self.moves.append(58)
                     black_castle_queenside = True
             except AttributeError:
@@ -784,14 +846,13 @@ class King:
         return (white_castle_kingside, white_castle_queenside,
                 black_castle_kingside, black_castle_queenside)
 
-
     def remove_moves_to_attacked_squares(self, white_controlled_squares: set,
                                          black_controlled_squares: set):
-        '''Removes illegal moves into opponent controlled squares from
+        """Remove illegal moves into opponent controlled squares from
         King.moves.
 
         Helper method to King.update_moves().
-        '''
+        """
         # Remove illegal king moves into opponent controlled squares.
         # King cannot willingly move into check.
         if self.color == 'white':
@@ -804,10 +865,9 @@ class King:
             if move in opponent_controlled_squares:
                 self.moves.remove(move)
 
-
     def check_if_in_check(self, white_controlled_squares: set,
-                                black_controlled_squares: set):
-        '''Check if self (king) is in check.'''
+                          black_controlled_squares: set):
+        """Check if self (king) is in check."""
         if self.color == 'white':
             opponent_controlled_squares = black_controlled_squares
         elif self.color == 'black':
@@ -820,9 +880,8 @@ class King:
             self.in_check = False
             return False
 
-
     def move_piece(self, board, new_square: int):
-        '''Move the king.'''
+        """Move the king."""
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):

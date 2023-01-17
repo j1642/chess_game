@@ -1,9 +1,7 @@
-'''
-All tests for the pieces.py file.
-'''
+"""All tests for the pieces.py file."""
 
-#from os import chdir, getcwd
-#if getcwd().split('/')[-1] != 'chess':
+# from os import chdir, getcwd
+# if getcwd().split('/')[-1] != 'chess':
 #    chdir('..')
 import unittest
 
@@ -16,15 +14,17 @@ import pieces
 # It seems like there needs to be a global board variable for these tests.
 # Shouldn't a local all_squares variable work without giving a NameError?
 class SetUpTearDown(unittest.TestCase):
+    """Instantiate and remove variables for each test."""
 
     def setUp(self):
+        """Assign new variables for each test."""
         global chessboard
         chessboard = board.Board()
         global all_squares
         all_squares = chessboard.squares
 
-
     def tearDown(self):
+        """Remove variables used in previous test."""
         global chessboard
         del chessboard
         global all_squares
@@ -32,11 +32,12 @@ class SetUpTearDown(unittest.TestCase):
 
 
 class TestPieceMovement(SetUpTearDown):
+    """All pieces.py tests."""
 
     def test_board_updates_upon_piece_movement(self):
-        '''The board_obj.squares array must update whenever a piece moves.
+        """The board_obj.squares array must update whenever a piece moves.
         The relevant code is in the move_piece method of each piece class.
-        '''
+        """
         self.assertEqual(all_squares, [' '] * 64)
         pawn = pieces.Pawn('P', 'white', 0)
         knight = pieces.Knight('N', 'white', 1)
@@ -66,12 +67,11 @@ class TestPieceMovement(SetUpTearDown):
         for ind, piece in enumerate(white_pieces):
             self.assertEqual(all_squares[new_squares[ind]], piece)
 
-
     def test_pawn_movement(self):
-        '''Pawns can move forward by one or two squares on their first move.
+        """Pawns can move forward by one or two squares on their first move.
         Afterwards, pawns may only move forward by one squre. They may also
         capture diagonally at any point.
-        '''
+        """
         pawn = pieces.Pawn('Pa', 'white', 8)
         self.assertFalse(pawn.moves)
         self.assertFalse(pawn.has_moved)
@@ -90,9 +90,8 @@ class TestPieceMovement(SetUpTearDown):
         pawn.update_moves(chessboard)
         self.assertEqual(pawn.moves, [41, 33])
 
-
     def test_blocked_pawn_cannot_move_forward_by_one(self):
-        '''A completely blocked pawn cannot move forward at all.'''
+        """A completely blocked pawn cannot move forward at all."""
         pawn = pieces.Pawn('Pa', 'white', 16)
         all_squares[16] = pawn
 
@@ -108,11 +107,10 @@ class TestPieceMovement(SetUpTearDown):
         pawn.update_moves(chessboard)
         self.assertEqual(pawn.moves, [])
 
-
     def test_partially_blocked_pawn_cannot_move_forward_by_two(self):
-        '''A partially blocked pawn may only initially move forward by one
+        """A partially blocked pawn may only initially move forward by one
         square instead of one or two.
-        '''
+        """
         pawn = pieces.Pawn('Pa', 'white', 16)
         all_squares[16] = pawn
         self.assertFalse(pawn.has_moved)
@@ -123,11 +121,10 @@ class TestPieceMovement(SetUpTearDown):
         pawn.update_moves(chessboard)
         self.assertEqual(pawn.moves, [24])
 
-
     def test_white_pawn_captures(self):
-        '''White pawns can capture black pieces, can initally move forward by
+        """White pawns can capture black pieces, can initally move forward by
         two squares, when not blocked, and cannot capture friendly pieces.
-        '''
+        """
         pawn = pieces.Pawn('Pd', 'white', 11)
         friendly_piece = pieces.Bishop('Bc', 'white', 18)
         opponent_piece = pieces.Pawn('pe', 'black', 20)
@@ -142,11 +139,10 @@ class TestPieceMovement(SetUpTearDown):
         self.assertFalse(pawn.has_moved)
         self.assertEqual(set(pawn.moves), set([19, 27, 20]))
 
-
     def test_black_pawn_captures(self):
-        '''Black pawns can capture white pieces and cannot move forward two
+        """Black pawns can capture white pieces and cannot move forward two
         squares when blocked by a friendly piece.
-        '''
+        """
         pawn = pieces.Pawn('pa', 'black', 48)
         friendly_piece = pieces.Knight('nb', 'black', 32)
         opponent_piece = pieces.Queen('Q', 'white', 41)
@@ -160,11 +156,10 @@ class TestPieceMovement(SetUpTearDown):
         self.assertFalse(pawn.has_moved)
         self.assertEqual(set(pawn.moves), set([40, 41]))
 
-
     def test_pawn_cannot_capture_past_board_edge(self):
-        '''Opposing pawns in the A file and H file should not be able to
+        """Opposing pawns in the A file and H file should not be able to
         capture each other.
-        '''
+        """
         pawn = pieces.Pawn('Pa', 'white', 8)
         opponent_pawn_b = pieces.Pawn('pb', 'black', 17)
         opponent_pawn_h = pieces.Pawn('ph', 'black', 15)
@@ -188,11 +183,10 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(set(opponent_pawn_b.moves), set([9, 8]))
         self.assertEqual(opponent_pawn_h.moves, [7])
 
-
     def test_promote_pawn_walking_down_board(self):
-        '''Pawns which walk into their final rank are promoted.
+        """Pawns which walk into their final rank are promoted.
         This test assumes the promotion should be to a queen.
-        '''
+        """
         white_pawn = pieces.Pawn('Pa', 'white', 8)
         black_pawn = pieces.Pawn('ph', 'black', 63)
 
@@ -216,12 +210,11 @@ class TestPieceMovement(SetUpTearDown):
         self.assertTrue(isinstance(chessboard.squares[7], pieces.Queen))
         self.assertEqual(chessboard.black_pieces, [chessboard.squares[7]])
 
-
     def test_promote_pawn_after_capture(self):
-        '''Pawns which just captured a piece are promoted.
+        """Pawns which just captured a piece are promoted.
         Current promotion defaults to queen without prompting the user.
         This test assumes that queen promotion is always chosen.
-        '''
+        """
         white_pawn = pieces.Pawn('Pa', 'white', 48)
         black_pawn = pieces.Pawn('pa', 'black', 8)
         white_piece_to_capture = pieces.Knight('Nb', 'white', 1)
@@ -251,9 +244,8 @@ class TestPieceMovement(SetUpTearDown):
         self.assertTrue(isinstance(chessboard.squares[57], pieces.Queen))
         self.assertTrue(isinstance(chessboard.squares[1], pieces.Queen))
 
-
     def test_knight_movement(self):
-        '''Knight can move in 8 directions when not near the board edge.'''
+        """Knight can move in 8 directions when not near the board edge."""
         knight = pieces.Knight('Nb', 'white', 1)
         self.assertFalse(knight.moves)
 
@@ -268,9 +260,8 @@ class TestPieceMovement(SetUpTearDown):
         supposed_knight_moves = [(18 + i) for i in knight_move_directions]
         self.assertEqual(set(knight.moves), set((supposed_knight_moves)))
 
-
     def test_knight_friendly_piece_collision(self):
-        '''Knight cannot move to squares occupied by friendly pieces.'''
+        """Knight cannot move to squares occupied by friendly pieces."""
         knight = pieces.Knight('Ng', 'white', 6)
         pawn_e2 = pieces.Pawn('Pe', 'white', 12)
 
@@ -281,9 +272,8 @@ class TestPieceMovement(SetUpTearDown):
         # pawn_e2 blocks one possible move from the knight's square.
         self.assertEqual(set(knight.moves), set([21, 23]))
 
-
     def test_knight_capture_available(self):
-        '''Knight must be able to capture opposing pieces.'''
+        """Knight must be able to capture opposing pieces."""
         knight = pieces.Knight('Ng', 'white', 6)
         opponent_piece = pieces.Pawn('ph', 'black', 23)
 
@@ -293,9 +283,8 @@ class TestPieceMovement(SetUpTearDown):
         knight.update_moves(chessboard)
         self.assertEqual(set(knight.moves), set([21, 23, 12]))
 
-
     def test_bishop_movement(self):
-        '''Bishop can move in 4 directions diagonally.'''
+        """Bishop can move in 4 directions diagonally."""
         bishop = pieces.Bishop('Bc', 'white', 2)
         self.assertFalse(bishop.moves)
         bishop.update_moves(chessboard)
@@ -312,9 +301,8 @@ class TestPieceMovement(SetUpTearDown):
         bishop.update_moves(chessboard)
         self.assertEqual(set(bishop.moves), set(range(9, 64, 9)))
 
-
     def test_bishop_friendly_piece_collision(self):
-        '''Bishop cannot move into nor past friendly pieces.'''
+        """Bishop cannot move into nor past friendly pieces."""
         bishop = pieces.Bishop('Bf', 'white', 7)
         friendly_piece = pieces.Rook('Ra', 'white', 35)
 
@@ -324,9 +312,8 @@ class TestPieceMovement(SetUpTearDown):
         bishop.update_moves(chessboard)
         self.assertEqual(bishop.moves, [14, 21, 28])
 
-
     def test_bishop_opponent_piece_collision(self):
-        '''Bishop can move into but not past opposing pieces.'''
+        """Bishop can move into but not past opposing pieces."""
         bishop = pieces.Bishop('Bf', 'white', 7)
         opponent_piece = pieces.Pawn('pe', 'black', 35)
 
@@ -336,15 +323,15 @@ class TestPieceMovement(SetUpTearDown):
         bishop.update_moves(chessboard)
         self.assertEqual(bishop.moves, [14, 21, 28, 35])
 
-
     def test_rook_movement(self):
-        '''Rook can move in the 4 orthogonal directions.'''
+        """Rook can move in the 4 orthogonal directions."""
         rook = pieces.Rook('Ra', 'white', 9)
         self.assertFalse(rook.moves)
         self.assertFalse(rook.has_moved)
         rook.update_moves(chessboard)
-        supposed_rook_moves = [1, 8] + list(range(17, 58, 8)) \
-                            + list(range(10, 16))
+        supposed_rook_moves = ([1, 8]
+                               + list(range(17, 58, 8))
+                               + list(range(10, 16)))
         self.assertEqual(set(rook.moves), set(supposed_rook_moves))
         rook.move_piece(chessboard, 10)
         self.assertTrue(rook.has_moved)
@@ -361,11 +348,10 @@ class TestPieceMovement(SetUpTearDown):
         rook = pieces.Rook('Ra', 'white', 0)
         self.assertRaises(Exception, rook.move_piece, 100, castling=True)
 
-
     def test_rook_movement_edge_cases_from_corner(self):
-        '''Rook movement cannot wrap around the board.
+        """Rook movement cannot wrap around the board.
         E.g. moving from square h1 to a2.
-        '''
+        """
         rook = pieces.Rook('Ra', 'white', 0)
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves), set(list(range(8, 57, 8))
@@ -386,9 +372,8 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(set(rook.moves), set(list(range(7, 56, 8))
                                               + list(range(56, 63))))
 
-
     def test_rook_friendly_piece_collision(self):
-        '''Rook cannot move into or past friendly pieces.'''
+        """Rook cannot move into or past friendly pieces."""
         rook = pieces.Rook('ra', 'black', 9)
         friendly_knight = pieces.Knight('nb', 'black', 57)
         friendly_pawn_a = pieces.Pawn('pa', 'black', 8)
@@ -402,9 +387,8 @@ class TestPieceMovement(SetUpTearDown):
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves), set([1] + list(range(17, 50, 8))))
 
-
     def test_rook_opponent_piece_collision(self):
-        '''Rook can move into but not past opposing pieces.'''
+        """Rook can move into but not past opposing pieces."""
         rook = pieces.Rook('ra', 'black', 9)
         opponent_pawn = pieces.Pawn('Pc', 'white', 10)
         opponent_knight = pieces.Knight('Nb', 'white', 1)
@@ -416,29 +400,31 @@ class TestPieceMovement(SetUpTearDown):
         all_squares[8] = opponent_rook
 
         rook.update_moves(chessboard)
-        self.assertEqual(set(rook.moves), set([8, 1, 10,] \
-                                              + list(range(17, 58, 8))))
+        self.assertEqual(set(rook.moves),
+                         set([8, 1, 10] + list(range(17, 58, 8))))
 
     def test_queen_movement(self):
-        '''Queen must be able to move in all eight directions.'''
+        """Queen must be able to move in all eight directions."""
         queen = pieces.Queen('Q', 'white', 9)
         self.assertFalse(queen.moves)
         queen.update_moves(chessboard)
         # Possible rook moves plus possible bishop moves.
-        supposed_queen_moves = [1, 8] + list(range(17, 58, 8)) \
-                            + list(range(10, 16))
-        supposed_queen_moves += [0, 16, 2, 18, 27, 36, 45, 54, 63]
+        supposed_queen_moves = ([1, 8]
+                                + list(range(17, 58, 8))
+                                + list(range(10, 16))
+                                + [0, 16, 2, 18, 27, 36, 45, 54, 63])
         self.assertEqual(set(queen.moves), set(supposed_queen_moves))
 
         # This block should prevent queen edge cases on the corners/sides.
         queen = pieces.Queen('Q', 'white', 0)
         queen.update_moves(chessboard)
-        self.assertEqual(set(queen.moves), set(list(range(9, 64, 9)) \
-                                      + list(range(8, 57, 8)) \
-                                      + list(range(1, 8))))
+        self.assertEqual(set(queen.moves),
+                         set(list(range(9, 64, 9))
+                             + list(range(8, 57, 8))
+                             + list(range(1, 8))))
 
     def test_queen_friendly_piece_collision(self):
-        '''Queen cannot move into or past friendly pieces.'''
+        """Queen cannot move into or past friendly pieces."""
         queen = pieces.Queen('q', 'black', 56)
         friendly_knight = pieces.Knight('nb', 'black', 57)
         friendly_pawn = pieces.Pawn('pb', 'black', 49)
@@ -450,11 +436,10 @@ class TestPieceMovement(SetUpTearDown):
         queen.update_moves(chessboard)
         self.assertEqual(set(queen.moves), set(range(0, 49, 8)))
 
-
     def test_queen_opponent_piece_collision(self):
-        '''Queen cannot move through opposing pieces but can move into their
+        """Queen cannot move through opposing pieces but can move into their
         square.
-        '''
+        """
         queen = pieces.Queen('q', 'black', 0)
         opponent_bishop = pieces.Bishop('Bc', 'white', 2)
         opponent_pawn = pieces.Pawn('Pb', 'white', 9)
@@ -464,14 +449,13 @@ class TestPieceMovement(SetUpTearDown):
         all_squares[9] = opponent_pawn
 
         queen.update_moves(chessboard)
-        self.assertEqual(set(queen.moves), set([1, 2, 9] \
-                                               + list(range(8, 57, 8))))
-
+        self.assertEqual(set(queen.moves),
+                         set([1, 2, 9] + list(range(8, 57, 8))))
 
     def test_king_movement(self):
-        '''Test simple parts of King.update_moves() and King.move_piece.
+        """Test simple parts of King.update_moves() and King.move_piece.
         This does not test castling.
-        '''
+        """
         king = pieces.King('k', 'black', 63)
         self.assertFalse(king.has_moved)
         self.assertFalse(king.moves)
@@ -486,9 +470,8 @@ class TestPieceMovement(SetUpTearDown):
         king.update_moves(chessboard)
         self.assertEqual(set(king.moves), set((3, 11, 12, 13, 5)))
 
-
     def test_king_castling_also_moves_rook(self):
-        '''King castling must also move the appropriate rook.'''
+        """King castling must also move the appropriate rook."""
         white_king = pieces.King('K', 'white', 4)
         white_rook_a = pieces.Rook('Ra', 'white', 0)
         white_rook_h = pieces.Rook('Rh', 'white', 7)
@@ -521,16 +504,15 @@ class TestPieceMovement(SetUpTearDown):
         self.assertTrue(black_king.has_moved)
         self.assertTrue(black_rook_h.has_moved)
 
-
     def test_king_friendly_piece_collision(self):
-        '''King cannot move into friendly pieces.'''
+        """King cannot move into friendly pieces."""
         # Technically, we should set king.has_moved to true.
         # If not doing that affects the outcome of this test, then there
         # is a bug.
         king = pieces.King('K', 'white', 12)
         friendly_pawn_e = pieces.Pawn('Pe', 'white', 28)
         friendly_pawn_d = pieces.Pawn('Pd', 'white', 11)
-        friendly_queen = pieces.Queen ('Q', 'white', 3)
+        friendly_queen = pieces.Queen('Q', 'white', 3)
         friendly_pawn_f = pieces.Pawn('Pf', 'white', 13)
         friendly_bishop = pieces.Bishop('Bf', 'white', 5)
 
@@ -544,9 +526,8 @@ class TestPieceMovement(SetUpTearDown):
         king.update_moves(chessboard)
         self.assertEqual(set(king.moves), set([4, 19, 20, 21]))
 
-
     def test_remove_moves_to_attacked_squares(self):
-        '''Remove king moves into attacked squares.'''
+        """Remove king moves into attacked squares."""
         white_king = pieces.King('K', 'white', 4)
         black_king = pieces.King('k', 'black', 20)
         black_rook_a = pieces.Rook('ra', 'black', 59)
@@ -574,10 +555,8 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(white_king.moves, [])
         self.assertEqual(set(black_king.moves), set([19, 21, 28, 27, 29]))
 
-
     def test_check_if_in_check(self):
-        '''King.check_if_in_check() method changes king_obj.in_check to True.
-        '''
+        """King.check_if_in_check() method changes King.in_check to True."""
         king = pieces.King('K', 'white', 4)
         opponent_rook = pieces.Rook('ra', 'black', 0)
         self.assertFalse(king.in_check)
@@ -593,12 +572,11 @@ class TestPieceMovement(SetUpTearDown):
         king.check_if_in_check(set(king.moves), set(opponent_rook.moves))
         self.assertTrue(king.in_check)
 
-
     def test_castling_without_checks_present(self):
-        '''King cannot castle out of, through, or into check.
+        """King cannot castle out of, through, or into check.
         This is a low-level test that checks the functions themselves, not
         how the functions are called in other files.
-        '''
+        """
         white_king = pieces.King('K', 'white', 4)
         white_rook_a = pieces.Rook('Ra', 'white', 0)
         white_rook_h = pieces.Rook('Rh', 'white', 7)
@@ -620,9 +598,8 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(set(black_king.moves),
                          set([58, 59, 61, 62, 51, 52, 53]))
 
-
     def test_castling_cannot_castle_out_of_check(self):
-        '''Confirm that a king cannot castle to escape check.'''
+        """Confirm that a king cannot castle to escape check."""
         king = pieces.King('K', 'white', 4)
         rook_a = pieces.Rook('Ra', 'white', 0)
         rook_h = pieces.Rook('Rh', 'white', 7)
@@ -646,7 +623,7 @@ class TestPieceMovement(SetUpTearDown):
         self.assertEqual(set(king.moves), set([2, 6, 3, 5, 11, 12, 13]))
 
         supposed_opponent_rook_moves = [56, 57, 58, 59, 61, 62, 63] \
-                                        + list(range(4, 53, 8))
+            + list(range(4, 53, 8))
 
         self.assertEqual(set(opponent_rook.moves),
                          set(supposed_opponent_rook_moves))
@@ -658,9 +635,8 @@ class TestPieceMovement(SetUpTearDown):
         self.assertTrue(king.in_check)
         self.assertEqual(set(king.moves), set([3, 5, 11, 13]))
 
-
     def test_castling_cannot_castle_through_check(self):
-        '''Confirm a king cannot castle through an attacked square.'''
+        """Confirm a king cannot castle through an attacked square."""
         king = pieces.King('K', 'white', 4)
         rook_a = pieces.Rook('Ra', 'white', 0)
         rook_h = pieces.Rook('Rh', 'white', 7)
@@ -682,9 +658,8 @@ class TestPieceMovement(SetUpTearDown):
 
         self.assertEqual(king.moves, [12])
 
-
     def test_castling_cannot_castle_into_check(self):
-        '''Confirm that the king cannot castle into an attacked square.'''
+        """Confirm that the king cannot castle into an attacked square."""
         king = pieces.King('K', 'white', 4)
         rook_a = pieces.Rook('Ra', 'white', 0)
         rook_h = pieces.Rook('Rh', 'white', 7)
@@ -705,10 +680,8 @@ class TestPieceMovement(SetUpTearDown):
         king.update_moves(chessboard)
         self.assertEqual(set(king.moves), set([3, 5, 11, 12, 13]))
 
-
-
     def test_checked_king_moves_must_all_escape_check(self):
-        '''Ensure that a checked king on e1 cannot move to f1 when an
+        """Ensure that a checked king on e1 cannot move to f1 when an
         opponent's rook is checking the king from a1.
 
         This functionality requires the full Board class, not the limited
@@ -716,7 +689,7 @@ class TestPieceMovement(SetUpTearDown):
 
         This test is similar to one in pieces.py but this has a crucial
         addition at the end.
-        '''
+        """
         king = pieces.King('K', 'white', 4)
         opponent_rook = pieces.Rook('ra', 'black', 0)
         self.assertFalse(king.in_check)
@@ -736,13 +709,12 @@ class TestPieceMovement(SetUpTearDown):
         king.update_moves(chessboard)
 
         self.assertTrue(king.in_check)
-        self.assertEqual(set(king.moves), set([11, 12 ,13]))
-
+        self.assertEqual(set(king.moves), set([11, 12, 13]))
 
     def test_escape_check_by_rook_captures_rook(self):
-        '''The white king has no legal moves, so the white rook must
+        """The white king has no legal moves, so the white rook must
         capture the black piece which is checking the white king.
-        '''
+        """
         white_king = pieces.King('K', 'white', 4)
         white_rook_a = pieces.Rook('Ra', 'white', 8)
         black_rook_a = pieces.Rook('ra', 'black', 0)
@@ -776,10 +748,8 @@ class TestPieceMovement(SetUpTearDown):
 
         self.assertEqual(white_rook_a.moves, [0])
 
-
     def test_escape_check_by_king_capturing_checking_piece(self):
-        '''The white king must capture the checking piece to escape check.
-        '''
+        """The white king must capture the checking piece to escape check."""
         white_king = pieces.King('K', 'white', 1)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 15)
@@ -800,11 +770,10 @@ class TestPieceMovement(SetUpTearDown):
         self.assertTrue(white_king.in_check)
         self.assertEqual(white_king.moves, [0])
 
-
     def test_king_must_escape_check_by_capturing_nonchecking_piece(self):
-        '''The white king must escape check by capturing a non-checking
+        """The white king must escape check by capturing a non-checking
         piece.
-        '''
+        """
         white_king = pieces.King('K', 'white', 7)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 15)
@@ -825,10 +794,11 @@ class TestPieceMovement(SetUpTearDown):
         self.assertTrue(white_king.in_check)
         self.assertEqual(white_king.moves, [15])
 
-
     def test_escape_check_by_interposition(self):
-        '''Test check scenario where only legal move is interposition.
-        The white rook must block check.'''
+        """Test check scenario where only legal move is interposition.
+
+        The white rook must block check.
+        """
         white_king = pieces.King('K', 'white', 15)
         white_rook = pieces.Rook('Ra', 'white', 25)
         black_rook_1 = pieces.Rook('r1', 'black', 0)
@@ -859,9 +829,8 @@ class TestPieceMovement(SetUpTearDown):
                                                         checking_pieces)
         self.assertEqual(white_rook.moves, [9])
 
-
     def test_king_must_move_to_escape_double_check(self):
-        '''Test double check scenario. King must move to escape.'''
+        """Test double check scenario. King must move to escape."""
         white_king = pieces.King('K', 'white', 1)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 7)
@@ -885,7 +854,8 @@ class TestPieceMovement(SetUpTearDown):
                              + [0, 7]))
         # black_rook_a temporarily has extra moves b/c white king is in
         # check. This is not a bug but it is important to remember.
-        #self.assertEqual(set(black_rook_a.moves),
+
+        # self.assertEqual(set(black_rook_a.moves),
         #                 set([1] + list(range(8, 57, 8))))
         self.assertEqual(set(black_rook_h.moves),
                          set(list(range(1, 7)) + list(range(15, 64, 8))))
@@ -893,14 +863,13 @@ class TestPieceMovement(SetUpTearDown):
         # capturable. Fixed by protected pieces.
         self.assertEqual(set(white_king.moves), set([9, 10]))
 
-
     def test_why_black_king_did_not_escape_check(self):
-        '''Recreate game scenario where black king did not escape check.
+        """Recreate game scenario where black king did not escape check.
 
         Results: Game did not call the move-limiting method after finding
         that a king was in check (Board.moves_must_escape_check_or_checkmate).
         The issue is resolved.
-        '''
+        """
         check_test_fen = 'rnbB2kr/1p1p3p/8/2pP2Q1/p3P3/P7/1PP2PPP/RN2KBNR b'
         chessboard = chess_utilities.import_fen_to_board(check_test_fen)
 
@@ -926,8 +895,8 @@ class TestPieceMovement(SetUpTearDown):
 
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
-        #black_king.check_if_in_check(chessboard.white_controlled_squares,
-         #                            chessboard.black_controlled_squares)
+        # black_king.check_if_in_check(chessboard.white_controlled_squares,
+        #                            chessboard.black_controlled_squares)
 
         self.assertTrue(black_king.in_check)
 
@@ -937,11 +906,11 @@ class TestPieceMovement(SetUpTearDown):
             else:
                 self.assertEqual(piece.moves, [])
 
-        # TODO: why is checking pieces == [(Q, Sq: 38, white), (Q, Sq: 38, white)]
-
+        # TODO: why is checking pieces == [(Q, Sq: 38, white),
+        #                                  (Q, Sq: 38, white)]
 
     def test_en_passant_a_file(self):
-        '''Test black can capture white in the A file.'''
+        """Test black can capture white in the A file."""
         white_pawn_a = pieces.Pawn('Pa', 'white', 8)
         black_pawn_b = pieces.Pawn('pb', 'black', 25)
         black_pawn_b.has_moved = True
@@ -963,9 +932,8 @@ class TestPieceMovement(SetUpTearDown):
         chessboard.update_black_controlled_squares()
         self.assertEqual(set(black_pawn_b.moves), set([17, 16]))
 
-
     def test_en_passant_h_file(self):
-        '''Test white can capture black in the H file.'''
+        """Test white can capture black in the H file."""
         white_pawn_g = pieces.Pawn('Pg', 'white', 38)
         black_pawn_h = pieces.Pawn('ph', 'black', 55)
         white_pawn_g.has_moved = True
@@ -988,9 +956,8 @@ class TestPieceMovement(SetUpTearDown):
         chessboard.update_white_controlled_squares()
         self.assertEqual(set(white_pawn_g.moves), set([46, 47]))
 
-
     def test_double_en_passant_middle(self):
-        '''Test black can capture white in the E file with either pawn.'''
+        """Test black can capture white in the E file with either pawn."""
         white_pawn_e = pieces.Pawn('Pe', 'white', 12)
         black_pawn_d = pieces.Pawn('pd', 'black', 27)
         black_pawn_f = pieces.Pawn('pf', 'black', 29)
@@ -1015,4 +982,4 @@ class TestPieceMovement(SetUpTearDown):
 
 
 # Must be removed or commented out to run tests in command line.
-#unittest.main()
+# unittest.main()

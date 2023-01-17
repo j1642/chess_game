@@ -110,7 +110,7 @@ class TestPieceMovement(SetUpTearDown):
 
 
     def test_partially_blocked_pawn_cannot_move_forward_by_two(self):
-        '''A Partially blocked pawn may only initially move forward by one
+        '''A partially blocked pawn may only initially move forward by one
         square instead of one or two.
         '''
         pawn = pieces.Pawn('Pa', 'white', 16)

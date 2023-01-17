@@ -3,6 +3,7 @@ Run this file to play chess.
 
 Dependencies (must be in same directory):
     board.py
+    chess_utilities.py
     gui.py
     pieces.py
 '''
@@ -41,7 +42,7 @@ class Game:
 
     def select_color(self):
         '''Player chooses their piece color.'''
-        # Delete this block when done testing and debuging.
+        # TODO: Delete this block when done testing and debuging.
         self.player_color, self.computer_color = 'white', 'black'
         self.white_turn, self.black_turn = self.player_turn, self.computer_turn
         self.player_moves = self.board.white_moves
@@ -78,7 +79,7 @@ class Game:
         computer_king = [piece for piece in computer_pieces \
                          if isinstance(piece, pieces.King)]
 
-        # Checkmate or stalemate.
+        # TODO: Completed stalemate, incomplete checkmate.
         if computer_moves == []:
             if computer_king.in_check:
                 print('Player wins by checkmate. Game over.')
@@ -111,8 +112,9 @@ class Game:
         print(self.board)
         if self.player_color == 'white':
             self.player_moves = self.board.white_moves
-        elif self.player_color == black:
+        elif self.player_color == 'black':
             self.player_moves = self.board.black_moves
+        # TODO: Completed stalemate, incomplete checkmate.
         if self.player_moves == []:
             if self.player_king.in_check:
                 print('Computer wins by checkmate. Game over.')
@@ -165,9 +167,11 @@ class Game:
         self.board.update_black_controlled_squares()
 
         # Update king moves again now that all other piece moves are known.
-        # Needed to determine if in check and to remove illegal king moves.
         self.board.white_king.update_moves(self.board)
-        self.board.black_king.update_moves(self.board)
+        # Black king should not have to update again b/c
+        # white_controlled_squares were known prior to the black king updating
+        # it's moves.
+        # self.board.black_king.update_moves(self.board)
 
         # TODO: check if a piece is pinned to the king before moving it:
         #   - by Updating dummy board and check if friendly king is in check.
@@ -177,19 +181,14 @@ class Game:
 
 
     def play(self):
-        '''Play chess.'''
-        checkmate = False
-        while not checkmate:
+        '''Play chess. While loop ends by sys.exit() in Game.player_turn() or
+        Game.computer_turn().
+        '''
+        while True:
             self.between_moves()
-            if checkmate:
-                print('Checkmate after game.black_turn()')
-                break
             self.display.update_gui(self.board)
             self.white_turn()
             self.between_moves()
-            if checkmate:
-                print('Checkmate after game.white_turn()')
-                break
             self.display.update_gui(self.board)
             self.black_turn()
 
@@ -201,9 +200,16 @@ if __name__ == '__main__':
         game = Game()
         try:
             game.play()
+        # Catch all exceptions. The except statement is intentionally vague.
         except Exception:
+            # Next two lines from Stack Overflow.
             e_type, e_val, e_tb = sys.exc_info()
             traceback.print_exception(e_type, e_val, e_tb)
+            # Store chessboard in database for debugging.
+            db_e_type = str(e_type).split("'")[1]
+            db_e_val = str(e_val)
+            chess_utilities.pickle_and_add_board_to_db(game.board, db_e_type,
+                                                       db_e_val)
             # Add error to bug tracking log
             current_time = strftime('%Y-%m-%d %H:%M', gmtime())
             with open('chess_bug_log.txt', 'a') as log:
@@ -212,7 +218,6 @@ if __name__ == '__main__':
                 log.write('\n')
                 log.write(chess_utilities.export_board_to_fen(game.board))
                 log.write('\n\n')
-            # save current board config
-            # upon start, ask player if they want to load game
+            # Next steps: upon start, ask player if they want to load game
 
     main()

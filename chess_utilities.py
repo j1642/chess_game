@@ -1,10 +1,9 @@
-'''
-Import and export board states to and from a truncated version of Forsyth-
-Edwards Notation (FEN).
+"""Import and export board states to and from a truncated version of
+Forsyth-Edwards Notation (FEN).
 
 Primarily written to convert board positions into board.Board objects for
 debugging.
-'''
+"""
 import copy
 import pickle
 import sqlite3
@@ -13,12 +12,13 @@ from time import gmtime, strftime
 import board
 import pieces
 
+
 # TODO: expand this for saving game state using a 'Save' button?
 
 def print_fen_to_terminal(fen_string):
-    '''Prints a FEN string into the terminal as an ASCII chess board.
+    """Print a FEN string into the terminal as an ASCII chess board.
     Similar to board.Board.__repr__.
-    '''
+    """
     fen_ls = fen_string.split(' ')
     fen_ls[0] = fen_ls[0].split('/')
     assert len(fen_ls[0]) == 8
@@ -41,7 +41,7 @@ def print_fen_to_terminal(fen_string):
 
 
 def import_fen_to_board(fen: str):
-    '''Converts FEN string to board.Board object.'''
+    """Convert FEN string to board.Board object."""
     chessboard = board.Board()
     fen = fen.split(' ')
 
@@ -51,7 +51,9 @@ def import_fen_to_board(fen: str):
     elif turn_to_move == 'b':
         last_move_color = 'white'
 
-    chessboard.last_move_piece = pieces.Pawn('placeholder', last_move_color, 100)
+    chessboard.last_move_piece = pieces.Pawn('placeholder',
+                                             last_move_color,
+                                             100)
 
     if fen[-1] == ' ':
         fen.pop()
@@ -73,7 +75,9 @@ def import_fen_to_board(fen: str):
                     piece_color = 'white'
                 elif char.islower():
                     piece_color = 'black'
-                piece = letter_to_piece[char.lower()](char, piece_color, squares_ind_counter)
+                piece = letter_to_piece[char.lower()](char,
+                                                      piece_color,
+                                                      squares_ind_counter)
                 chessboard.squares[squares_ind_counter] = piece
                 if piece.color == 'white':
                     chessboard.white_pieces.append(piece)
@@ -95,12 +99,12 @@ def import_fen_to_board(fen: str):
 
 
 def export_board_to_fen(chessboard):
-    '''Convert board.Board.squares list to a FEN string, without castling, en
-    passant, and move counts because they are not be used in these scripts.
-    '''
-    # Deepcopy seems necessary here because the original board is not equal to
-    # and is not the board after calling this function, according to one of the
-    # tests.
+    """Convert board.Board.squares list to a truncated FEN string (without
+    castling, en passant, and move count indicators).
+    """
+    # Deepcopy seems necessary here because the original board is not
+    # equal to and is not the same board object after calling this
+    # function, based on the tests.
     squares = copy.deepcopy(chessboard.squares)
     fen = []
     for slice_start in range(0, 57, 8):
@@ -108,7 +112,7 @@ def export_board_to_fen(chessboard):
         fen.append(squares[slice_start:slice_end])
 
     fen = list(reversed(fen))
-    # Add piece positions to fen
+    # Add piece positions
     for ind, row in enumerate(fen):
         partial_fen = []
         adjacent_empty_squares_count = 0
@@ -143,24 +147,25 @@ def export_board_to_fen(chessboard):
 
     fen = ' '.join([fen, white_or_black_to_move])
 
-    #with open('FEN_exports.txt', 'a') as export:
-     #   current_time = strftime('%Y-%m-%d %H:%M', gmtime())
-      #  export.write(f'{current_time}\n')
-       # export.write(f'{fen}\n\n')
+    # with open('FEN_exports.txt', 'a') as export:
+    #    current_time = strftime('%Y-%m-%d %H:%M', gmtime())
+    #    export.write(f'{current_time}\n')
+    #    export.write(f'{fen}\n\n')
 
     return fen
 
 
 def pickle_and_add_board_to_db(chessboard, e_type, e_val):
-    '''Serialize and store board.Board object in an sqlite database.
+    """Serialize and store board.Board object in an sqlite database.
 
     Called after an error has occurred so the board object can be debugged
     easily.
 
-    Note: Traceback object can't be stored in the database. ("InterfaceError...
-    probably unsupported type." It would be nice to include but it is not
-    a major problem. Consider manually adding traceback as string after error.
-    '''
+    Note: Traceback object can't be stored in the database.
+    ("InterfaceError... probably unsupported type." It would be nice to
+    include but it is not necessary. Consider manually adding traceback
+    as a string after error.
+    """
     current_time = strftime('%Y-%m-%d %H:%M', gmtime())
     pickled_board = pickle.dumps(chessboard)
 
@@ -176,13 +181,12 @@ def pickle_and_add_board_to_db(chessboard, e_type, e_val):
 
 
 def load_board_from_db(row_id=None):
-    '''As a default, pulls the most recent board.Board object and associated information from the
-    database. The row_id parameter can select a specific row from the table if
-    needed.
-
-    Should this istead return cur.fetchall() for more obvious bugs where
-    multiple rows are returned? Or is that an unrealistic outcome from this.
-    '''
+    """As a default, pulls the most recent board.Board object and
+    associated information from the database. The row_id parameter can
+    select a specific row from the table if needed.
+    """
+    # Should this instead return cur.fetchall() for more obvious bugs
+    # where multiple rows are returned? Or is that an unrealistic outcome?
     con = sqlite3.connect('chessboards.sqlite')
     cur = con.cursor()
     # There could be a row with an id of 0. Need to avoid "if 0:" scenario.
@@ -198,9 +202,9 @@ def load_board_from_db(row_id=None):
 
 
 def create_board_database():
-    '''Creates a SQLite database in the current directory, if a file named
+    """Create a SQLite database in the current directory, if a file named
     "chessboards.sqlite" does not already exist.
-    '''
+    """
     con = sqlite3.connect('chessboards.sqlite')
     cur = con.cursor()
     cur.execute('''CREATE TABLE IF NOT EXISTS chessboards
@@ -215,17 +219,17 @@ def create_board_database():
     con.close()
 
 
-
 if __name__ == '__main__':
-    import sys
     import unittest
 
     class TestChessUtilities(unittest.TestCase):
+        """chess_utilities.py tests"""
+
         def test_export_board_to_fen(self):
-            '''Board object is exportable to Forsyth-Edwards Notation (FEN).'''
+            """Board object is exportable to Forsyth-Edwards Notation (FEN)."""
             chessboard = board.Board()
             chessboard.initialize_pieces()
-            #original_board = copy.deepcopy(chessboard)
+            # original_board = copy.deepcopy(chessboard)
 
             exported_fen = export_board_to_fen(chessboard)
 
@@ -233,13 +237,12 @@ if __name__ == '__main__':
                              'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w')
             # Test below fails so the export_board_to_fen function uses
             # copy.deepcopy.
-            #self.assertEquals(original_board, chessboard)
-
+            # self.assertEquals(original_board, chessboard)
 
         def test_import_fen_to_board(self):
-            '''This is not a thorough test. The real test is visually examining
-            the printed chessboard.
-            '''
+            """Board imports without error. Requires visual check of the
+            printed chessboard for a more detailed check.
+            """
             check_test = 'rnbB2kr/1p1p3p/8/2pP2Q1/p3P3/P7/1PP2PPP/RN2KBNR b'
             chessboard = import_fen_to_board(check_test)
 
@@ -247,21 +250,8 @@ if __name__ == '__main__':
             self.assertIsInstance(chessboard.squares[0], pieces.Rook)
             self.assertEqual(chessboard.squares[0].color, 'white')
 
-
-        def setUp(self):
-            try:
-                raise Exception('Raise Exception for tests.')
-            except Exception:
-                e_type, e_val, _ = sys.exc_info()
-                self.e_type = str(e_type).split("'")[1]
-                self.e_val = str(e_val)
-
-                self.assertEqual(self.e_type, 'Exception')
-                self.assertEqual(self.e_val, 'Raise Exception for tests.')
-
-
         def test_pickle_and_add_board_to_db(self):
-            '''Serialize the Board object and add it to the SQLite database.'''
+            """Serialize the Board object and add it to the SQLite database."""
             chessboard = board.Board()
             chessboard.initialize_pieces()
             chessboard.squares[8].update_moves(chessboard)
@@ -273,18 +263,17 @@ if __name__ == '__main__':
             old_rows_in_db_count = cur.fetchall()[0][0]
 
             pickle_and_add_board_to_db(chessboard, self.e_type,
-                                             self.e_val)
+                                       self.e_val)
 
             cur.execute('SELECT COUNT(id) FROM chessboards')
             new_rows_in_db_count = cur.fetchall()[0][0]
 
             self.assertEqual(new_rows_in_db_count, old_rows_in_db_count + 1)
 
-
         def test_load_board_from_db(self):
-            '''Load the serialized Board object from the database to a useable
-            object.
-            '''
+            """Load the serialized Board object from the database to a
+            useable object.
+            """
             _, _, error_type, error_value, chessboard = load_board_from_db()
             chessboard = pickle.loads(chessboard)
 
@@ -301,4 +290,4 @@ if __name__ == '__main__':
             con.close()
 
 
-    unittest.main()
+unittest.main()

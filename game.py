@@ -1,12 +1,11 @@
-'''
-Run this file to play chess.
+"""Run this file to play chess.
 
 Dependencies (must be in same directory):
     board.py
     chess_utilities.py
     gui.py
     pieces.py
-'''
+"""
 
 from random import choice
 import sys
@@ -20,8 +19,9 @@ import pieces
 
 
 class Game:
-    '''Controls player turns.'''
-    #Should this stuff stay as a class or become the main program?
+    """Controls player turns."""
+
+    # Should this stuff stay as a class or become the main program?
     def __init__(self):
         self.player_color = ''
         self.computer_color = ''
@@ -35,13 +35,12 @@ class Game:
 
         self.display = gui.GUI()
 
-
     def __repr__(self):
-        return f'''Playing as {self.player_color}.\nTurn: {self.turn_color}\n'''
-
+        return (f'Playing as {self.player_color}.\n'
+                f'Turn: {self.turn_color}\n')
 
     def select_color(self):
-        '''Player chooses their piece color.'''
+        """Player chooses their piece color."""
         # TODO: Delete this block when done testing and debuging.
         self.player_color, self.computer_color = 'white', 'black'
         self.white_turn, self.black_turn = self.player_turn, self.computer_turn
@@ -52,22 +51,23 @@ class Game:
         selected_color = input('Pick your color: white or black?\n>>> ')
         if selected_color.lower() == 'white':
             self.player_color, self.computer_color = 'white', 'black'
-            self.white_turn, self.black_turn = self.player_turn, self.computer_turn
+            self.white_turn, self.black_turn = self.player_turn, \
+                self.computer_turn
             self.player_moves = self.board.white_moves
             self.player_king = self.board.white_king
         elif selected_color.lower() == 'black':
             self.player_color, self.computer_color = 'black', 'white'
-            self.black_turn, self.white_turn = self.player_turn, self.computer_turn
+            self.black_turn, self.white_turn = self.player_turn, \
+                self.computer_turn
             self.player_moves = self.board.black_moves
             self.player_king = self.board.black_king
         else:
             print('Input white or black.')
 
-
     def computer_turn(self):
-        '''Computer turn. Currently, it plays a random move from all available
-        moves.
-        '''
+        """Make the computer's move. Currently, it plays a random move
+        from all available moves.
+        """
         if self.computer_color == 'white':
             computer_pieces = self.board.white_pieces
             computer_moves = self.board.white_moves
@@ -76,7 +76,7 @@ class Game:
             computer_moves = self.board.black_moves
         else:
             raise Exception
-        computer_king = [piece for piece in computer_pieces \
+        computer_king = [piece for piece in computer_pieces
                          if isinstance(piece, pieces.King)]
 
         # TODO: Completed stalemate, incomplete checkmate.
@@ -106,9 +106,8 @@ class Game:
         self.board.last_move_from_to = (old_square, random_move)
         self.turn_color = self.player_color
 
-
     def player_turn(self, old_square=None):
-        '''Human turn.'''
+        """Human turn."""
         print(self.board)
         if self.player_color == 'white':
             self.player_moves = self.board.white_moves
@@ -132,7 +131,8 @@ class Game:
 
         try:
             if self.board.squares[old_square].color != self.player_color:
-                print(f"One of your opponent's pieces is on square {old_square}.")
+                print(f"One of your opponent's pieces is on square "
+                      f'{old_square}.')
                 self.player_turn()
         except AttributeError:
             assert self.board.squares[old_square] == ' '
@@ -158,32 +158,29 @@ class Game:
         self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.computer_color
 
-
     def between_moves(self):
-        '''All moves must be updated between turns so pieces know where they
-        can go.
-        '''
+        """All moves must be updated between turns so pieces know where
+        they can go.
+        """
         self.board.update_white_controlled_squares()
         self.board.update_black_controlled_squares()
 
-        # Update king moves again now that all other piece moves are known.
+        # Update king moves again now that all other piece moves are known
         self.board.white_king.update_moves(self.board)
         # Black king should not have to update again b/c
-        # white_controlled_squares were known prior to the black king updating
-        # it's moves.
+        # white_controlled_squares were known prior to the black king
+        # updating its moves.
         # self.board.black_king.update_moves(self.board)
 
         # TODO: check if a piece is pinned to the king before moving it:
         #   - by Updating dummy board and check if friendly king is in check.
 
-
         # TODO: choose terminal or GUI
 
-
     def play(self):
-        '''Play chess. While loop ends by sys.exit() in Game.player_turn() or
-        Game.computer_turn().
-        '''
+        """Play the game. The while loop ends by sys.exit() in
+        Game.player_turn() or Game.computer_turn().
+        """
         while True:
             self.between_moves()
             self.display.update_gui(self.board)
@@ -193,10 +190,10 @@ class Game:
             self.black_turn()
 
 
-
 if __name__ == '__main__':
 
     def main():
+        """Run the game."""
         game = Game()
         try:
             game.play()

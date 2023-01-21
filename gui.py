@@ -151,7 +151,3 @@ class GUI:
         # Row number calculations give a minimum result of 1, not 0.
         button.grid(column=column + 1, row=row - 1)
 
-
-if __name__ == '__main__':
-    gui = GUI()
-    root.mainloop()

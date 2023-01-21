@@ -1,15 +1,15 @@
-'''
-The Board class represents the chessboard, storing piece locations, the
+"""The Board class represents the chessboard, storing piece locations, the
 previous move, and methods which broadly operate on each piece color.
-'''
+"""
 import sys
 import pieces
 
 
 class Board:
-    '''Holds the current state of the board and provides methods for updating
-    the board state.
-    '''
+    """Holds the current state of the board and provides methods for
+    updating the board state.
+    """
+
     def __init__(self):
         self.squares = [' '] * 64
         self.white_pieces = []
@@ -24,11 +24,8 @@ class Board:
         self.last_move_piece = None
         self.last_move_from_to = (None, None)
 
-
     def __repr__(self):
-        '''Shows the current board. Useful for feedback to user before GUI
-        is implememnted. Starts from the eighth rank (row).'''
-
+        """Start from the eighth rank (row)."""
         ranks_to_print = []
         for factor in range(7, -1, -1):
             rank_x = ['|']
@@ -44,13 +41,12 @@ class Board:
         # Looks nice w/ print( <board_object> )
         return '\n'.join(ranks_to_print)
 
-
     # Variable suffix corresponds to starting file (column) of the piece.
     def initialize_pieces(self):
-        '''Put all pieces on their initial squares.
+        """Put all pieces on their initial squares.
         Set attributes: self.squares, self.white_pieces, self.black_pieces,
         self.white_king, self.black_king.
-        '''
+        """
         white_rook_a = pieces.Rook('Ra', 'white', 0)
         white_knight_b = pieces.Knight('Nb', 'white', 1)
         white_bishop_c = pieces.Bishop('Bc', 'white', 2)
@@ -70,11 +66,11 @@ class Board:
         white_pawn_h = pieces.Pawn('Ph', 'white', 15)
 
         self.white_pieces = [white_rook_a, white_knight_b, white_bishop_c,
-                                white_queen, white_king, white_bishop_f,
-                                white_knight_g, white_rook_h, white_pawn_a,
-                                white_pawn_b, white_pawn_c, white_pawn_d,
-                                white_pawn_e, white_pawn_f, white_pawn_g,
-                                white_pawn_h]
+                             white_queen, white_king, white_bishop_f,
+                             white_knight_g, white_rook_h, white_pawn_a,
+                             white_pawn_b, white_pawn_c, white_pawn_d,
+                             white_pawn_e, white_pawn_f, white_pawn_g,
+                             white_pawn_h]
 
         black_rook_a = pieces.Rook('ra', 'black', 56)
         black_knight_b = pieces.Knight('nb', 'black', 57)
@@ -95,36 +91,31 @@ class Board:
         black_pawn_h = pieces.Pawn('ph', 'black', 55)
 
         self.black_pieces = [black_rook_a, black_knight_b, black_bishop_c,
-                                black_queen, black_king, black_bishop_f,
-                                black_knight_g, black_rook_h,black_pawn_a,
-                                black_pawn_b, black_pawn_c, black_pawn_d,
-                                black_pawn_e, black_pawn_f, black_pawn_g,
-                                black_pawn_h]
+                             black_queen, black_king, black_bishop_f,
+                             black_knight_g, black_rook_h, black_pawn_a,
+                             black_pawn_b, black_pawn_c, black_pawn_d,
+                             black_pawn_e, black_pawn_f, black_pawn_g,
+                             black_pawn_h]
 
         for piece in self.white_pieces + self.black_pieces:
             self.squares[piece.square] = piece
-
         self.white_king = white_king
-
         self.black_king = black_king
 
-
     def update_moves_white(self):
-        'Helper function for update_white_controlled_squares() method.'
+        """Support for update_white_controlled_squares() method."""
         for piece in self.white_pieces:
             piece.update_moves(self)
 
-
     def update_moves_black(self):
-        'Helper function for update_black_controlled_squares() method.'
+        """Support for update_black_controlled_squares() method."""
         for piece in self.black_pieces:
             piece.update_moves(self)
 
-
     def update_king_moves(self):
-        '''The king moves are dependant on the possbile move of all opponent
+        """King moves are dependant on the possbile moves of all opponent
         pieces, so they must be updated last.
-        '''
+        """
         for piece in self.white_pieces:
             if piece.name == 'K':
                 white_king = piece
@@ -138,18 +129,16 @@ class Board:
                                      self.black_controlled_squares)
         black_king.check_if_in_check(self.white_controlled_squares,
                                      self.black_controlled_squares)
-
         white_king.update_moves(self)
         black_king.update_moves(self)
 
-
     def update_white_controlled_squares(self):
-        '''Creates set to determine if black king is in check and limit
+        """Create a set to determine if black king is in check and limit
         black king moves which would put it in check.
 
         Note: Avoiding an "augment only" keyword argument helps avoid
         discrepancies between controlled_squares and set of one color's moves.
-        '''
+        """
         white_controlled_squares = []
         self.white_moves = []
 
@@ -159,7 +148,7 @@ class Board:
                 self.white_moves.append(move)
                 if isinstance(piece, pieces.Pawn):
                     if abs(piece.square - move) == 7 \
-                    or abs(piece.square - move) == 9:
+                            or abs(piece.square - move) == 9:
                         white_controlled_squares.append(move)
                 else:
                     white_controlled_squares.append(move)
@@ -168,12 +157,10 @@ class Board:
 
         self.white_controlled_squares = set(white_controlled_squares)
 
-
-
     def update_black_controlled_squares(self):
-        '''Creates set to determine if white king is in check and limit
+        """Create set to determine if white king is in check and limit
         white king moves which would put it in check.
-        '''
+        """
         black_controlled_squares = []
         self.black_moves = []
 
@@ -183,7 +170,7 @@ class Board:
                 self.black_moves.append(move)
                 if isinstance(piece, pieces.Pawn):
                     if abs(piece.square - move) == 7 \
-                    or abs(piece.square - move) == 9:
+                            or abs(piece.square - move) == 9:
                         black_controlled_squares.append(move)
                 else:
                     black_controlled_squares.append(move)
@@ -192,11 +179,10 @@ class Board:
 
         self.black_controlled_squares = set(black_controlled_squares)
 
-
     def find_checking_pieces(self) -> tuple:
-        '''Assumes a king is in check. Return which piece(s) is/are checking
+        """Assumes a king is in check. Return which piece(s) is/are checking
         the king.
-        '''
+        """
         # Only one king may be in check at any time.
         if self.last_move_piece.color == 'white':
             checked_king = self.black_king
@@ -222,22 +208,21 @@ class Board:
                     checking_pieces.append(piece)
             else:
                 if checked_square in piece.moves:
-                    #piece.giving_check = True
+                    # piece.giving_check = True
                     checking_pieces.append(piece)
 
-        return checking_pieces #, checked_king
-
+        return checking_pieces  # , checked_king
 
     def find_interposition_squares(self, checking_pieces: list,
-                                   checked_king)-> list:
-        '''Assumes a king is in check. Return set of interposition squares
+                                   checked_king) -> list:
+        """Assumes a king is in check. Return set of interposition squares
         which block check.
 
         Helper function for Board.king_escapes_check_or_checkmate().
-        '''
+        """
         interposition_squares = []
         # Pawns and knights cannot be blocked, and kings cannot give check.
-        #brq_directions = [[+-9, +-7], ...]
+        # brq_directions = [[+-9, +-7], ...]
         for checking_piece in checking_pieces:
             delta = checked_king.square - checking_piece.square
             # max/min of +-7 in same row
@@ -252,7 +237,8 @@ class Board:
             #
             # Moves with a delta of 1 are not interposable.
             for rank in pieces.ranks_files.ranks:
-                if checked_king.square in rank and checking_piece.square in rank:
+                if checked_king.square in rank \
+                        and checking_piece.square in rank:
                     move_direction = 1
                     break
             else:
@@ -277,11 +263,12 @@ class Board:
 
         return interposition_squares
 
-
     def moves_must_escape_check_or_checkmate(self, board, checked_king,
                                              checking_pieces):
-        '''Run when a king is in check. Limits all moves to those which escape
-        check. If no moves escape check, the game ends by checkmate.'''
+        """Run when a king is in check. Limits all moves to those which
+        escape check. If no moves escape check, the game ends by
+        checkmate.
+        """
         interpose_squares = self.find_interposition_squares(checking_pieces,
                                                             checked_king)
 
@@ -300,8 +287,8 @@ class Board:
         else:
             friendly_pieces = board.black_pieces
 
-        # Limit moves for pieces (excluding checked king) to interposition and
-        # capturing the checking piece.
+        # Limit moves for pieces (excluding checked king) to interposition
+        # and capturing the checking piece.
         all_legal_moves_in_check = set(interpose_squares
                                        + checking_pieces_squares)
 
@@ -314,6 +301,7 @@ class Board:
                     legal_moves = all_legal_moves_in_check & set(piece.moves)
                     piece.moves = list(legal_moves)
                 elif len(checking_pieces) > 1:
-                    piece.moves = []#list(interpose_squares & set(piece.moves))
+                    piece.moves = []
+                    # list(interpose_squares & set(piece.moves))
                 else:
                     raise Exception('Length of checking_pieces should be >= 1')

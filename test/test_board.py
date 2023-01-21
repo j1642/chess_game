@@ -299,10 +299,11 @@ class TestBoard(unittest.TestCase):
 
     def test_fix_assertion_error_when_king_is_checked(self):
         """When error occurred, 'BLACK loses by checkmate' was printed to
-        standard output, indicating that len(checking_pieces) was more than 1.
+        standard output, indicating that len(checking_pieces) was more
+        than 1.
 
-        Fixes: 1. (May not help but is a code improvement. There likely is a
-                   better way to accomplish the same change.)
+        Fixes: 1. (May not help but is a code improvement. There likely is
+                  a better way to accomplish the same change.)
                   In board.moves_must_escape_check_or_checkmate(),
                   escape call stack immediately with sys.exit() instead of
                   finishing King.update_moves(), etc.

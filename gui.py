@@ -1,10 +1,10 @@
-'''
-This module provides an alternative to playing chess in the terminal with
-ASCII graphics.
-'''
+"""Provide a graphical display, in addition to the ASCII standard
+outputs to the terminal.
+"""
 import tkinter as tk
 # GUI could have all the logic to run the game with GUI display?
 # And all terminal-displa logic in game?
+
 
 class GUI:
     def __init__(self):
@@ -33,11 +33,10 @@ class GUI:
         # self.update_gui(chessboard)
         # self.root.mainloop()
 
-
     def find_dark_light_squares(self) -> tuple:
-        '''Return sets of which chessboard squares are dark and which are
+        """Return sets of which chessboard squares are dark and which are
         light.
-        '''
+        """
         dark_squares = []
         light_squares = []
         for square in range(64):
@@ -58,26 +57,25 @@ class GUI:
 
         return set(dark_squares), set(light_squares)
 
-
     def empty_function(self):
-        '''Used as the command keyword argument for the empty square buttons.
-        '''
+        """Use as the command keyword argument for the empty square
+        buttons.
+        """
         pass
 
-
     def update_gui(self, chessboard, selected_piece=None):
-        '''Update the GUI based on current state of chessboard.squares.'''
+        """Update the GUI based on current state of chessboard.squares."""
         for ind, char in enumerate('abcdefgh'):
             label = tk.Label(self.root,
                              text=char,
-                             font = ('Helvetica', 11)
+                             font=('Helvetica', 11)
                              )
             label.grid(column=ind + 1, row=8)
 
         for ind, num in enumerate(range(8, 0, -1)):
             label = tk.Label(self.root,
                              text=str(num),
-                             font = ('Helvetica', 11)
+                             font=('Helvetica', 11)
                              )
             label.grid(column=0, row=ind)
 
@@ -92,8 +90,8 @@ class GUI:
                     image_path = 'assets/light_square.png'
             elif square.color == 'white' or square.color == 'black':
                 color = square.color
-                piece_type = str(type(square)).split('.')[1]\
-                            .split("\'")[0].lower()
+                piece_type = str(type(square)).split('.')[1].split("\'")[0]\
+                    .lower()
 
                 image_path = ''.join(['assets/', color, '_', piece_type])
 
@@ -105,8 +103,8 @@ class GUI:
                 raise Exception(f'Square {ind}: contents invalid.')
 
             image_path = tk.PhotoImage(file=image_path)
-            # Need to store Photoimage object reference to display it after the
-            # for loop and function end.
+            # Need to store Photoimage object reference to display it
+            # after the for loop and function end.
             self.image_references[ind] = image_path
 
             self.find_command_make_button(chessboard,
@@ -119,27 +117,27 @@ class GUI:
         # Updates display based on terminal inputs.
         self.root.update_idletasks()
 
-
     def find_command_make_button(self, chessboard,
                                  image_column_row_index_square: tuple,
                                  selected_piece):
-        '''Makes buttons and adds them to the grid.
+        """Make buttons and adds them to the grid.
 
         Helper method for update_gui().
 
-        Having this method removes bug where all buttons with pieces on them
-        refer to the black h rook, due to the final value of ind from
+        Having this method removes bug where all buttons with pieces on
+        them refer to the black h rook, due to the final value of ind from
         enumerate() being 63.
-        '''
+        """
         image, column, row, index, square = image_column_row_index_square
 
         if selected_piece is None:
             all_squares = chessboard.squares
-            command = lambda : self.update_gui(chessboard, selected_piece=all_squares[index])
+            command = lambda: self.update_gui(
+                chessboard, selected_piece=all_squares[index])
             if square == ' ':
-                command = lambda : self.empty_function()
+                command = lambda: self.empty_function()
         else:
-            command = lambda : selected_piece.move_piece(chessboard, index)
+            command = lambda: selected_piece.move_piece(chessboard, index)
 
         button = tk.Button(
             self.root,
@@ -147,8 +145,7 @@ class GUI:
             highlightthickness=0,
             bd=0,
             borderwidth=0,
-            command=command
-            )
+            command=command)
 
         # Column plus 1 makes space for row labels in column 0
         # Row number calculations give a minimum result of 1, not 0.

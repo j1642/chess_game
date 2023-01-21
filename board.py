@@ -2,6 +2,7 @@
 The Board class represents the chessboard, storing piece locations, the
 previous move, and methods which broadly operate on each piece color.
 '''
+import sys
 import pieces
 
 
@@ -144,7 +145,11 @@ class Board:
 
     def update_white_controlled_squares(self):
         '''Creates set to determine if black king is in check and limit
-        black king moves which would put it in check.'''
+        black king moves which would put it in check.
+
+        Note: Avoiding an "augment only" keyword argument helps avoid
+        discrepancies between controlled_squares and set of one color's moves.
+        '''
         white_controlled_squares = []
         self.white_moves = []
 
@@ -152,16 +157,23 @@ class Board:
         for piece in self.white_pieces:
             for move in piece.moves:
                 self.white_moves.append(move)
-                white_controlled_squares.append(move)
+                if isinstance(piece, pieces.Pawn):
+                    if abs(piece.square - move) == 7 \
+                    or abs(piece.square - move) == 9:
+                        white_controlled_squares.append(move)
+                else:
+                    white_controlled_squares.append(move)
             for square in piece.protected_squares:
                 white_controlled_squares.append(square)
 
         self.white_controlled_squares = set(white_controlled_squares)
 
 
+
     def update_black_controlled_squares(self):
         '''Creates set to determine if white king is in check and limit
-        white king moves which would put it in check.'''
+        white king moves which would put it in check.
+        '''
         black_controlled_squares = []
         self.black_moves = []
 
@@ -169,7 +181,12 @@ class Board:
         for piece in self.black_pieces:
             for move in piece.moves:
                 self.black_moves.append(move)
-                black_controlled_squares.append(move)
+                if isinstance(piece, pieces.Pawn):
+                    if abs(piece.square - move) == 7 \
+                    or abs(piece.square - move) == 9:
+                        black_controlled_squares.append(move)
+                else:
+                    black_controlled_squares.append(move)
             for square in piece.protected_squares:
                 black_controlled_squares.append(square)
 
@@ -178,9 +195,7 @@ class Board:
 
     def find_checking_pieces(self) -> tuple:
         '''Assumes a king is in check. Return which piece(s) is/are checking
-        the king and the checked king object.
-
-        Helper function for self.king_escapes_check_or_checkmate().
+        the king.
         '''
         # Only one king may be in check at any time.
         if self.last_move_piece.color == 'white':
@@ -192,18 +207,25 @@ class Board:
             opponent_controlled_squares = self.black_controlled_squares
             opponent_pieces = self.black_pieces
 
+        # TODO: remove after debugging
+        print(opponent_pieces)
         checked_square = checked_king.square
         assert checked_square in opponent_controlled_squares
 
         checking_pieces = []
         # Should piece move lists be sets instead?
         # Should update_moves() notice if the opponent's king is attacked?
+        # TODO: pawn attacking king not in pawn moves. Use Pawn.giving_check?
         for piece in opponent_pieces:
-            if checked_square in piece.moves:
-                #piece.giving_check = True
-                checking_pieces.append(piece)
+            if isinstance(piece, pieces.Pawn):
+                if checked_square in piece.protected_squares:
+                    checking_pieces.append(piece)
+            else:
+                if checked_square in piece.moves:
+                    #piece.giving_check = True
+                    checking_pieces.append(piece)
 
-        return checking_pieces, checked_king
+        return checking_pieces #, checked_king
 
 
     def find_interposition_squares(self, checking_pieces: list,
@@ -211,7 +233,7 @@ class Board:
         '''Assumes a king is in check. Return set of interposition squares
         which block check.
 
-        Helper function for self.king_escapes_check_or_checkmate().
+        Helper function for Board.king_escapes_check_or_checkmate().
         '''
         interposition_squares = []
         # Pawns and knights cannot be blocked, and kings cannot give check.
@@ -256,18 +278,20 @@ class Board:
         return interposition_squares
 
 
-    def moves_must_escape_check_or_checkmate(self, board):
+    def moves_must_escape_check_or_checkmate(self, board, checked_king,
+                                             checking_pieces):
         '''Run when a king is in check. Limits all moves to those which escape
         check. If no moves escape check, the game ends by checkmate.'''
-        checking_pieces, checked_king = self.find_checking_pieces()
         interpose_squares = self.find_interposition_squares(checking_pieces,
                                                             checked_king)
 
         # King in double check must move or is in checkmate.
         if len(checking_pieces) > 1:
             if checked_king.moves == []:
+                # TODO: remove after debugging
+                print(checking_pieces)
                 print(f'{checked_king.color.upper()} loses by checkmate.')
-                return f'{checked_king.color.upper()} loses by checkmate.'
+                sys.exit()
 
         checking_pieces_squares = [piece.square for piece in checking_pieces]
 
@@ -276,7 +300,7 @@ class Board:
         else:
             friendly_pieces = board.black_pieces
 
-        # Limit moves for pieces (excluding king) to interposition, and
+        # Limit moves for pieces (excluding checked king) to interposition and
         # capturing the checking piece.
         all_legal_moves_in_check = set(interpose_squares
                                        + checking_pieces_squares)

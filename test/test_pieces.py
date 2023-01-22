@@ -31,7 +31,7 @@ class SetUpTearDown(unittest.TestCase):
         del all_squares
 
 
-class TestPieceMovement(SetUpTearDown):
+class TestPieces(SetUpTearDown):
     """All pieces.py tests."""
 
     def test_board_updates_upon_piece_movement(self):
@@ -979,7 +979,3 @@ class TestPieceMovement(SetUpTearDown):
         chessboard.update_black_controlled_squares()
         self.assertEqual(set(black_pawn_d.moves), set([19, 20]))
         self.assertEqual(set(black_pawn_f.moves), set([21, 20]))
-
-
-# Must be removed or commented out to run tests in command line.
-# unittest.main()

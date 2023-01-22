@@ -248,6 +248,7 @@ class TestBoard(unittest.TestCase):
         self.assertEqual(chessboard.black_king, chessboard.squares[52])
         chessboard.update_black_controlled_squares()
 
+        self.assertEquals(0, 1)
         # Alternative plan: if piece type is pawn, do not update moves if
         # opponent king is in check (b/c pawn does not attack unlimited
         # distances).
@@ -296,6 +297,7 @@ class TestBoard(unittest.TestCase):
 
         chessboard.white_king.update_moves(chessboard)
         chessboard.black_king.update_moves(chessboard)
+        self.assertEquals(0, 1)
 
     def test_fix_assertion_error_when_king_is_checked(self):
         """When error occurred, 'BLACK loses by checkmate' was printed to
@@ -337,5 +339,4 @@ class TestBoard(unittest.TestCase):
         # determined by piece.moves, not piece.protected_squares.
         chessboard.black_king.update_moves(chessboard)
 
-# Must be removed or commented out to run tests in the terminal.
-# unittest.main()
+        self.assertEquals(0, 1)

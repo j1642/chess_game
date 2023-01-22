@@ -123,15 +123,14 @@ class Game:
 
         old_square = self.get_player_move_from()
         new_square = self.get_player_move_to()
+        if new_square == -1:
+            return self.player_turn()
         moving_piece = self.board.squares[old_square]
         result = moving_piece.move_piece(self.board, new_square)
 
         if isinstance(result, str):
-            print('The selected piece cannot move there. Input a valid '
-                  'square for the selected piece to move to. (algebraic '
-                  'notation)')
-            new_square = input('>>> ')
-            self.player_turn()
+            print('The selected piece cannot move there.')
+            return self.player_turn()
 
         self.board.last_move_piece = moving_piece
         self.board.last_move_from_to = (old_square, new_square)
@@ -151,10 +150,11 @@ class Game:
             if self.board.squares[new_square].color == self.player_color:
                 print(f'You cannot move to {new_square}. You already '
                       'have a piece there.')
-                # Allow player to completely restart their turn.
-                self.player_turn()
+                # Player completely restarts their turn.
+                return -1
         except AttributeError:
             assert self.board.squares[new_square] == ' '
+        assert isinstance(new_square, int)
         return new_square
 
     def get_player_move_from(self) -> int:
@@ -171,11 +171,13 @@ class Game:
             if self.board.squares[old_square].color != self.player_color:
                 print(f"One of your opponent's pieces is on square "
                       f'{old_square}. You cannot move that piece.')
+                return self.get_player_move_from()
         except AttributeError:
             assert self.board.squares[old_square] == ' '
             print('There is no piece on that square. Choose a square that'
                   ' has one of your pieces on it.')
             return self.get_player_move_from()
+        assert isinstance(old_square, int)
         return old_square
 
     def is_valid_input_square(self, user_input) -> bool:

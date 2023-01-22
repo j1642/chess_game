@@ -121,42 +121,74 @@ class Game:
                 print('Draw by stalemate. Game over.')
             sys.exit()
 
-        print(f'\n{self.player_color.capitalize()} to move.')
-
-        try:
-            old_square = int(input('Square to move from? (int)\n>>> '))
-        except TypeError:
-            print('Square to move from must be an int where you have a piece.')
-            old_square = int(input('Square to move from? (int)\n>>> '))
-
-        try:
-            if self.board.squares[old_square].color != self.player_color:
-                print(f"One of your opponent's pieces is on square "
-                      f'{old_square}.')
-                self.player_turn()
-        except AttributeError:
-            assert self.board.squares[old_square] == ' '
-            print('There is no piece on that square. Choose a square that has',
-                  'one of your pieces on it.')
-            self.player_turn()
-
-        new_square = int(input('Square to move to? (int)\n>>> '))
-
+        old_square = self.get_player_move_from()
+        new_square = self.get_player_move_to()
         moving_piece = self.board.squares[old_square]
-        if isinstance(moving_piece, pieces.King):
-            result = moving_piece.move_piece(self.board, new_square)
-        else:
-            result = moving_piece.move_piece(self.board, new_square)
+        result = moving_piece.move_piece(self.board, new_square)
 
         if isinstance(result, str):
-            print('The selected piece cannot move there. Input a valid square',
-                  'for the selected piece to move to. (int)')
+            print('The selected piece cannot move there. Input a valid '
+                  'square for the selected piece to move to. (algebraic '
+                  'notation)')
             new_square = input('>>> ')
             self.player_turn()
 
         self.board.last_move_piece = moving_piece
         self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.computer_color
+
+    def get_player_move_to(self) -> int:
+        """Prompt for, validate, and return the square to move to."""
+        new_square = input('Square to move to? (algebraic notation)\n>>> ')
+        if not self.is_valid_input_square(new_square):
+            # is_valid_input_square() prints explanation to user.
+            return self.get_player_move_to()
+        if new_square.isdigit():
+            new_square = int(new_square)
+        else:
+            new_square = self.board.ALGEBRAIC_NOTATION[new_square]
+        try:
+            if self.board.squares[new_square].color == self.player_color:
+                print(f'You cannot move to {new_square}. You already '
+                      'have a piece there.')
+                # Allow player to completely restart their turn.
+                self.player_turn()
+        except AttributeError:
+            assert self.board.squares[new_square] == ' '
+        return new_square
+
+    def get_player_move_from(self) -> int:
+        """Prompt for, validate, and return the square to move from."""
+        old_square = input('Square to move from? (algebraic notation)\n>>> ')
+        if not self.is_valid_input_square(old_square):
+            # is_valid_input_square() prints explanation to user.
+            return self.get_player_move_from()
+        if old_square.isdigit():
+            old_square = int(old_square)
+        else:
+            old_square = self.board.ALGEBRAIC_NOTATION[old_square]
+        try:
+            if self.board.squares[old_square].color != self.player_color:
+                print(f"One of your opponent's pieces is on square "
+                      f'{old_square}. You cannot move that piece.')
+        except AttributeError:
+            assert self.board.squares[old_square] == ' '
+            print('There is no piece on that square. Choose a square that'
+                  ' has one of your pieces on it.')
+            return self.get_player_move_from()
+        return old_square
+
+    def is_valid_input_square(self, user_input) -> bool:
+        """Validate user move input."""
+        if user_input.isdigit():
+            square = int(user_input)
+            if (0 <= square and square <= 63):
+                return True
+            return False
+        elif user_input in self.board.ALGEBRAIC_NOTATION:
+            return True
+        print(f'{user_input} is not a valid algebraic notation square.')
+        return False
 
     def between_moves(self):
         """All moves must be updated between turns so pieces know where

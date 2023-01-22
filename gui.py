@@ -12,7 +12,7 @@ class GUI:
         self.image_references = [0] * 64
 
         self.root = tk.Tk()
-        self.root.geometry('400x405+440+400')
+        self.root.geometry('400x405+380+430')
         self.root.title('Chess')
 
         # TODO: Closing the window exits the program in the terminal.
@@ -150,4 +150,3 @@ class GUI:
         # Column plus 1 makes space for row labels in column 0
         # Row number calculations give a minimum result of 1, not 0.
         button.grid(column=column + 1, row=row - 1)
-

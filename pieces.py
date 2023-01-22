@@ -173,7 +173,9 @@ class Pawn:
                 return
         except TypeError:
             print('TypeError in Pawn.add_en_passant_moves(). Possibly caused',
-                  'by chessboard.last_move_from_to being (None, None).')
+                  'by chessboard.last_move_from_to being (None, None).',
+                  f'last_move_from={last_move_from}',
+                  f'last_move_to={last_move_to}')
         # Last piece moved was a pawn and it advanced two squares.
         en_passant_squares = []
 

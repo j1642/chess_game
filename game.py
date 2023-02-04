@@ -1,6 +1,6 @@
 """Run this file to play chess.
 
-Dependencies (must be in same directory):
+Dependencies:
     board.py
     chess_utilities.py
     gui.py
@@ -21,7 +21,6 @@ import pieces
 class Game:
     """Controls player turns."""
 
-    # Should this stuff stay as a class or become the main program?
     def __init__(self):
         self.player_color = ''
         self.computer_color = ''
@@ -41,28 +40,22 @@ class Game:
 
     def select_color(self):
         """Player chooses their piece color."""
-        # TODO: Delete this block when done testing and debuging.
-        self.player_color, self.computer_color = 'white', 'black'
-        self.white_turn, self.black_turn = self.player_turn, self.computer_turn
-        self.player_moves = self.board.white_moves
-        self.player_king = self.board.white_king
-        return
-
-        selected_color = input('Pick your color: white or black?\n>>> ')
+        selected_color = input('Pick your pieces: white or black?\n>>> ')
         if selected_color.lower() == 'white':
             self.player_color, self.computer_color = 'white', 'black'
-            self.white_turn, self.black_turn = self.player_turn, \
-                self.computer_turn
+            self.white_turn = self.player_turn
+            self.black_turn = self.computer_turn
             self.player_moves = self.board.white_moves
             self.player_king = self.board.white_king
         elif selected_color.lower() == 'black':
             self.player_color, self.computer_color = 'black', 'white'
-            self.black_turn, self.white_turn = self.player_turn, \
-                self.computer_turn
+            self.black_turn = self.player_turn
+            self.white_turn = self.computer_turn
             self.player_moves = self.board.black_moves
             self.player_king = self.board.black_king
         else:
-            print('Input white or black.')
+            print('Invalid piece color.')
+            return self.select_color()
 
     def computer_turn(self):
         """Make the computer's move. Currently, it plays a random move

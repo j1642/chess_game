@@ -213,9 +213,7 @@ class TestPieces(SetUpTearDown):
 
     @mock.patch('pieces.input', create=True)
     def test_promote_pawn_after_capture(self, mocked_input):
-        """Pawns which just captured a piece are promoted.
-        This test assumes that queen promotion is always chosen.
-        """
+        """Pawns which just captured a piece are promoted."""
         mocked_input.side_effect = ['bishop', 'rook']
         white_pawn = pieces.Pawn('Pa', 'white', 48)
         black_pawn = pieces.Pawn('pa', 'black', 8)
@@ -241,8 +239,6 @@ class TestPieces(SetUpTearDown):
         white_pawn.update_moves(chessboard)
         black_pawn.update_moves(chessboard)
 
-        # The Pawn promotion method currenty defaults to queen for debugging
-        # and testing.
         self.assertTrue(isinstance(chessboard.squares[57], pieces.Bishop))
         self.assertTrue(isinstance(chessboard.squares[1], pieces.Rook))
 

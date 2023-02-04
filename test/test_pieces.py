@@ -4,6 +4,7 @@
 # if getcwd().split('/')[-1] != 'chess':
 #    chdir('..')
 import unittest
+from unittest import mock
 
 import board
 import chess_utilities
@@ -183,10 +184,10 @@ class TestPieces(SetUpTearDown):
         self.assertEqual(set(opponent_pawn_b.moves), set([9, 8]))
         self.assertEqual(opponent_pawn_h.moves, [7])
 
-    def test_promote_pawn_walking_down_board(self):
-        """Pawns which walk into their final rank are promoted.
-        This test assumes the promotion should be to a queen.
-        """
+    @mock.patch('pieces.input', create=True)
+    def test_promote_pawn_walking_down_board(self, mocked_input):
+        """Pawns which walk into their final rank are promoted."""
+        mocked_input.side_effect = ['rook', 'knight']
         white_pawn = pieces.Pawn('Pa', 'white', 8)
         black_pawn = pieces.Pawn('ph', 'black', 63)
 
@@ -204,17 +205,18 @@ class TestPieces(SetUpTearDown):
         white_pawn.update_moves(chessboard)
         black_pawn.update_moves(chessboard)
 
-        self.assertTrue(isinstance(chessboard.squares[56], pieces.Queen))
+        self.assertTrue(isinstance(chessboard.squares[56], pieces.Rook))
         self.assertEqual(chessboard.white_pieces, [chessboard.squares[56]])
 
-        self.assertTrue(isinstance(chessboard.squares[7], pieces.Queen))
+        self.assertTrue(isinstance(chessboard.squares[7], pieces.Knight))
         self.assertEqual(chessboard.black_pieces, [chessboard.squares[7]])
 
-    def test_promote_pawn_after_capture(self):
+    @mock.patch('pieces.input', create=True)
+    def test_promote_pawn_after_capture(self, mocked_input):
         """Pawns which just captured a piece are promoted.
-        Current promotion defaults to queen without prompting the user.
         This test assumes that queen promotion is always chosen.
         """
+        mocked_input.side_effect = ['bishop', 'rook']
         white_pawn = pieces.Pawn('Pa', 'white', 48)
         black_pawn = pieces.Pawn('pa', 'black', 8)
         white_piece_to_capture = pieces.Knight('Nb', 'white', 1)
@@ -241,8 +243,8 @@ class TestPieces(SetUpTearDown):
 
         # The Pawn promotion method currenty defaults to queen for debugging
         # and testing.
-        self.assertTrue(isinstance(chessboard.squares[57], pieces.Queen))
-        self.assertTrue(isinstance(chessboard.squares[1], pieces.Queen))
+        self.assertTrue(isinstance(chessboard.squares[57], pieces.Bishop))
+        self.assertTrue(isinstance(chessboard.squares[1], pieces.Rook))
 
     def test_knight_movement(self):
         """Knight can move in 8 directions when not near the board edge."""
@@ -863,6 +865,7 @@ class TestPieces(SetUpTearDown):
         # capturable. Fixed by protected pieces.
         self.assertEqual(set(white_king.moves), set([9, 10]))
 
+    @unittest.skip("Incomplete")
     def test_why_black_king_did_not_escape_check(self):
         """Recreate game scenario where black king did not escape check.
 

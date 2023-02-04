@@ -199,17 +199,12 @@ class Pawn:
                     en_passant_piece.moves.append(
                         (last_move_from + last_move_to) // 2)
 
-    def promote_pawn(self, board, debug_input='queen'):
+    def promote_pawn(self, board):
         """Immediately promote pawn when it advances to its final row."""
         all_squares = board.squares
-        if debug_input:
-            new_piece_type = debug_input
-        else:
-            print('\nPawn promotion: which piece should your pawn become?')
-            print('Input queen, rook, bishop, or knight.')
-            new_piece_type = input('>>> ')
-        # TODO: small fix so black piece nams are lowercase when promoted
-        new_piece_type = new_piece_type.lower()
+        print('\nPawn promotion: which piece should your pawn become?')
+        print('Input queen, rook, bishop, or knight.')
+        new_piece_type = input('>>> ').lower()
         if new_piece_type == 'queen':
             all_squares[self.square] = Queen('Q', self.color, self.square)
         elif new_piece_type == 'rook':
@@ -219,8 +214,8 @@ class Pawn:
         elif new_piece_type == 'knight':
             all_squares[self.square] = Knight('N', self.color, self.square)
         else:
-            print('Unable to interpret your new piece type.')
-            self.promote_pawn(board)
+            print('Invalid piece type entered.')
+            return self.promote_pawn(board)
 
         new_piece = all_squares[self.square]
 

@@ -8,6 +8,21 @@ import pieces
 class Board:
     """Holds the current state of the board and provides methods for
     updating the board state.
+
+    Methods
+    -------
+        __init__()
+        __repr__()
+        initialize_pieces()
+        update_moves_white()
+        update_moves_black()
+        update_king_moves()
+        update_white_controlled_squares()
+        update_black_controlled_squares()
+        find_checking_pieces()
+        find_interposition_squares()
+        moves_must_escape_check_or_checkmate()
+
     """
 
     def __init__(self):
@@ -206,7 +221,7 @@ class Board:
             opponent_pieces = self.black_pieces
 
         # TODO: remove after debugging
-        print(opponent_pieces)
+        # print('opponent_pieces =', opponent_pieces)
         checked_square = checked_king.square
         assert checked_square in opponent_controlled_squares
 

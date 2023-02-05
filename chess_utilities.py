@@ -3,6 +3,16 @@ Forsyth-Edwards Notation (FEN).
 
 Primarily written to convert board positions into board.Board objects for
 debugging.
+
+Functions
+---------
+    print_fen_to_terminal()
+    import_fen_to_board()
+    export_board_to_fen()
+    pickle_and_add_board_to_db()
+    load_board_from_db()
+    create_board_database()
+
 """
 import copy
 import pickle

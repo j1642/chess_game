@@ -7,6 +7,18 @@ import tkinter as tk
 
 
 class GUI:
+    """Visual representation of a chessboard.
+
+    Methods
+    -------
+        __init__()
+        find_dark_light_squares()
+        empty_function()
+        update_gui()
+        find_command_make_button()
+
+    """
+
     def __init__(self):
         self.dark_squares, self.light_squares = self.find_dark_light_squares()
         self.image_references = [0] * 64
@@ -108,7 +120,8 @@ class GUI:
             self.image_references[ind] = image_path
 
             self.find_command_make_button(chessboard,
-                                          (image_path, column_num, row_num, ind, square),
+                                          (image_path, column_num,
+                                              row_num, ind, square),
                                           selected_piece)
         # mainloop() blocks flow from moving on.
         # self.root.mainloop()

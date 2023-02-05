@@ -7,6 +7,22 @@ import game
 import pieces
 
 
+def setup_board_kings_in_corner(g: game.Game):
+    """Set up the kings and a pawn in a corner as an incomplete template
+    for stalemate and checkmate.
+    """
+    a8 = g.board.ALGEBRAIC_NOTATION['a8']
+    a7 = g.board.ALGEBRAIC_NOTATION['a7']
+    a6 = g.board.ALGEBRAIC_NOTATION['a6']
+    g.board.black_pieces = [pieces.King('k', 'black', a8),
+                            pieces.Pawn('pa', 'black', a7)]
+    g.board.white_pieces = [pieces.King('K', 'white', a6)]
+    for piece in g.board.white_pieces + g.board.black_pieces:
+        g.board.squares[piece.square] = piece
+    g.board.white_king = g.board.squares[a6]
+    g.board.black_king = g.board.squares[a8]
+
+
 class TestGame(unittest.TestCase):
     """Test: user input, computer moves, stalemates, checkmated."""
 
@@ -73,43 +89,51 @@ class TestGame(unittest.TestCase):
         self.assertEqual(1, count_black_pieces_in_ranks_5_6)
 
     @mock.patch('game.input', create=True)
-    def test_computer_stalemated(self, mocked_input):
-        """Stalematei the computer. Black king in the corner."""
+    def test_stalemates(self, mocked_input):
+        """Stalemate the computer and player iteratively."""
+        for player_color in ['white', 'black']:
+            with self.subTest(player_color=player_color):
+                mocked_input.side_effect = [player_color]
+                g = game.Game()
+                setup_board_kings_in_corner(g)
+                if player_color == 'white':
+                    g.player_king = g.board.white_king
+                else:
+                    g.player_king = g.board.black_king
+                b1 = g.board.ALGEBRAIC_NOTATION['b1']
+                g.board.squares[b1] = pieces.Rook('Ra', 'white', b1)
+                g.board.white_pieces.append(g.board.squares[b1])
+
+                g.between_moves()
+                res = g.black_turn()
+                self.assertEqual('stalemate', res)
+
+    @mock.patch('game.input', create=True)
+    def test_checkmates(self, mocked_input):
+        """Checkmate the computer and player iteratively."""
+        for player_color in ['white', 'black']:
+            with self.subTest(player_color=player_color):
+                mocked_input.side_effect = [player_color]
+                g = game.Game()
+                setup_board_kings_in_corner(g)
+                g.player_king = g.board.white_king
+                if player_color == 'black':
+                    g.player_king = g.board.black_king
+                h8 = g.board.ALGEBRAIC_NOTATION['h8']
+                g.board.squares[h8] = pieces.Rook('Ra', 'white', h8)
+                g.board.white_pieces.append(g.board.squares[h8])
+                g.board.last_move_piece = g.board.squares[h8]
+                g.board.last_move_from_to = (7, 63)
+
+                g.between_moves()
+                res = g.black_turn()
+                expected = 'player wins by checkmate'
+                if player_color == 'black':
+                    expected = 'computer wins by checkmate'
+                self.assertEqual(expected, res)
+
+    @mock.patch('game.input', create=True)
+    def test_scholars_mate(self, mocked_input):
+        """Reach Scholar's Mate step by step."""
         mocked_input.side_effect = ['white']
-        g = game.Game()
-        a8 = g.board.ALGEBRAIC_NOTATION['a8']
-        a7 = g.board.ALGEBRAIC_NOTATION['a7']
-        a6 = g.board.ALGEBRAIC_NOTATION['a6']
-        b1 = g.board.ALGEBRAIC_NOTATION['b1']
-        g.board.squares[a8] = pieces.King('k', 'black', a8)
-        g.board.squares[a7] = pieces.Pawn('pa', 'black', a7)
-        g.board.squares[a6] = pieces.King('K', 'white', a6)
-        g.board.squares[b1] = pieces.Rook('Ra', 'white', b1)
-        g.board.black_pieces = [g.board.squares[a8], g.board.squares[a7]]
-        g.board.white_pieces = [g.board.squares[a6], g.board.squares[b1]]
-        g.board.white_king = g.board.squares[a6]
-        g.board.black_king = g.board.squares[a8]
-        g.board.last_move_piece = g.board.squares[b1]
-        g.board.last_move_from_to = (2, 1)
-        g.board.update_white_controlled_squares()
-        g.board.update_black_controlled_squares()
-        g.board.white_king.update_moves(g.board)
-        g.between_moves()
-        g.computer_turn()
-        # TODO: React to stalemate in game.py to nicely end the game.
-
-    def tesst_computer_checkmated(self):
-        """Checkmate the computer."""
-        pass
-
-    def test_player_stalemated(self):
-        """Stalemate the player."""
-        pass
-
-    def test_player_checkmated(self):
-        """Checkmate the player."""
-        pass
-
-    def test_scholars_mate(self):
-        """Achieve Scholar's Mate step by step."""
         pass

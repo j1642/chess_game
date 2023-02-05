@@ -18,11 +18,15 @@ The values also increase with increasing rank number.
 E.g. a2 is square 8, while a1 is square 0.
 
 Algebraic notation of the squares.
+| a8 | b8 | c8 | ... | h8 |
+| .. | .. | .. | ... | .. |
 | a3 | b3 | c3 | ... | h3 |
 | a2 | b2 | c2 | ... | h2 |
 | a1 | b1 | c1 | ... | h1 |
 
 Equivalent integer representation.
+| 56 | 57 | 58 | ... | 63 |
+| .. | .. | .. | ... | .. |
 | 16 | 17 | 18 | ... | 23 |
 | 8  | 9  | 10 | ... | 15 |
 | 0  | 1  | 2  | ... | 7  |
@@ -202,9 +206,9 @@ class Pawn:
     def promote_pawn(self, board):
         """Immediately promote pawn when it advances to its final row."""
         all_squares = board.squares
-        print('\nPawn promotion: which piece should your pawn become?')
-        print('Input queen, rook, bishop, or knight.')
-        new_piece_type = input('>>> ').lower()
+        new_piece_type = input('\nPawn promotion: which piece should your '
+                               'pawn become?\nInput queen, rook. bishop, '
+                               'or knight.\n>>> ').lower()
         if new_piece_type == 'queen':
             all_squares[self.square] = Queen('Q', self.color, self.square)
         elif new_piece_type == 'rook':

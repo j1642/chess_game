@@ -19,7 +19,22 @@ import pieces
 
 
 class Game:
-    """Controls the flow of the game."""
+    """Controls the flow of the game.
+
+    Methods
+    -------
+        __init__()
+        __repr__()
+        select_color()
+        computer_turn()
+        player_turn()
+        is_valid_square()
+        get_player_move_to()
+        get_player_move_from()
+        between_moves()
+        play()
+
+    """
 
     def __init__(self):
         self.player_color = ''
@@ -143,6 +158,18 @@ class Game:
         self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.computer_color
 
+    def is_valid_square(self, user_input) -> bool:
+        """Validate user move input."""
+        if user_input.isdigit():
+            square = int(user_input)
+            if (0 <= square and square <= 63):
+                return True
+            return False
+        elif user_input in self.board.ALGEBRAIC_NOTATION:
+            return True
+        print(f'{user_input} is not a valid algebraic notation square.')
+        return False
+
     def get_player_move_to(self) -> int:
         """Prompt for, validate, and return the square to move to."""
         new_square = input('Square to move to? (algebraic notation)\n>>> ')
@@ -186,18 +213,6 @@ class Game:
             return self.get_player_move_from()
         assert isinstance(old_square, int)
         return old_square
-
-    def is_valid_square(self, user_input) -> bool:
-        """Validate user move input."""
-        if user_input.isdigit():
-            square = int(user_input)
-            if (0 <= square and square <= 63):
-                return True
-            return False
-        elif user_input in self.board.ALGEBRAIC_NOTATION:
-            return True
-        print(f'{user_input} is not a valid algebraic notation square.')
-        return False
 
     def between_moves(self):
         """All moves must be updated between turns so pieces know where

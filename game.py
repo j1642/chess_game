@@ -44,7 +44,6 @@ class Game:
         self.black_wins = False
         self.board = board.Board()
 
-        self.board.initialize_pieces()
         self.select_color()
 
         self.display = gui.GUI()
@@ -93,15 +92,17 @@ class Game:
         else:
             raise Exception
         computer_king = [piece for piece in computer_pieces
-                         if isinstance(piece, pieces.King)]
+                         if isinstance(piece, pieces.King)][0]
 
         # TODO: Completed stalemate, incomplete checkmate.
+        # TODO: DRY. Centralize computer and player checkmate/stalemate.
         if computer_moves == []:
             if computer_king.in_check:
-                print('Player wins by checkmate. Game over.')
+                print('Player wins by checkmate! Game over.')
+                return 'player wins by checkmate'
             else:
-                print('Draw by stalemate. Game over.')
-            sys.exit()
+                print('Draw by stalemate! Game over.')
+                return 'stalemate'
 
         if isinstance(move, tuple) and len(move) == 2 \
                 and self.is_valid_square(move[0]) \
@@ -136,12 +137,14 @@ class Game:
         elif self.player_color == 'black':
             self.player_moves = self.board.black_moves
         # TODO: Completed stalemate, incomplete checkmate.
+        # TODO: DRY. Centralize computer and player checkmate/stalemate.
         if self.player_moves == []:
             if self.player_king.in_check:
-                print('Computer wins by checkmate. Game over.')
+                print('Computer wins by checkmate! Game over.')
+                return 'computer wins by checkmate'
             else:
-                print('Draw by stalemate. Game over.')
-            sys.exit()
+                print('Draw by stalemate! Game over.')
+                return 'stalemate'
 
         old_square = self.get_player_move_from()
         new_square = self.get_player_move_to()
@@ -232,16 +235,19 @@ class Game:
         # - by Updating dummy board and check if friendly king is in check.
 
     def play(self):
-        """Play the game. The while loop ends by sys.exit() in
-        Game.player_turn() or Game.computer_turn().
-        """
+        """Play the game."""
+        self.board.initialize_pieces()
         while True:
             self.between_moves()
             self.display.update_gui(self.board)
             self.white_turn()
+            # TODO: if self.white_turn() returns str:
+            #   game over
             self.between_moves()
             self.display.update_gui(self.board)
             self.black_turn()
+            # TODO: if self.black_turn() returns str:
+            #   game over
 
 
 if __name__ == '__main__':

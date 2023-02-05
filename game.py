@@ -7,7 +7,7 @@ Dependencies:
     pieces.py
 """
 
-from random import choice
+import random
 import sys
 from time import gmtime, strftime
 import traceback
@@ -19,7 +19,7 @@ import pieces
 
 
 class Game:
-    """Controls player turns."""
+    """Controls the flow of the game."""
 
     def __init__(self):
         self.player_color = ''
@@ -42,24 +42,32 @@ class Game:
         """Player chooses their piece color."""
         selected_color = input('Pick your pieces: white or black?\n>>> ')
         if selected_color.lower() == 'white':
-            self.player_color, self.computer_color = 'white', 'black'
+            self.player_color = 'white'
+            self.computer_color = 'black'
             self.white_turn = self.player_turn
             self.black_turn = self.computer_turn
             self.player_moves = self.board.white_moves
             self.player_king = self.board.white_king
+
         elif selected_color.lower() == 'black':
-            self.player_color, self.computer_color = 'black', 'white'
+            self.player_color = 'black'
+            self.computer_color = 'white'
             self.black_turn = self.player_turn
             self.white_turn = self.computer_turn
             self.player_moves = self.board.black_moves
             self.player_king = self.board.black_king
+
         else:
             print('Invalid piece color.')
             return self.select_color()
 
-    def computer_turn(self):
+    def computer_turn(self, move=None):
         """Make the computer's move. Currently, it plays a random move
         from all available moves.
+
+        The `move` positional/keyword argument can force a specific move.
+        `move` should be None or a tuple of squares to move from/to (ints
+        or algebraic notation strings).
         """
         if self.computer_color == 'white':
             computer_pieces = self.board.white_pieces
@@ -80,23 +88,29 @@ class Game:
                 print('Draw by stalemate. Game over.')
             sys.exit()
 
-        move_choices = []
-        while move_choices == []:
-            piece_to_move = choice(computer_pieces)
-            move_choices = piece_to_move.moves
+        if isinstance(move, tuple) and len(move) == 2 \
+                and self.is_valid_square(move[0]) \
+                and self.is_valid_square(move[1]) \
+                and move[0] != move[1]:
+            old_square = self.board.ALGEBRAIC_NOTATION.get(move[0], move[0])
+            new_square = self.board.ALGEBRAIC_NOTATION.get(move[1], move[1])
+            piece_to_move = self.board.squares[old_square]
+            piece_to_move.move_piece(self.board, new_square)
+        else:
+            move_choices = []
+            while move_choices == []:
+                piece_to_move = random.choice(computer_pieces)
+                move_choices = piece_to_move.moves
+            assert move_choices
+            assert piece_to_move
 
-        assert move_choices
-        assert piece_to_move
-
-        old_square = piece_to_move.square
-        random_move = choice(move_choices)
-
-        piece_to_move.move_piece(self.board, random_move)
-
-        assert old_square != piece_to_move.square
+            old_square = piece_to_move.square
+            new_square = random.choice(move_choices)
+            piece_to_move.move_piece(self.board, new_square)
+            assert old_square != piece_to_move.square
 
         self.board.last_move_piece = piece_to_move
-        self.board.last_move_from_to = (old_square, random_move)
+        self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.player_color
 
     def player_turn(self, old_square=None):
@@ -132,8 +146,8 @@ class Game:
     def get_player_move_to(self) -> int:
         """Prompt for, validate, and return the square to move to."""
         new_square = input('Square to move to? (algebraic notation)\n>>> ')
-        if not self.is_valid_input_square(new_square):
-            # is_valid_input_square() prints explanation to user.
+        if not self.is_valid_square(new_square):
+            # is_valid_square() prints explanation to user.
             return self.get_player_move_to()
         if new_square.isdigit():
             new_square = int(new_square)
@@ -153,8 +167,8 @@ class Game:
     def get_player_move_from(self) -> int:
         """Prompt for, validate, and return the square to move from."""
         old_square = input('Square to move from? (algebraic notation)\n>>> ')
-        if not self.is_valid_input_square(old_square):
-            # is_valid_input_square() prints explanation to user.
+        if not self.is_valid_square(old_square):
+            # is_valid_square() prints explanation to user.
             return self.get_player_move_from()
         if old_square.isdigit():
             old_square = int(old_square)
@@ -162,8 +176,8 @@ class Game:
             old_square = self.board.ALGEBRAIC_NOTATION[old_square]
         try:
             if self.board.squares[old_square].color != self.player_color:
-                print(f"One of your opponent's pieces is on square "
-                      f'{old_square}. You cannot move that piece.')
+                print("One of your opponent's pieces is on that square. "
+                      'You cannot move that piece.')
                 return self.get_player_move_from()
         except AttributeError:
             assert self.board.squares[old_square] == ' '
@@ -173,7 +187,7 @@ class Game:
         assert isinstance(old_square, int)
         return old_square
 
-    def is_valid_input_square(self, user_input) -> bool:
+    def is_valid_square(self, user_input) -> bool:
         """Validate user move input."""
         if user_input.isdigit():
             square = int(user_input)
@@ -200,9 +214,7 @@ class Game:
         # self.board.black_king.update_moves(self.board)
 
         # TODO: check if a piece is pinned to the king before moving it:
-        #   - by Updating dummy board and check if friendly king is in check.
-
-        # TODO: choose terminal or GUI
+        # - by Updating dummy board and check if friendly king is in check.
 
     def play(self):
         """Play the game. The while loop ends by sys.exit() in

@@ -135,5 +135,21 @@ class TestGame(unittest.TestCase):
     @mock.patch('game.input', create=True)
     def test_scholars_mate(self, mocked_input):
         """Reach Scholar's Mate step by step."""
-        mocked_input.side_effect = ['white']
-        pass
+        mocked_input.side_effect = ['white', 'e2', 'e4', 'd1', 'h5', 'f1',
+                                    'c4', 'h5', 'f7']
+        g = game.Game()
+        g.board.initialize_pieces()
+        print('\nScholar\'s Mate')
+        for computer_move in [('e7', 'e5'), ('b8', 'c6'), ('g8', 'f6'),
+                              ('f6', 'g8')]:
+            g.between_moves()
+            res = g.player_turn()
+            if res:
+                self.assertEqual(0, 1)
+            g.between_moves()
+            res = g.computer_turn(move=computer_move)
+            g.between_moves()
+            if res:
+                print('computer res =', res)
+                break
+        self.assertEqual('player wins by checkmate', res)

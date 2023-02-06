@@ -861,7 +861,6 @@ class TestPieces(SetUpTearDown):
         # capturable. Fixed by protected pieces.
         self.assertEqual(set(white_king.moves), set([9, 10]))
 
-    @unittest.skip("Incomplete")
     def test_why_black_king_did_not_escape_check(self):
         """Recreate game scenario where black king did not escape check.
 

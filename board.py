@@ -1,7 +1,6 @@
 """The Board class represents the chessboard, storing piece locations, the
 previous move, and methods which broadly operate on each piece color.
 """
-import sys
 import pieces
 
 
@@ -307,7 +306,6 @@ class Board:
                 # TODO: remove after debugging
                 print(checking_pieces)
                 print(f'{checked_king.color.upper()} loses by checkmate.')
-                sys.exit()
 
         checking_pieces_squares = [piece.square for piece in checking_pieces]
 

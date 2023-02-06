@@ -52,7 +52,7 @@ class Board:
             'f8': 61, 'g8': 62, 'h8': 63}
 
     def __repr__(self):
-        """Start from the eighth rank (row)."""
+        """Print the board setup, starting from the eighth rank (row)."""
         ranks_to_print = []
         for factor in range(7, -1, -1):
             rank_x = ['|']
@@ -93,11 +93,11 @@ class Board:
         white_pawn_h = pieces.Pawn('Ph', 'white', 15)
 
         self.white_pieces = [white_rook_a, white_knight_b, white_bishop_c,
-                             white_queen, white_king, white_bishop_f,
+                             white_queen, white_bishop_f,
                              white_knight_g, white_rook_h, white_pawn_a,
                              white_pawn_b, white_pawn_c, white_pawn_d,
                              white_pawn_e, white_pawn_f, white_pawn_g,
-                             white_pawn_h]
+                             white_pawn_h, white_king]
 
         black_rook_a = pieces.Rook('ra', 'black', 56)
         black_knight_b = pieces.Knight('nb', 'black', 57)
@@ -118,11 +118,11 @@ class Board:
         black_pawn_h = pieces.Pawn('ph', 'black', 55)
 
         self.black_pieces = [black_rook_a, black_knight_b, black_bishop_c,
-                             black_queen, black_king, black_bishop_f,
+                             black_queen, black_bishop_f,
                              black_knight_g, black_rook_h, black_pawn_a,
                              black_pawn_b, black_pawn_c, black_pawn_d,
                              black_pawn_e, black_pawn_f, black_pawn_g,
-                             black_pawn_h]
+                             black_pawn_h, black_king]
 
         for piece in self.white_pieces + self.black_pieces:
             self.squares[piece.square] = piece
@@ -223,6 +223,8 @@ class Board:
         # TODO: remove after debugging
         # print('opponent_pieces =', opponent_pieces)
         checked_square = checked_king.square
+        # If this AssertionError is raised, check that the kings are the
+        # final list elements in board.white_pieces and board.black_pieces.
         assert checked_square in opponent_controlled_squares
 
         checking_pieces = []
@@ -319,11 +321,8 @@ class Board:
         all_legal_moves_in_check = set(interpose_squares
                                        + checking_pieces_squares)
 
-        piece_types_minus_king = (pieces.Pawn, pieces.Knight, pieces.Bishop,
-                                  pieces.Rook, pieces.Queen)
-
         for piece in friendly_pieces:
-            if isinstance(piece, piece_types_minus_king):
+            if not isinstance(piece, pieces.King):
                 if len(checking_pieces) == 1:
                     legal_moves = all_legal_moves_in_check & set(piece.moves)
                     piece.moves = list(legal_moves)

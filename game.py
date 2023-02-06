@@ -131,7 +131,7 @@ class Game:
 
     def player_turn(self, old_square=None):
         """Human turn."""
-        print(self.board)
+        # print(self.board)
         if self.player_color == 'white':
             self.player_moves = self.board.white_moves
         elif self.player_color == 'black':
@@ -236,18 +236,19 @@ class Game:
 
     def play(self):
         """Play the game."""
-        self.board.initialize_pieces()
+        if not self.board.black_pieces + self.board.white_pieces:
+            self.board.initialize_pieces()
         while True:
             self.between_moves()
             self.display.update_gui(self.board)
-            self.white_turn()
-            # TODO: if self.white_turn() returns str:
-            #   game over
+            res_white_turn = self.white_turn()
+            if res_white_turn:
+                sys.exit(0)
             self.between_moves()
             self.display.update_gui(self.board)
-            self.black_turn()
-            # TODO: if self.black_turn() returns str:
-            #   game over
+            res_black_turn = self.black_turn()
+            if res_black_turn:
+                sys.exit(0)
 
 
 if __name__ == '__main__':

@@ -223,12 +223,14 @@ class Pawn:
 
         new_piece = all_squares[self.square]
 
+        # King pieces must always be final item in board.<color>_pieces.
+        # Insert into board.<color>_pieces, never append.
         if self.color == 'white':
-            board.white_pieces.append(new_piece)
+            board.white_pieces.insert(0, new_piece)
             board.white_pieces.remove(self)
         elif self.color == 'black':
             new_piece.name = new_piece.name.lower()
-            board.black_pieces.append(new_piece)
+            board.black_pieces.insert(0, new_piece)
             board.black_pieces.remove(self)
 
     def move_piece(self, board, new_square: int):

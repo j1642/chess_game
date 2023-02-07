@@ -1,6 +1,7 @@
 """Provide a graphical display, in addition to the ASCII standard
 outputs to the terminal.
 """
+import sys
 import tkinter as tk
 # GUI could have all the logic to run the game with GUI display?
 # And all terminal-displa logic in game?
@@ -20,9 +21,12 @@ class GUI:
     """
 
     def __init__(self):
+        # Disable display in CI/CD to avoid TclError
+        if sys.version[:4] == '3.10':
+            return
+
         self.dark_squares, self.light_squares = self.find_dark_light_squares()
         self.image_references = [0] * 64
-
         self.root = tk.Tk()
         self.root.geometry('400x405+380+430')
         self.root.title('Chess')

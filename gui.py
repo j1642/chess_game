@@ -22,7 +22,9 @@ class GUI:
 
     def __init__(self):
         # Disable display in CI/CD to avoid TclError
-        if sys.version[:4] == '3.10':
+        if sys.version[:6] == '3.10.8' and sys.platform == 'linux':
+            print('Remove the gui.__init__() check if you are using '
+                  'Python 3.10.8 on Linux.')
             return
 
         self.dark_squares, self.light_squares = self.find_dark_light_squares()
@@ -162,7 +164,8 @@ class GUI:
             highlightthickness=0,
             bd=0,
             borderwidth=0,
-            command=command)
+            # Commands not currently supported.
+            command=self.empty_function())
 
         # Column plus 1 makes space for row labels in column 0
         # Row number calculations give a minimum result of 1, not 0.

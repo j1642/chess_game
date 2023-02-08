@@ -11,7 +11,6 @@ import chess_utilities
 import pieces
 
 
-# What's up with this?
 # It seems like there needs to be a global board variable for these tests.
 # Shouldn't a local all_squares variable work without giving a NameError?
 class SetUpTearDown(unittest.TestCase):
@@ -46,9 +45,7 @@ class TestPieces(SetUpTearDown):
         rook = pieces.Rook('Ra', 'white', 3)
         queen = pieces.Queen('Q', 'white', 4)
         bishop = pieces.Bishop('B', 'white', 5)
-
-        white_pieces = (pawn, knight, king, rook, queen, bishop)
-
+        white_pieces = (pawn, knight, rook, queen, bishop, king)
         for ind, piece in enumerate(white_pieces):
             chessboard.squares[ind] = piece
 
@@ -60,7 +57,7 @@ class TestPieces(SetUpTearDown):
         # Make sure it is possible to iteratively update the move lists.
         self.assertEqual(pawn.moves, [8, 16])
 
-        new_squares = (8, 18, 10, 11, 12, 14)
+        new_squares = (8, 18, 11, 12, 14, 10)
         for ind, piece in enumerate(white_pieces):
             piece.move_piece(chessboard, new_squares[ind])
 
@@ -115,7 +112,6 @@ class TestPieces(SetUpTearDown):
         pawn = pieces.Pawn('Pa', 'white', 16)
         all_squares[16] = pawn
         self.assertFalse(pawn.has_moved)
-
         blocking_piece = pieces.King('k', 'black', 32)
         all_squares[32] = blocking_piece
 
@@ -129,14 +125,11 @@ class TestPieces(SetUpTearDown):
         pawn = pieces.Pawn('Pd', 'white', 11)
         friendly_piece = pieces.Bishop('Bc', 'white', 18)
         opponent_piece = pieces.Pawn('pe', 'black', 20)
-
         all_squares[11] = pawn
         all_squares[18] = friendly_piece
         all_squares[20] = opponent_piece
 
         pawn.update_moves(chessboard)
-        # Pawn should be able to move forward by 1 or 2 squares and
-        # capture the enemy pawn.
         self.assertFalse(pawn.has_moved)
         self.assertEqual(set(pawn.moves), set([19, 27, 20]))
 
@@ -147,7 +140,6 @@ class TestPieces(SetUpTearDown):
         pawn = pieces.Pawn('pa', 'black', 48)
         friendly_piece = pieces.Knight('nb', 'black', 32)
         opponent_piece = pieces.Queen('Q', 'white', 41)
-
         all_squares[48] = pawn
         all_squares[32] = friendly_piece
         all_squares[41] = opponent_piece
@@ -164,10 +156,8 @@ class TestPieces(SetUpTearDown):
         pawn = pieces.Pawn('Pa', 'white', 8)
         opponent_pawn_b = pieces.Pawn('pb', 'black', 17)
         opponent_pawn_h = pieces.Pawn('ph', 'black', 15)
-
         opponent_pawn_b.has_moved = True
         opponent_pawn_h.has_moved = True
-
         all_squares[8] = pawn
         all_squares[17] = opponent_pawn_b
         all_squares[15] = opponent_pawn_h
@@ -190,14 +180,12 @@ class TestPieces(SetUpTearDown):
         mocked_input.side_effect = ['rook', 'knight']
         white_pawn = pieces.Pawn('Pa', 'white', 8)
         black_pawn = pieces.Pawn('ph', 'black', 63)
-
         chessboard.white_pieces = [white_pawn]
         chessboard.black_pieces = [black_pawn]
 
         while white_pawn.square < 56:
             white_pawn.update_moves(chessboard)
             white_pawn.move_piece(chessboard, white_pawn.moves[0])
-
         while black_pawn.square > 7:
             black_pawn.update_moves(chessboard)
             black_pawn.move_piece(chessboard, black_pawn.moves[0])
@@ -219,10 +207,8 @@ class TestPieces(SetUpTearDown):
         black_pawn = pieces.Pawn('pa', 'black', 8)
         white_piece_to_capture = pieces.Knight('Nb', 'white', 1)
         black_piece_to_capture = pieces.Knight('nb', 'black', 57)
-
         white_pawn.has_moved = True
         black_pawn.has_moved = True
-
         chessboard.white_pieces = [white_pawn, white_piece_to_capture]
         chessboard.black_pieces = [black_pawn, black_piece_to_capture]
         for piece in chessboard.white_pieces + chessboard.black_pieces:
@@ -262,7 +248,6 @@ class TestPieces(SetUpTearDown):
         """Knight cannot move to squares occupied by friendly pieces."""
         knight = pieces.Knight('Ng', 'white', 6)
         pawn_e2 = pieces.Pawn('Pe', 'white', 12)
-
         all_squares[6] = knight
         all_squares[12] = pawn_e2
 
@@ -274,7 +259,6 @@ class TestPieces(SetUpTearDown):
         """Knight must be able to capture opposing pieces."""
         knight = pieces.Knight('Ng', 'white', 6)
         opponent_piece = pieces.Pawn('ph', 'black', 23)
-
         all_squares[6] = knight
         all_squares[23] = opponent_piece
 
@@ -294,7 +278,7 @@ class TestPieces(SetUpTearDown):
         supposed_bishop_moves = set((61, 59, 45, 38, 31, 43, 34, 25, 16))
         self.assertEqual(set(bishop.moves), supposed_bishop_moves)
 
-        # This block should prevent bishop edge cases on the corners/sides.
+        # This block should prevent bishop edge cases on the corners/sides
         bishop = pieces.Bishop('Bc', 'white', 0)
         bishop.update_moves(chessboard)
         self.assertEqual(set(bishop.moves), set(range(9, 64, 9)))
@@ -303,7 +287,6 @@ class TestPieces(SetUpTearDown):
         """Bishop cannot move into nor past friendly pieces."""
         bishop = pieces.Bishop('Bf', 'white', 7)
         friendly_piece = pieces.Rook('Ra', 'white', 35)
-
         all_squares[7] = bishop
         all_squares[35] = friendly_piece
 
@@ -314,7 +297,6 @@ class TestPieces(SetUpTearDown):
         """Bishop can move into but not past opposing pieces."""
         bishop = pieces.Bishop('Bf', 'white', 7)
         opponent_piece = pieces.Pawn('pe', 'black', 35)
-
         all_squares[7] = bishop
         all_squares[35] = opponent_piece
 
@@ -354,17 +336,14 @@ class TestPieces(SetUpTearDown):
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves), set(list(range(8, 57, 8))
                                               + list(range(1, 8))))
-
         rook = pieces.Rook('Rh', 'white', 7)
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves), set(list(range(15, 64, 8))
                                               + list(range(0, 7))))
-
         rook = pieces.Rook('ra', 'black', 56)
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves), set(list(range(0, 49, 8))
                                               + list(range(57, 64))))
-
         rook = pieces.Rook('rh', 'black', 63)
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves), set(list(range(7, 56, 8))
@@ -376,7 +355,6 @@ class TestPieces(SetUpTearDown):
         friendly_knight = pieces.Knight('nb', 'black', 57)
         friendly_pawn_a = pieces.Pawn('pa', 'black', 8)
         friendly_pawn_c = pieces.Pawn('pc', 'black', 10)
-
         all_squares[9] = rook
         all_squares[57] = friendly_knight
         all_squares[8] = friendly_pawn_a
@@ -391,12 +369,10 @@ class TestPieces(SetUpTearDown):
         opponent_pawn = pieces.Pawn('Pc', 'white', 10)
         opponent_knight = pieces.Knight('Nb', 'white', 1)
         opponent_rook = pieces.Rook('Ra', 'white', 8)
-
         all_squares[9] = rook
         all_squares[10] = opponent_pawn
         all_squares[1] = opponent_knight
         all_squares[8] = opponent_rook
-
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves),
                          set([8, 1, 10] + list(range(17, 58, 8))))
@@ -406,7 +382,6 @@ class TestPieces(SetUpTearDown):
         queen = pieces.Queen('Q', 'white', 9)
         self.assertFalse(queen.moves)
         queen.update_moves(chessboard)
-        # Possible rook moves plus possible bishop moves.
         supposed_queen_moves = ([1, 8]
                                 + list(range(17, 58, 8))
                                 + list(range(10, 16))
@@ -426,7 +401,6 @@ class TestPieces(SetUpTearDown):
         queen = pieces.Queen('q', 'black', 56)
         friendly_knight = pieces.Knight('nb', 'black', 57)
         friendly_pawn = pieces.Pawn('pb', 'black', 49)
-
         all_squares[56] = queen
         all_squares[57] = friendly_knight
         all_squares[49] = friendly_pawn
@@ -435,13 +409,12 @@ class TestPieces(SetUpTearDown):
         self.assertEqual(set(queen.moves), set(range(0, 49, 8)))
 
     def test_queen_opponent_piece_collision(self):
-        """Queen cannot move through opposing pieces but can move into their
-        square.
+        """Queen cannot move through opposing pieces but can move into
+        their square.
         """
         queen = pieces.Queen('q', 'black', 0)
         opponent_bishop = pieces.Bishop('Bc', 'white', 2)
         opponent_pawn = pieces.Pawn('Pb', 'white', 9)
-
         all_squares[0] = queen
         all_squares[2] = opponent_bishop
         all_squares[9] = opponent_pawn
@@ -473,19 +446,16 @@ class TestPieces(SetUpTearDown):
         white_king = pieces.King('K', 'white', 4)
         white_rook_a = pieces.Rook('Ra', 'white', 0)
         white_rook_h = pieces.Rook('Rh', 'white', 7)
-        chessboard.white_pieces = [white_king, white_rook_a, white_rook_h]
-
+        chessboard.white_pieces = [white_rook_a, white_rook_h, white_king]
         black_king = pieces.King('k', 'black', 60)
         black_rook_a = pieces.Rook('ra', 'black', 56)
         black_rook_h = pieces.Rook('rh', 'black', 63)
-        chessboard.black_pieces = [black_king, black_rook_a, black_rook_h]
-
+        chessboard.black_pieces = [black_rook_a, black_rook_h, black_king]
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
-
         self.assertEqual(set(white_king.moves), set([3, 5, 11, 12, 13, 2, 6]))
         self.assertEqual(set(black_king.moves),
                          set([59, 61, 51, 52, 53, 58, 62]))
@@ -513,7 +483,6 @@ class TestPieces(SetUpTearDown):
         friendly_queen = pieces.Queen('Q', 'white', 3)
         friendly_pawn_f = pieces.Pawn('Pf', 'white', 13)
         friendly_bishop = pieces.Bishop('Bf', 'white', 5)
-
         all_squares[12] = king
         all_squares[28] = friendly_pawn_e
         all_squares[11] = friendly_pawn_d
@@ -530,20 +499,16 @@ class TestPieces(SetUpTearDown):
         black_king = pieces.King('k', 'black', 20)
         black_rook_a = pieces.Rook('ra', 'black', 59)
         black_rook_h = pieces.Rook('rh', 'black', 61)
-
         all_pieces = (white_king, black_king, black_rook_a,
                       black_rook_h)
-
         for piece in all_pieces:
             chessboard.squares[piece.square] = piece
-
         for piece in all_pieces:
             piece.update_moves(chessboard)
 
         black_controlled_squares = set(black_rook_a.moves
                                        + black_rook_h.moves
                                        + black_king.moves)
-
         white_controlled_squares = set(white_king.moves)
 
         for king in (white_king, black_king):
@@ -558,7 +523,6 @@ class TestPieces(SetUpTearDown):
         king = pieces.King('K', 'white', 4)
         opponent_rook = pieces.Rook('ra', 'black', 0)
         self.assertFalse(king.in_check)
-
         all_squares[4] = king
         all_squares[0] = opponent_rook
 
@@ -581,13 +545,10 @@ class TestPieces(SetUpTearDown):
         black_king = pieces.King('k', 'black', 60)
         black_rook_a = pieces.Rook('ra', 'black', 56)
         black_rook_h = pieces.Rook('rh', 'black', 63)
-
-        chessboard.white_pieces = [white_king, white_rook_a, white_rook_h]
-        chessboard.black_pieces = [black_king, black_rook_a, black_rook_h]
-
+        chessboard.white_pieces = [white_rook_a, white_rook_h, white_king]
+        chessboard.black_pieces = [black_rook_a, black_rook_h, black_king]
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             piece.update_moves(chessboard)
 
@@ -602,16 +563,12 @@ class TestPieces(SetUpTearDown):
         rook_a = pieces.Rook('Ra', 'white', 0)
         rook_h = pieces.Rook('Rh', 'white', 7)
         opponent_rook = pieces.Rook('ra', 'black', 60)
-
         chessboard.white_king = king
         chessboard.last_move_piece = opponent_rook
-
-        chessboard.white_pieces = [king, rook_a, rook_h]
+        chessboard.white_pieces = [rook_a, rook_h, king]
         chessboard.black_pieces = [opponent_rook]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             piece.update_moves(chessboard)
 
@@ -640,8 +597,7 @@ class TestPieces(SetUpTearDown):
         rook_h = pieces.Rook('Rh', 'white', 7)
         opponent_rook_a = pieces.Rook('ra', 'black', 59)
         opponent_rook_h = pieces.Rook('rh', 'black', 61)
-
-        chessboard.white_pieces = [king, rook_a, rook_h]
+        chessboard.white_pieces = [rook_a, rook_h, king]
         chessboard.black_pieces = [opponent_rook_a, opponent_rook_h]
 
         for piece in chessboard.white_pieces + chessboard.black_pieces:
@@ -663,10 +619,8 @@ class TestPieces(SetUpTearDown):
         rook_h = pieces.Rook('Rh', 'white', 7)
         opponent_rook_a = pieces.Rook('ra', 'black', 58)
         opponent_rook_h = pieces.Rook('rh', 'black', 62)
-
-        chessboard.white_pieces = [king, rook_a, rook_h]
+        chessboard.white_pieces = [rook_a, rook_h, king]
         chessboard.black_pieces = [opponent_rook_a, opponent_rook_h]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -691,13 +645,10 @@ class TestPieces(SetUpTearDown):
         king = pieces.King('K', 'white', 4)
         opponent_rook = pieces.Rook('ra', 'black', 0)
         self.assertFalse(king.in_check)
-
         chessboard.white_king = king
         chessboard.last_move_piece = opponent_rook
-
         chessboard.white_pieces.append(king)
         chessboard.black_pieces.append(opponent_rook)
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -717,13 +668,10 @@ class TestPieces(SetUpTearDown):
         white_rook_a = pieces.Rook('Ra', 'white', 8)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 15)
-
         chessboard.white_king = white_king
         chessboard.last_move_piece = black_rook_h
-
-        chessboard.white_pieces = [white_king, white_rook_a]
+        chessboard.white_pieces = [white_rook_a, white_king]
         chessboard.black_pieces = [black_rook_a, black_rook_h]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -751,13 +699,10 @@ class TestPieces(SetUpTearDown):
         white_king = pieces.King('K', 'white', 1)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 15)
-
         chessboard.last_move_piece = black_rook_h
         chessboard.white_king = white_king
-
         chessboard.white_pieces = [white_king]
         chessboard.black_pieces = [black_rook_a, black_rook_h]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -775,13 +720,10 @@ class TestPieces(SetUpTearDown):
         white_king = pieces.King('K', 'white', 7)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 15)
-
         chessboard.white_king = white_king
         chessboard.last_move_piece = black_rook_h
-
         chessboard.white_pieces = [white_king]
         chessboard.black_pieces = [black_rook_a, black_rook_h]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -802,13 +744,10 @@ class TestPieces(SetUpTearDown):
         black_rook_1 = pieces.Rook('r1', 'black', 0)
         black_rook_2 = pieces.Rook('r2', 'black', 8)
         black_rook_3 = pieces.Rook('r3', 'black', 16)
-
         chessboard.last_move_piece = black_rook_3
         chessboard.white_king = white_king
-
-        chessboard.white_pieces = [white_king, white_rook]
+        chessboard.white_pieces = [white_rook, white_king]
         chessboard.black_pieces = [black_rook_1, black_rook_2, black_rook_3]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -832,12 +771,10 @@ class TestPieces(SetUpTearDown):
         white_king = pieces.King('K', 'white', 1)
         black_rook_a = pieces.Rook('ra', 'black', 0)
         black_rook_h = pieces.Rook('rh', 'black', 7)
-
         chessboard.last_move_piece = black_rook_h
         chessboard.white_king = white_king
         chessboard.white_pieces = [white_king]
         chessboard.black_pieces = [black_rook_a, black_rook_h]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -870,16 +807,21 @@ class TestPieces(SetUpTearDown):
         """
         check_test_fen = 'rnbB2kr/1p1p3p/8/2pP2Q1/p3P3/P7/1PP2PPP/RN2KBNR b'
         chessboard = chess_utilities.import_fen_to_board(check_test_fen)
-
         for piece in chessboard.squares:
             try:
                 if piece.color == 'white':
-                    chessboard.white_pieces.append(piece)
+                    if isinstance(piece, pieces.King):
+                        chessboard.white_pieces.append(piece)
+                    else:
+                        chessboard.white_pieces.insert(0, piece)
                 elif piece.color == 'black':
-                    chessboard.black_pieces.append(piece)
+                    if isinstance(piece, pieces.King):
+                        chessboard.black_pieces.append(piece)
+                    else:
+                        chessboard.black_pieces.insert(0, piece)
+
             except AttributeError:
                 continue
-
         for black_piece in chessboard.black_pieces:
             if isinstance(black_piece, pieces.King):
                 chessboard.black_king = black_piece
@@ -912,10 +854,8 @@ class TestPieces(SetUpTearDown):
         white_pawn_a = pieces.Pawn('Pa', 'white', 8)
         black_pawn_b = pieces.Pawn('pb', 'black', 25)
         black_pawn_b.has_moved = True
-
         chessboard.white_pieces = [white_pawn_a]
         chessboard.black_pieces = [black_pawn_b]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -935,10 +875,8 @@ class TestPieces(SetUpTearDown):
         white_pawn_g = pieces.Pawn('Pg', 'white', 38)
         black_pawn_h = pieces.Pawn('ph', 'black', 55)
         white_pawn_g.has_moved = True
-
         chessboard.white_pieces = [white_pawn_g]
         chessboard.black_pieces = [black_pawn_h]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 
@@ -961,10 +899,8 @@ class TestPieces(SetUpTearDown):
         black_pawn_f = pieces.Pawn('pf', 'black', 29)
         black_pawn_d.has_moved = True
         black_pawn_f.has_moved = True
-
         chessboard.white_pieces = [white_pawn_e]
         chessboard.black_pieces = [black_pawn_d, black_pawn_f]
-
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             chessboard.squares[piece.square] = piece
 

@@ -557,13 +557,12 @@ class Rook:
 
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
-
+            old_square, self.square = self.square, new_square
         else:
             print(f'Not a valid move for {self.name}.')
             return 'Not a valid move.'
 
         self.has_moved = True
-        old_square, self.square = self.square, new_square
         board.squares[old_square], board.squares[new_square] = ' ', self
 
 

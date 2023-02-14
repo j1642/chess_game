@@ -719,6 +719,8 @@ class King:
             if -1 < new_square < 64:
                 all_moves.append(self.square + direction)
 
+        self.protected_squares = all_moves.copy()
+
         # Remove moves where a friendly piece is. Castling checks this within
         # its own block.
         all_moves_copy = all_moves.copy()

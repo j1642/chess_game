@@ -913,3 +913,30 @@ class TestPieces(SetUpTearDown):
         chessboard.update_black_controlled_squares()
         self.assertEqual(set(black_pawn_d.moves), set([19, 20]))
         self.assertEqual(set(black_pawn_f.moves), set([21, 20]))
+
+    def test_close_kings_limit_moves(self):
+        """Kings limit legal moves of nearby kings without limiting
+        King.protected_squares or Board.<color>_controlled_squares.
+        """
+        b6 = chessboard.ALGEBRAIC_NOTATION['b6']
+        b8 = chessboard.ALGEBRAIC_NOTATION['b8']
+        chessboard.white_pieces.append(pieces.King('K', 'white', b6))
+        chessboard.black_pieces.append(pieces.King('k', 'black', b8))
+        for piece in chessboard.white_pieces + chessboard.black_pieces:
+            chessboard.squares[piece.square] = piece
+
+        chessboard.update_black_controlled_squares()
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+
+        expected_white_controlled = set([48, 49, 50, 40, 42, 32, 33, 34])
+        self.assertEqual(set(chessboard.white_controlled_squares),
+                         expected_white_controlled)
+        self.assertEqual(set(chessboard.squares[b6].moves),
+                         set([40, 42, 32, 33, 34]))
+
+        expected_black_controlled = set([56, 58, 48, 49, 50])
+        self.assertEqual(set(chessboard.black_controlled_squares),
+                         expected_black_controlled)
+        self.assertEqual(set(chessboard.squares[b8].moves),
+                         set([56, 58]))

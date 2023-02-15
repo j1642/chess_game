@@ -3,8 +3,6 @@ outputs to the terminal.
 """
 import sys
 import tkinter as tk
-# GUI could have all the logic to run the game with GUI display?
-# And all terminal-displa logic in game?
 
 
 class GUI:
@@ -32,6 +30,7 @@ class GUI:
         self.root = tk.Tk()
         self.root.geometry('400x405+380+430')
         self.root.title('Chess')
+        self.perspective = None
 
         # TODO: Closing the window exits the program in the terminal.
         # TODO: Remove exit button and delete button blocks.
@@ -83,24 +82,34 @@ class GUI:
 
     def update_gui(self, chessboard, selected_piece=None):
         """Update the GUI based on current state of chessboard.squares."""
-        for ind, char in enumerate('abcdefgh'):
+        files = 'abcdefgh'
+        ranks = range(8, 0, -1)
+        if self.perspective == 'black':
+            files = reversed(files)
+            ranks = range(1, 9)
+        # Add rank and file labels
+        for ind, char in enumerate(files):
             label = tk.Label(self.root,
                              text=char,
                              font=('Helvetica', 11)
                              )
             label.grid(column=ind + 1, row=8)
-
-        for ind, num in enumerate(range(8, 0, -1)):
+        for ind, num in enumerate(ranks):
             label = tk.Label(self.root,
                              text=str(num),
                              font=('Helvetica', 11)
                              )
             label.grid(column=0, row=ind)
 
-        for ind, square in enumerate(chessboard.squares):
+        squares = chessboard.squares
+        if self.perspective == 'black':
+            squares = reversed(chessboard.squares)
+        for ind, square in enumerate(squares):
             IS_DARK_SQUARE = ind in self.dark_squares
-            row_num = abs(ind // 8 - 8)
-            column_num = ind % 8
+            # Column plus 1 makes space for row labels in column 0
+            # Row number calculations give a minimum result of 1, not 0.
+            row_num = abs(ind // 8 - 8) - 1
+            column_num = ind % 8 + 1
             if square == ' ':
                 if IS_DARK_SQUARE:
                     image_path = 'assets/dark_square.png'
@@ -132,16 +141,13 @@ class GUI:
         # mainloop() blocks flow from moving on.
         # self.root.mainloop()
 
-        # update_idletasks() makes GUI unable to be clicked.
-        # Updates display based on terminal inputs.
+        # update_idletasks() disables GUI click interaction.
         self.root.update_idletasks()
 
     def find_command_make_button(self, chessboard,
                                  image_column_row_index_square: tuple,
                                  selected_piece):
         """Make buttons and adds them to the grid.
-
-        Helper method for update_gui().
 
         Having this method removes bug where all buttons with pieces on
         them refer to the black h rook, due to the final value of ind from
@@ -167,6 +173,4 @@ class GUI:
             # Commands not currently supported.
             command=self.empty_function())
 
-        # Column plus 1 makes space for row labels in column 0
-        # Row number calculations give a minimum result of 1, not 0.
-        button.grid(column=column + 1, row=row - 1)
+        button.grid(column=column, row=row)

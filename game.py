@@ -45,8 +45,12 @@ class Game:
         self.board = board.Board()
 
         self.select_color()
-
+        # Instantiating GUI before Game.select_color() opens blank window.
         self.display = gui.GUI()
+        if self.player_color == 'white':
+            self.display.perspective = 'white'
+        else:
+            self.display.perspective = 'black'
 
     def __repr__(self):
         return (f'Playing as {self.player_color}.\n'
@@ -62,7 +66,6 @@ class Game:
             self.black_turn = self.computer_turn
             self.player_moves = self.board.white_moves
             self.player_king = self.board.white_king
-
         elif selected_color.lower() == 'black':
             self.player_color = 'black'
             self.computer_color = 'white'
@@ -233,7 +236,7 @@ class Game:
 
         # TODO: check if a piece is pinned to the king before moving it:
         # - by Updating dummy board and check if friendly king is in check.
-
+    # TODO: Entered infinite loop when checkmating as the black pieces.
     def play(self):
         """Play the game."""
         if not self.board.black_pieces + self.board.white_pieces:

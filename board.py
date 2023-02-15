@@ -63,8 +63,6 @@ class Board:
                     rank_x.append(self.squares[square])
                 rank_x.append('|')
             ranks_to_print.append(''.join(rank_x))
-
-        # Looks nice w/ print( <board_object> )
         return '\n'.join(ranks_to_print)
 
     # Variable suffix corresponds to starting file (column) of the piece.
@@ -219,27 +217,21 @@ class Board:
             opponent_controlled_squares = self.black_controlled_squares
             opponent_pieces = self.black_pieces
 
-        # TODO: remove after debugging
-        # print('opponent_pieces =', opponent_pieces)
         checked_square = checked_king.square
         # If this AssertionError is raised, check that the kings are the
         # final list elements in board.white_pieces and board.black_pieces.
         assert checked_square in opponent_controlled_squares
 
         checking_pieces = []
-        # Should piece move lists be sets instead?
         # Should update_moves() notice if the opponent's king is attacked?
-        # TODO: pawn attacking king not in pawn moves. Use Pawn.giving_check?
         for piece in opponent_pieces:
             if isinstance(piece, pieces.Pawn):
                 if checked_square in piece.protected_squares:
                     checking_pieces.append(piece)
             else:
                 if checked_square in piece.moves:
-                    # piece.giving_check = True
                     checking_pieces.append(piece)
-
-        return checking_pieces  # , checked_king
+        return checking_pieces
 
     def find_interposition_squares(self, checking_pieces: list,
                                    checked_king) -> list:
@@ -249,7 +241,6 @@ class Board:
         Helper function for Board.king_escapes_check_or_checkmate().
         """
         interposition_squares = []
-        # Pawns and knights cannot be blocked, and kings cannot give check.
         # brq_directions = [[+-9, +-7], ...]
         for checking_piece in checking_pieces:
             delta = checked_king.square - checking_piece.square
@@ -270,10 +261,10 @@ class Board:
                     move_direction = 1
                     break
             else:
+                # TODO: Why 6? Shouldn't it be 9 and 7 for diag moves?
                 for move_direction in range(9, 6, -1):
                     if delta % move_direction == 0:
                         break
-
             assert move_direction
 
             if delta_is_neg:
@@ -288,7 +279,6 @@ class Board:
                                     checked_king.square,
                                     move_direction):
                     interposition_squares.append(square)
-
         return interposition_squares
 
     def moves_must_escape_check_or_checkmate(self, board, checked_king,
@@ -303,8 +293,6 @@ class Board:
         # King in double check must move or is in checkmate.
         if len(checking_pieces) > 1:
             if checked_king.moves == []:
-                # TODO: remove after debugging
-                print(checking_pieces)
                 print(f'{checked_king.color.upper()} loses by checkmate.')
 
         checking_pieces_squares = [piece.square for piece in checking_pieces]
@@ -326,6 +314,6 @@ class Board:
                     piece.moves = list(legal_moves)
                 elif len(checking_pieces) > 1:
                     piece.moves = []
-                    # list(interpose_squares & set(piece.moves))
                 else:
-                    raise Exception('Length of checking_pieces should be >= 1')
+                    raise ValueError('Length of checking_pieces should be'
+                                     ' >= 1')

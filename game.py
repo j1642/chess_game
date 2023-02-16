@@ -58,7 +58,10 @@ class Game:
 
     def select_color(self):
         """Player chooses their piece color."""
-        selected_color = input('Pick your pieces: white or black?\n>>> ')
+        selected_color = input('Select your pieces: white, black, or '
+                               'random?\n>>> ')
+        if selected_color.lower() == 'random':
+            selected_color = random.choice(['white', 'black'])
         if selected_color.lower() == 'white':
             self.player_color = 'white'
             self.computer_color = 'black'
@@ -73,7 +76,6 @@ class Game:
             self.white_turn = self.computer_turn
             self.player_moves = self.board.black_moves
             self.player_king = self.board.black_king
-
         else:
             print('Invalid piece color.')
             return self.select_color()

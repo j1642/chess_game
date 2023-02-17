@@ -168,8 +168,9 @@ class Pawn:
         are any pawns of the opposite color adjacent to the moved pawn's
         current square.
         """
-        last_move_from = board.last_move_from_to[0]
-        last_move_to = board.last_move_from_to[1]
+        if board.last_move_from_to == (None, None):
+            return
+        last_move_from, last_move_to = board.last_move_from_to
         try:
             if not isinstance(board.last_move_piece, Pawn):
                 return
@@ -188,11 +189,8 @@ class Pawn:
         elif last_move_to in ranks_files.h_file:
             en_passant_squares = [last_move_to - 1]
         else:
-            # TODO: Line below causes TypeError when last_move_to or
-            # last_move_from is '', which happens through improperly
-            # handling incorrect input.
-            # E.g. Trying to move a piece illegally (to square not in
-            # piece_x.moves.
+            # If the following line causes a TypeError, check that
+            # Board.last_move_from_to is not None.
             en_passant_squares = [last_move_to + 1, last_move_to - 1]
 
         for en_passant_square in en_passant_squares:

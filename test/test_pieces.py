@@ -1,8 +1,5 @@
 """All tests for the pieces.py file."""
 
-# from os import chdir, getcwd
-# if getcwd().split('/')[-1] != 'chess':
-#    chdir('..')
 import unittest
 from unittest import mock
 
@@ -125,7 +122,6 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/8/8/2B1p3/3P4/8 w')
         pawn = pieces.Pawn('Pd', 'white', 11)
-
         pawn.update_moves(chessboard)
         self.assertFalse(pawn.has_moved)
         self.assertEqual(set(pawn.moves), set([19, 27, 20]))
@@ -137,7 +133,6 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '8/p7/1Q6/n7/8/8/8/8 w')
         pawn = chessboard.squares[48]
-
         pawn.update_moves(chessboard)
         self.assertFalse(pawn.has_moved)
         self.assertEqual(set(pawn.moves), set([40, 41]))
@@ -239,7 +234,6 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/8/8/8/4P3/6N1 w')
         knight = chessboard.squares[6]
-
         knight.update_moves(chessboard)
         self.assertEqual(set(knight.moves), set([21, 23]))
 
@@ -248,7 +242,6 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/8/8/7p/8/6N1 w')
         knight = chessboard.squares[6]
-
         knight.update_moves(chessboard)
         self.assertEqual(set(knight.moves), set([21, 23, 12]))
 
@@ -275,7 +268,6 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/3R4/8/8/8/7B w')
         bishop = chessboard.squares[7]
-
         bishop.update_moves(chessboard)
         self.assertEqual(bishop.moves, [14, 21, 28])
 
@@ -284,7 +276,6 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/3p4/8/8/8/7B w')
         bishop = chessboard.squares[7]
-
         bishop.update_moves(chessboard)
         self.assertEqual(bishop.moves, [14, 21, 28, 35])
 
@@ -339,7 +330,6 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '1n6/8/8/8/8/8/prp5/8 w')
         rook = chessboard.squares[9]
-
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves), set([1] + list(range(17, 50, 8))))
 
@@ -348,7 +338,6 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/8/8/8/RrP5/1N6 w')
         rook = chessboard.squares[9]
-
         rook.update_moves(chessboard)
         self.assertEqual(set(rook.moves),
                          set([8, 1, 10] + list(range(17, 58, 8))))
@@ -364,7 +353,7 @@ class TestPieces(SetUpTearDown):
                                 + [0, 16, 2, 18, 27, 36, 45, 54, 63])
         self.assertEqual(set(queen.moves), set(supposed_queen_moves))
 
-        # This block should prevent queen edge cases on the corners/sides.
+        # Queen edge cases on the corners/sides.
         queen = pieces.Queen('Q', 'white', 0)
         queen.update_moves(chessboard)
         self.assertEqual(set(queen.moves),
@@ -461,23 +450,9 @@ class TestPieces(SetUpTearDown):
         """Remove king moves into attacked squares."""
         chessboard = chess_utilities.import_fen_to_board(
             '3r1r2/8/8/8/8/4k3/8/4K3 w')
-        black_rook_a = chessboard.squares[59]
-        black_rook_h = chessboard.squares[61]
-        all_pieces = (black_rook_a, black_rook_h, chessboard.white_king,
-                      chessboard.black_king)
-
-        for piece in all_pieces:
-            piece.update_moves(chessboard)
-        black_controlled_squares = set(black_rook_a.moves
-                                       + black_rook_h.moves
-                                       + chessboard.black_king.moves)
-        white_controlled_squares = set(chessboard.white_king.moves)
-
-        for king in (chessboard.white_king, chessboard.black_king):
-            king.remove_moves_to_attacked_squares(
-                white_controlled_squares,
-                black_controlled_squares)
-
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
         self.assertEqual(chessboard.white_king.moves, [])
         self.assertEqual(set(chessboard.black_king.moves),
                          set([19, 21, 28, 27, 29]))
@@ -486,18 +461,10 @@ class TestPieces(SetUpTearDown):
         """King.check_if_in_check() method changes King.in_check to True."""
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/8/8/8/8/r3K3 w')
-        black_rook = chessboard.squares[0]
-
         self.assertFalse(chessboard.white_king.in_check)
-        chessboard.white_king.update_moves(chessboard)
-        black_rook.update_moves(chessboard)
 
-        chessboard.white_king.remove_moves_to_attacked_squares(
-            set(chessboard.white_king.moves),
-            set(black_rook.moves))
-        chessboard.white_king.check_if_in_check(
-            set(chessboard.white_king.moves),
-            set(black_rook.moves))
+        chessboard.update_black_controlled_squares()
+        chessboard.update_white_controlled_squares()
         self.assertTrue(chessboard.white_king.in_check)
 
     def test_castling_without_checks_present(self):
@@ -530,22 +497,20 @@ class TestPieces(SetUpTearDown):
             piece.update_moves(chessboard)
 
         # King has not yet realized he is in check. If these tests fail
-        # because of changed functionality, they can probably be removed.
+        # because of implementation changes, they can probably be removed.
         self.assertFalse(chessboard.white_king.in_check)
         self.assertEqual(set(chessboard.white_king.moves),
                          set([2, 6, 3, 5, 11, 12, 13]))
 
         supposed_black_rook_moves = [56, 57, 58, 59, 61, 62, 63] \
             + list(range(4, 53, 8))
-
         self.assertEqual(set(black_rook.moves),
                          set(supposed_black_rook_moves))
 
-        # TODO: should not assign controlled squares manually
-        chessboard.white_controlled_squares = set(chessboard.white_king.moves)
-        chessboard.black_controlled_squares = set(black_rook.moves)
-
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
         chessboard.white_king.update_moves(chessboard)
+
         self.assertTrue(chessboard.white_king.in_check)
         self.assertEqual(set(chessboard.white_king.moves), set([3, 5, 11, 13]))
 
@@ -560,7 +525,6 @@ class TestPieces(SetUpTearDown):
         self.assertTrue(5 in chessboard.black_controlled_squares)
 
         chessboard.white_king.update_moves(chessboard)
-
         self.assertEqual(chessboard.white_king.moves, [12])
 
     def test_castling_cannot_castle_into_check(self):
@@ -583,9 +547,6 @@ class TestPieces(SetUpTearDown):
 
         This functionality requires the full Board class, not the limited
         Board class previously used in the test section of pieces.py.
-
-        This test is similar to one in pieces.py but this has a crucial
-        addition at the end.
         """
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/8/8/8/8/r3K3 w')
@@ -613,15 +574,6 @@ class TestPieces(SetUpTearDown):
 
         self.assertTrue(chessboard.white_king.in_check)
         self.assertEqual(chessboard.white_king.moves, [])
-
-        # This portion tests moves_must_escape_check_or_checkmate().
-        checking_pieces = chessboard.find_checking_pieces()
-
-        chessboard.moves_must_escape_check_or_checkmate(
-            chessboard,
-            chessboard.white_king,
-            checking_pieces)
-
         self.assertEqual(white_rook_a.moves, [0])
 
     def test_escape_check_by_king_capturing_checking_piece(self):
@@ -652,7 +604,6 @@ class TestPieces(SetUpTearDown):
 
     def test_escape_check_by_interposition(self):
         """Test check scenario where only legal move is interposition.
-
         The white rook must block check.
         """
         chessboard = chess_utilities.import_fen_to_board(
@@ -667,14 +618,6 @@ class TestPieces(SetUpTearDown):
 
         self.assertTrue(chessboard.white_king.in_check)
         self.assertEqual(chessboard.white_king.moves, [])
-
-        # This portion tests moves_must_escape_check_or_checkmate().
-        checking_pieces = chessboard.find_checking_pieces()
-        # Test should pass because of rook interposition.
-        chessboard.moves_must_escape_check_or_checkmate(
-            chessboard,
-            chessboard.white_king,
-            checking_pieces)
         self.assertEqual(white_rook.moves, [9])
 
     def test_king_must_move_to_escape_double_check(self):
@@ -714,7 +657,6 @@ class TestPieces(SetUpTearDown):
         """
         chessboard = chess_utilities.import_fen_to_board(
             'rnbB2kr/1p1p3p/8/2pP2Q1/p3P3/P7/1PP2PPP/RN2KBNR b')
-
         self.assertEqual(chessboard.black_king.square, 62)
         self.assertIsInstance(chessboard.squares[38], pieces.Queen)
         self.assertEqual(chessboard.squares[38].color, 'white')
@@ -722,8 +664,6 @@ class TestPieces(SetUpTearDown):
 
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
-        # black_king.check_if_in_check(chessboard.white_controlled_squares,
-        #                            chessboard.black_controlled_squares)
         self.assertTrue(chessboard.black_king.in_check)
 
         for piece in chessboard.black_pieces:

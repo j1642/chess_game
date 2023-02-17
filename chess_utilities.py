@@ -90,13 +90,15 @@ def import_fen_to_board(fen: str):
                                                       squares_ind_counter)
                 chessboard.squares[squares_ind_counter] = piece
                 if piece.color == 'white':
-                    chessboard.white_pieces.append(piece)
                     if isinstance(piece, pieces.King):
                         chessboard.white_king = piece
+                    else:
+                        chessboard.white_pieces.append(piece)
                 elif piece.color == 'black':
-                    chessboard.black_pieces.append(piece)
                     if isinstance(piece, pieces.King):
                         chessboard.black_king = piece
+                    else:
+                        chessboard.black_pieces.append(piece)
                 squares_ind_counter += 1
 
             elif char.isdigit():
@@ -104,6 +106,12 @@ def import_fen_to_board(fen: str):
                 for _ in range(int(char)):
                     chessboard.squares[squares_ind_counter] = ' '
                     squares_ind_counter += 1
+
+    # Kings must be last piece in piece lists for check to work.
+    if chessboard.white_king:
+        chessboard.white_pieces.append(chessboard.white_king)
+    if chessboard.black_king:
+        chessboard.black_pieces.append(chessboard.black_king)
 
     return chessboard
 

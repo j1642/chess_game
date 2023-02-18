@@ -1,11 +1,9 @@
 """All tests for board.py."""
 
-# from os import chdir, getcwd
-# if getcwd().split('/')[-1] != 'chess':
-#    chdir('..')
 import unittest
 
 import board
+import chess_utilities
 import pieces
 
 
@@ -161,8 +159,8 @@ class TestBoard(unittest.TestCase):
     def test_find_interposition_squares_same_file(self):
         """Find squares (in the same column) where check can be blocked.
 
-        Note that the king is in double check here. Double check is already
-        accounted for in the code.
+        Note that the king is in double check here. Double check is
+        already accounted for in board.py.
         """
         chessboard = board.Board()
         white_rook_a = pieces.Rook('Ra', 'white', 0)
@@ -190,25 +188,15 @@ class TestBoard(unittest.TestCase):
 
     def test_find_checking_pieces(self):
         """Pieces checking a king can be identified."""
-        chessboard = board.Board()
-        white_king = pieces.King('K', 'white', 4)
-        black_rook_a = pieces.Rook('ra', 'black', 0)
-        black_rook_h = pieces.Rook('rh', 'black', 7)
-        black_queen = pieces.Queen('q', 'black', 60)
-        black_king = pieces.King('k', 'black', 63)
-
-        chessboard.white_king = white_king
-        chessboard.black_king = black_king
-        chessboard.last_move_piece = black_rook_a
-        chessboard.white_pieces = [white_king]
-        chessboard.black_pieces = [black_rook_a, black_rook_h, black_queen,
-                                   black_king]
-
-        for piece in chessboard.white_pieces + chessboard.black_pieces:
-            chessboard.squares[piece.square] = piece
+        chessboard = chess_utilities.import_fen_to_board(
+            '4q2k/8/8/8/8/8/8/r3K2r w')
+        print(chess_utilities.export_board_to_fen(chessboard))
 
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
-
         checking_pieces = chessboard.find_checking_pieces()
+        # All except black king
         self.assertEqual(checking_pieces, chessboard.black_pieces[:-1])
+        self.assertTrue(
+            isinstance(chessboard.black_pieces[-1],
+                       pieces.King))

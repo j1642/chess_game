@@ -36,12 +36,6 @@ Equivalent integer representation.
 class RanksFiles:
     """Holds iterables for limiting piece movement."""
 
-    # Certain movement directions are illegal depending on piece location.
-    # E.g. a knight may not jump over the edge of the board.
-
-    # Sets have a constant time complexity for membership check, and are
-    # not time intensive to create, according to timeit.timeit().
-
     def __init__(self):
         self.a_file = {i * 8 for i in range(8)}
         self.b_file = {i * 8 + 1 for i in range(8)}
@@ -73,7 +67,50 @@ class RanksFiles:
 ranks_files = RanksFiles()
 
 
-class Pawn:
+class _Piece:
+    # This drastically increases the calculations per turn, but does not
+    # noticeably slow test times or computer response time in game.
+    # Hypothetical optimization 1: remove all pieces/pawns besides king
+    #   and check if king is in check. If True, there may be a pin, so
+    #   check if each individual piece is pinned.
+    def is_pinned(self, chessboard):
+        """Detect if a piece is pinned. If pinned, remove illegal moves."""
+        chessboard.squares[self.square] = ' '
+        if self.color == 'white':
+            friendly_king = chessboard.white_king
+            chessboard.update_black_controlled_squares()
+        else:
+            friendly_king = chessboard.black_king
+            chessboard.update_white_controlled_squares()
+        chessboard.squares[self.square] = self
+
+        orig_in_check = friendly_king.in_check
+        if friendly_king.check_if_in_check(
+                chessboard.white_controlled_squares,
+                chessboard.black_controlled_squares):
+            friendly_king.in_check = orig_in_check
+            self.restrict_moves_when_pinned(chessboard, friendly_king)
+            return True
+        else:
+            return False
+
+    def restrict_moves_when_pinned(self, chessboard, friendly_king):
+        """Remove illegal moves for a pinned piece."""
+        # Does not affect <piece>.protected_squares.
+        # While protected squares only limit King moves, this is fine.
+        # If protected squares gain responsibilities, this is an issue.
+        checking_pieces = chessboard.find_checking_pieces()
+        checking_piece_sqrs = [piece.square for piece in checking_pieces]
+        interpose_or_capture_sqrs = chessboard.find_interposition_squares(
+            checking_pieces,
+            friendly_king)
+        interpose_or_capture_sqrs = set(
+            interpose_or_capture_sqrs
+            + checking_piece_sqrs)
+        self.moves = list(interpose_or_capture_sqrs & set(self.moves))
+
+
+class Pawn(_Piece):
     """The pawn piece.
 
     Methods
@@ -97,8 +134,8 @@ class Pawn:
         self.protected_squares = []
 
     def __repr__(self):
-        return f'''({self.name}, Sq: {self.square}, {self.color}, \
-    has_moved: {self.has_moved})'''
+        return f'({self.name}, Sq: {self.square}, {self.color}, ' \
+            'has_moved: {self.has_moved})'
 
     def update_moves(self, board):
         """Update pawn moves."""
@@ -153,7 +190,6 @@ class Pawn:
                 except AttributeError:
                     assert all_squares[diagonal_square] == ' '
                     continue
-
         # Promote pawn immediately once it reaches its final row.
         else:
             if self.color == 'white' and self.square in list(range(56, 64)):
@@ -255,7 +291,7 @@ class Pawn:
             return 'Not a valid move.'
 
 
-class Knight:
+class Knight(_Piece):
     """The knight piece.
 
     Methods
@@ -364,7 +400,7 @@ class Knight:
             # print(f'Not a valid move for {self.__class__.__name__}.')
 
 
-class Bishop:
+class Bishop(_Piece):
     """The bishop piece.
 
     Methods
@@ -456,7 +492,7 @@ class Bishop:
             return 'Not a valid move.'
 
 
-class Rook:
+class Rook(_Piece):
     """The rook piece.
 
     Methods
@@ -478,8 +514,8 @@ class Rook:
         self.protected_squares = []
 
     def __repr__(self):
-        return f'''({self.name}, Sq: {self.square}, {self.color}, \
-    has_moved: {self.has_moved})'''
+        return f'({self.name}, Sq: {self.square}, {self.color}, ' \
+            'has_moved: {self.has_moved})'
 
     def update_moves(self, board):
         """Update rook moves."""
@@ -523,7 +559,7 @@ class Rook:
                     # Square is not between 0 and 63, inclusive.
                     break
 
-        self.moves = sorted(all_moves)
+        self.moves = all_moves
 
     def move_piece(self, board, new_square: int, castling=False):
         """Move rook."""
@@ -564,7 +600,7 @@ class Rook:
         board.squares[old_square], board.squares[new_square] = ' ', self
 
 
-class Queen:
+class Queen(_Piece):
     """The queen piece.
 
     Methods
@@ -681,8 +717,8 @@ class King:
         self.protected_squares = []
 
     def __repr__(self):
-        return f'''({self.name}, Sq: {self.square}, {self.color}, \
-            has_moved: {self.has_moved}, in check: {self.in_check})'''
+        return f'({self.name}, Sq: {self.square}, {self.color}, '\
+            'has_moved: {self.has_moved}, in check: {self.in_check})'
 
     def update_moves(self, board):
         """Update king moves, while considering castling and illegal moves."""

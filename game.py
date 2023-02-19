@@ -99,7 +99,6 @@ class Game:
         computer_king = [piece for piece in computer_pieces
                          if isinstance(piece, pieces.King)][0]
 
-        # TODO: Completed stalemate, incomplete checkmate.
         # TODO: DRY. Centralize computer and player checkmate/stalemate.
         if computer_moves == []:
             if computer_king.in_check:
@@ -141,7 +140,6 @@ class Game:
             self.player_moves = self.board.white_moves
         elif self.player_color == 'black':
             self.player_moves = self.board.black_moves
-        # TODO: Completed stalemate, incomplete checkmate.
         # TODO: DRY. Centralize computer and player checkmate/stalemate.
         if self.player_moves == []:
             if self.player_king.in_check:
@@ -228,13 +226,10 @@ class Game:
         """
         self.board.update_white_controlled_squares()
         self.board.update_black_controlled_squares()
-
-        # Update king moves again now that all other piece moves are known
         self.board.white_king.update_moves(self.board)
         # Black king should not have to update again b/c
         # white_controlled_squares were known prior to the black king
         # updating its moves.
-        # self.board.black_king.update_moves(self.board)
 
         # TODO: check if a piece is pinned to the king before moving it:
         # - by Updating dummy board and check if friendly king is in check.
@@ -245,11 +240,13 @@ class Game:
             self.board.initialize_pieces()
         while True:
             self.between_moves()
+            self.board.remove_illegal_moves_for_pinned_pieces('white')
             self.display.update_gui(self.board)
             res_white_turn = self.white_turn()
             if res_white_turn:
                 sys.exit(0)
             self.between_moves()
+            self.board.remove_illegal_moves_for_pinned_pieces('black')
             self.display.update_gui(self.board)
             res_black_turn = self.black_turn()
             if res_black_turn:

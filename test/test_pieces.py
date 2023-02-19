@@ -744,3 +744,39 @@ class TestPieces(SetUpTearDown):
                          expected_black_controlled)
         self.assertEqual(set(chessboard.black_king.moves),
                          set([56, 58]))
+
+    def test_is_pinned_and_can_move_along_pin_axis(self):
+        """Pinned pawn can only move toward pinning piece, on pin axis."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/8/4r3/8/3p1p2/4P3/4K3 w')
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
+        white_pawn = chessboard.squares[12]
+
+        self.assertTrue(white_pawn.is_pinned(chessboard))
+        self.assertEqual(white_pawn.moves, [20, 28])
+
+    def test_is_pinned_and_cannot_move(self):
+        """Pinned knight cannot move."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/8/8/8/8/8/r2NK3 w')
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
+        white_knight = chessboard.squares[3]
+
+        self.assertTrue(white_knight.is_pinned(chessboard))
+        self.assertEqual(white_knight.moves, [])
+
+    def test_is_pinned_and_can_capture_pinning_piece(self):
+        """Pinned rook can move along pin axis and capture pinning rook."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/8/8/8/8/8/r2RK3 w')
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
+        white_rook = chessboard.squares[3]
+
+        self.assertTrue(white_rook.is_pinned(chessboard))
+        self.assertEqual(white_rook.moves, [0, 1, 2])

@@ -203,9 +203,23 @@ class Board:
 
         self.black_controlled_squares = set(black_controlled_squares)
 
-    def find_checking_pieces(self) -> tuple:
-        """Assumes a king is in check. Return which piece(s) is/are checking
-        the king.
+    def remove_illegal_moves_for_pinned_pieces(self, piece_color):
+        """Find and restrict pinned pieces.
+        Should be called immediately ebfore their turn.
+        """
+        if piece_color == 'white':
+            color_pieces = self.white_pieces
+        else:
+            color_pieces = self.black_pieces
+        # King cannot be pinned.
+        assert isinstance(color_pieces[-1], pieces.King)
+        for piece in color_pieces[:-1]:
+            # <piece>.is_pinned() calls func. which removes illegal moves
+            piece.is_pinned(self)
+
+    def find_checking_pieces(self) -> list:
+        """Assume a king is in check based on Board.last_move_piece.color.
+        Return which piece(s) is/are checking the king.
         """
         # Only one king may be in check at any time.
         if self.last_move_piece.color == 'white':

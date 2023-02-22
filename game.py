@@ -102,10 +102,10 @@ class Game:
         # TODO: DRY. Centralize computer and player checkmate/stalemate.
         if computer_moves == []:
             if computer_king.in_check:
-                print('Player wins by checkmate! Game over.')
+                print('Player wins by checkmate! Thank you for playing!')
                 return 'player wins by checkmate'
             else:
-                print('Draw by stalemate! Game over.')
+                print('Draw by stalemate! Thank you for playing!')
                 return 'stalemate'
 
         if isinstance(move, tuple) and len(move) == 2 \
@@ -143,10 +143,10 @@ class Game:
         # TODO: DRY. Centralize computer and player checkmate/stalemate.
         if self.player_moves == []:
             if self.player_king.in_check:
-                print('Computer wins by checkmate! Game over.')
+                print('Computer wins by checkmate! Thank you for playing!')
                 return 'computer wins by checkmate'
             else:
-                print('Draw by stalemate! Game over.')
+                print('Draw by stalemate! Thank you for playing!')
                 return 'stalemate'
 
         old_square = self.get_player_move_from()

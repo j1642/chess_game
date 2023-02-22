@@ -135,7 +135,7 @@ class Pawn(_Piece):
 
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color}, ' \
-            'has_moved: {self.has_moved})'
+            f'has_moved: {self.has_moved})'
 
     def update_moves(self, board):
         """Update pawn moves."""
@@ -395,9 +395,8 @@ class Knight(_Piece):
             board.squares[old_square], board.squares[new_square] = ' ', self
 
         else:
-            print(f'Not a valid move for {self.name}.')
+            print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
-            # print(f'Not a valid move for {self.__class__.__name__}.')
 
 
 class Bishop(_Piece):
@@ -488,7 +487,7 @@ class Bishop(_Piece):
             board.squares[old_square], board.squares[new_square] = ' ', self
 
         else:
-            print(f'Not a valid move for {self.name}.')
+            print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
 
 
@@ -515,7 +514,7 @@ class Rook(_Piece):
 
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color}, ' \
-            'has_moved: {self.has_moved})'
+            f'has_moved: {self.has_moved})'
 
     def update_moves(self, board):
         """Update rook moves."""
@@ -593,7 +592,7 @@ class Rook(_Piece):
                 raise Exception('King should not be able to be captured.')
             old_square, self.square = self.square, new_square
         else:
-            print(f'Not a valid move for {self.name}.')
+            print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
 
         self.has_moved = True
@@ -688,7 +687,7 @@ class Queen(_Piece):
             board.squares[old_square], board.squares[new_square] = ' ', self
 
         else:
-            print(f'Not a valid move for {self.name}.')
+            print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
 
 
@@ -718,7 +717,7 @@ class King:
 
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color}, '\
-            'has_moved: {self.has_moved}, in check: {self.in_check})'
+            f'has_moved: {self.has_moved}, in check: {self.in_check})'
 
     def update_moves(self, board):
         """Update king moves, while considering castling and illegal moves."""
@@ -775,7 +774,6 @@ class King:
         # on a1 would still be in check.
         if self.check_if_in_check(board.white_controlled_squares,
                                   board.black_controlled_squares):
-
             checking_pieces = board.find_checking_pieces()
 
             board.squares[self.square] = ' '
@@ -956,5 +954,5 @@ class King:
             self.has_moved = True
             board.squares[old_square], board.squares[new_square] = ' ', self
         else:
-            print(f'Not a valid move for {self.name}.')
+            print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'

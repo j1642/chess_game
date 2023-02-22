@@ -190,8 +190,6 @@ class TestBoard(unittest.TestCase):
         """Pieces checking a king can be identified."""
         chessboard = chess_utilities.import_fen_to_board(
             '4q2k/8/8/8/8/8/8/r3K2r w')
-        print(chess_utilities.export_board_to_fen(chessboard))
-
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
         checking_pieces = chessboard.find_checking_pieces()

@@ -205,7 +205,7 @@ class Board:
 
     def remove_illegal_moves_for_pinned_pieces(self, piece_color):
         """Find and restrict pinned pieces.
-        Should be called immediately ebfore their turn.
+        Should be called immediately before their turn.
         """
         if piece_color == 'white':
             color_pieces = self.white_pieces

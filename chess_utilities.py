@@ -51,7 +51,10 @@ def print_fen_to_terminal(fen_string):
 
 
 def import_fen_to_board(fen: str):
-    """Convert FEN string to board.Board object."""
+    """Convert FEN string to board.Board object.
+    Note that castling does not work unless Rook.name is changed to have
+    the file suffix.
+    """
     chessboard = board.Board()
     fen = fen.split(' ')
 

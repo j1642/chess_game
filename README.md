@@ -1,4 +1,3 @@
-# chess_game
 ![image](assets/chessboard.png)
 
 ### To play:
@@ -8,4 +7,4 @@ $ python game.py
 ```
 
 ### Dependencies:
-Tkinter - likely already included in your Python installation.
+Python 3.6+ with Tkinter

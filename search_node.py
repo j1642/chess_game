@@ -46,8 +46,6 @@ class SearchNode():
             for move in piece.moves:
                 orig_occupant = self.chessboard.squares[move]
                 piece.move_piece(self.chessboard, move)
-                self.chessboard.last_move_piece = piece
-                self.chessboard.last_move_from_to = (orig_piece_square, move)
                 self.subnodes.append(
                     SearchNode(self.chessboard, self.depth - 1, move=move))
                 # Undo the move.

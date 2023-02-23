@@ -68,6 +68,16 @@ ranks_files = RanksFiles()
 
 
 class _Piece:
+    """Superclass only. Do not instantiate.
+
+    Methods
+    -------
+    is_pinned()
+    restrict_moves_when_pinned()
+    update_board_after_move()
+
+    """
+
     # This drastically increases the calculations per turn, but does not
     # noticeably slow test times or computer response time in game.
     # Hypothetical optimization 1: remove all pieces/pawns besides king
@@ -108,6 +118,11 @@ class _Piece:
             interpose_or_capture_sqrs
             + checking_piece_sqrs)
         self.moves = list(interpose_or_capture_sqrs & set(self.moves))
+
+    def update_board_after_move(self, chessboard, new_sq, old_sq):
+        chessboard.last_move_piece = self
+        chessboard.last_move_from_to = (old_sq, new_sq)
+        chessboard.squares[old_sq], chessboard.squares[new_sq] = ' ', self
 
 
 class Pawn(_Piece):
@@ -284,7 +299,7 @@ class Pawn(_Piece):
 
             self.has_moved = True
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            self.update_board_after_move(board, new_square, old_square)
 
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
@@ -392,7 +407,7 @@ class Knight(_Piece):
                 raise Exception('King should not be able to be captured.')
 
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            self.update_board_after_move(board, new_square, old_square)
 
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
@@ -484,7 +499,7 @@ class Bishop(_Piece):
                 raise Exception('King should not be able to be captured.')
 
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            self.update_board_after_move(board, new_square, old_square)
 
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
@@ -596,7 +611,7 @@ class Rook(_Piece):
             return 'Not a valid move.'
 
         self.has_moved = True
-        board.squares[old_square], board.squares[new_square] = ' ', self
+        self.update_board_after_move(board, new_square, old_square)
 
 
 class Queen(_Piece):
@@ -684,7 +699,7 @@ class Queen(_Piece):
                 raise Exception('King should not be able to be captured.')
 
             old_square, self.square = self.square, new_square
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            self.update_board_after_move(board, new_square, old_square)
 
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
@@ -702,6 +717,7 @@ class King:
         add_castling_moves()
         remove_moves_to_attacked_squares()
         check_if_in_check()
+        update_board_after_move()
         move_piece()
 
     """
@@ -916,6 +932,12 @@ class King:
             self.in_check = False
             return False
 
+    def update_board_after_move(self, chessboard, new_sq, old_sq):
+        """Update Board after move. Must mirror the _Piece function."""
+        chessboard.last_move_piece = self
+        chessboard.last_move_from_to = (old_sq, new_sq)
+        chessboard.squares[old_sq], chessboard.squares[new_sq] = ' ', self
+
     def move_piece(self, board, new_square: int):
         """Move the king."""
         if new_square in self.moves:
@@ -952,7 +974,7 @@ class King:
                         black_rook_h.move_piece(board, 61, castling=True)
 
             self.has_moved = True
-            board.squares[old_square], board.squares[new_square] = ' ', self
+            self.update_board_after_move(board, new_square, old_square)
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'

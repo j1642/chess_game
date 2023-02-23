@@ -129,8 +129,6 @@ class Game:
             piece_to_move.move_piece(self.board, new_square)
             assert old_square != piece_to_move.square
 
-        self.board.last_move_piece = piece_to_move
-        self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.player_color
 
     def player_turn(self, old_square=None):
@@ -159,8 +157,6 @@ class Game:
             print('The selected piece cannot move there.')
             return self.player_turn()
 
-        self.board.last_move_piece = moving_piece
-        self.board.last_move_from_to = (old_square, new_square)
         self.turn_color = self.computer_color
 
     def is_valid_square(self, user_input) -> bool:

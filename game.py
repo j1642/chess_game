@@ -135,7 +135,6 @@ class Game:
 
     def player_turn(self, old_square=None):
         """Human turn."""
-        # print(self.board)
         if self.player_color == 'white':
             self.player_moves = self.board.white_moves
         elif self.player_color == 'black':
@@ -231,8 +230,6 @@ class Game:
         # white_controlled_squares were known prior to the black king
         # updating its moves.
 
-        # TODO: check if a piece is pinned to the king before moving it:
-        # - by Updating dummy board and check if friendly king is in check.
     # TODO: Entered infinite loop when checkmating as the black pieces.
     def play(self):
         """Play the game."""
@@ -262,7 +259,6 @@ if __name__ == '__main__':
             game.play()
         # Catch all exceptions. The except statement is intentionally vague.
         except Exception:
-            # Next two lines from Stack Overflow.
             e_type, e_val, e_tb = sys.exc_info()
             traceback.print_exception(e_type, e_val, e_tb)
             # Store chessboard in database for debugging.

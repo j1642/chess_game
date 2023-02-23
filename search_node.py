@@ -89,7 +89,7 @@ if __name__ == '__main__':
     import engine
 
     def nega_max(root, depth):
-        """Recursuve depth-first search of the search tree."""
+        """Recursive depth-first search of the search tree."""
         if depth == 0:
             return engine.evaluate_position(root.chessboard), \
                     root.move

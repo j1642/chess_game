@@ -147,6 +147,7 @@ class Pawn(_Piece):
         self.has_moved = False
         self.giving_check = False
         self.protected_squares = []
+        self.autopromote = False
 
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color}, ' \

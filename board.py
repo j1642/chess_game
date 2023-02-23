@@ -66,10 +66,9 @@ class Board:
         return '\n'.join(ranks_to_print)
 
     # Variable suffix corresponds to starting file (column) of the piece.
-    def initialize_pieces(self):
-        """Put all pieces on their initial squares.
-        Set attributes: self.squares, self.white_pieces, self.black_pieces,
-        self.white_king, self.black_king.
+    def initialize_pieces(self, autopromote=[]):
+        """Put all pieces on their initial squares. Adding a piece color
+        to 'autopromote' labels those pawns for automatic queen promotion.
         """
         white_rook_a = pieces.Rook('Ra', 'white', 0)
         white_knight_b = pieces.Knight('Nb', 'white', 1)
@@ -125,6 +124,20 @@ class Board:
             self.squares[piece.square] = piece
         self.white_king = white_king
         self.black_king = black_king
+
+        if autopromote:
+            for color in autopromote:
+                if color not in ['white', 'black']:
+                    raise ValueError('Invalid color for autopromotion.')
+            autopromote_pieces = []
+            if 'white' in autopromote:
+                autopromote_pieces += self.white_pieces
+            # Specifically not elif.
+            if 'black' in autopromote:
+                autopromote_pieces += self.black_pieces
+            for piece in autopromote_pieces:
+                if isinstance(piece, pieces.Pawn):
+                    piece.autopromote = True
 
     def update_moves_white(self):
         """Support for update_white_controlled_squares() method."""

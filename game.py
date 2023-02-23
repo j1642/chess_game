@@ -230,7 +230,11 @@ class Game:
     def play(self):
         """Play the game."""
         if not self.board.black_pieces + self.board.white_pieces:
-            self.board.initialize_pieces()
+            # Computer pawns will autopromote to queen.
+            if self.computer_color == 'white':
+                self.board.initialize_pieces(autopromote=['white'])
+            else:
+                self.board.initialize_pieces(autopromote=['black'])
         while True:
             self.between_moves()
             self.board.remove_illegal_moves_for_pinned_pieces('white')

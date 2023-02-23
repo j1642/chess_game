@@ -198,3 +198,26 @@ class TestBoard(unittest.TestCase):
         self.assertTrue(
             isinstance(chessboard.black_pieces[-1],
                        pieces.King))
+
+    def test_initialize_pieces_autopromote(self):
+        """Board.initialize_pieces() can set Pawn.autopromote."""
+        chessboard = board.Board()
+        chessboard.initialize_pieces()
+        for piece in chessboard.white_pieces + chessboard.black_pieces:
+            if isinstance(piece, pieces.Pawn):
+                self.assertFalse(piece.autopromote)
+
+        chessboard = board.Board()
+        chessboard.initialize_pieces(autopromote=['white'])
+        for piece in chessboard.white_pieces + chessboard.black_pieces:
+            if isinstance(piece, pieces.Pawn):
+                if piece.color == 'white':
+                    self.assertTrue(piece.autopromote)
+                else:
+                    self.assertFalse(piece.autopromote)
+
+        chessboard = board.Board()
+        chessboard.initialize_pieces(autopromote=['white', 'black'])
+        for piece in chessboard.white_pieces + chessboard.black_pieces:
+            if isinstance(piece, pieces.Pawn):
+                self.assertTrue(piece.autopromote)

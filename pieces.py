@@ -340,24 +340,19 @@ class Knight(_Piece):
         """Update knight moves."""
         all_squares = board.squares
         self.protected_squares = []
-        # Moves ordered by move direction clockwise
-        # all_moves = [self.square + delta for delta in [17, 10, -6, -15, -17,
-        #                                              -10, 6, 15]]
-
         # Moves ordered from downward (toward 1st rank) to upward knight moves
         knight_move_directions = (-15, -17, -6, -10, 6, 10, 15, 17)
         all_moves = [self.square + delta for delta in knight_move_directions]
 
         if self.square in ranks_files.rank_1:
-            del all_moves[:4]  # was index 3 (incorrect)
+            all_moves = all_moves[4:]
         elif self.square in ranks_files.rank_2:
-            del all_moves[:2]  # was 1, see comment above.
+            all_moves = all_moves[2:]
         elif self.square in ranks_files.rank_7:
-            del all_moves[6:]
+            all_moves = all_moves[:6]
         elif self.square in ranks_files.rank_8:
-            del all_moves[4:]  # was 3, see comment above.
+            all_moves = all_moves[:4]
 
-        # Some of items may be missing due to the the previous del statements.
         if self.square in ranks_files.a_file:
             for movement in (-17, -10, 6, 15):
                 try:

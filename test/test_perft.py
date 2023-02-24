@@ -30,17 +30,27 @@ def perft(chessboard, depth=None):
         return n_moves
 
     for piece in pieces_to_move:
+        prev_moves = piece.moves
         for move in piece.moves:
             # Deepcopy misses twice as many outcomes (~40 at depth 2)
             # prev_board = deepcopy(chessboard)
+            try:
+                if piece.has_moved is False:
+                    switch_has_moved_to_False = True
+            except AttributeError:
+                switch_has_moved_to_False = False
             prev_occupant = chessboard.squares[move]
             prev_square = piece.square
             prev_move_piece = chessboard.last_move_piece
             prev_move_from_to = chessboard.last_move_from_to
             piece.move_piece(chessboard, move)
             nodes += perft(chessboard, depth - 1)
-            # Undo the move. Can't undo promotion.
+            # Undo the move. Does not undo promotion -
+            #    Old pawn still has 'piece' reference
             # chessboard = prev_board
+            if switch_has_moved_to_False:
+                piece.has_moved = False
+            piece.moves = prev_moves
             chessboard.squares[piece.square] = prev_occupant
             chessboard.squares[prev_square] = piece
             piece.square = prev_square
@@ -62,7 +72,7 @@ class TestPerft(unittest.TestCase):
 
     # TODO: Perft 2 has invalid knight move output. Fix Knight.
     def test_perft_2(self):
-        """Depth 2. Knight problems"""
+        """Depth 2."""
         chessboard = board.Board()
         chessboard.last_move_piece = pieces.Pawn('p', 'black', 100)
         chessboard.initialize_pieces(autopromote=['white', 'black'])

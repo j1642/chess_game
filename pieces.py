@@ -551,7 +551,7 @@ class Rook(_Piece):
                 if -1 < new_square < 64:
                     # Is new square empty, a friendly piece, or opposing piece?
                     if all_squares[new_square] == ' ':
-                        pass
+                        all_moves.append(new_square)
                     elif self.color == all_squares[new_square].color:
                         self.protected_squares.append(new_square)
                         break
@@ -564,15 +564,13 @@ class Rook(_Piece):
                                         ' not occupied by a friendly or '
                                         'opponent piece.')
 
-                    all_moves.append(new_square)
                     if new_square in ranks_files.a_file and direction == -1:
                         break
                     elif new_square in ranks_files.h_file and direction == 1:
                         break
 
-                # Prevent useless calculations.
+                # Square is not between 0 and 63, inclusive.
                 else:
-                    # Square is not between 0 and 63, inclusive.
                     break
 
         self.moves = all_moves

@@ -206,12 +206,8 @@ class Pawn(_Piece):
                 except AttributeError:
                     assert all_squares[diagonal_square] == ' '
                     continue
-        # Promote pawn immediately once it reaches its final row.
         else:
-            if self.color == 'white' and self.square in list(range(56, 64)):
-                self.promote_pawn(board)
-            elif self.color == 'black' and self.square in list(range(0, 8)):
-                self.promote_pawn(board)
+            raise TypeError('Pawn should not exist on final rank.')
 
     def add_en_passant_moves(self, board):
         """Check for any valid en passant captures.
@@ -256,9 +252,12 @@ class Pawn(_Piece):
     def promote_pawn(self, board):
         """Immediately promote pawn when it advances to its final row."""
         all_squares = board.squares
-        new_piece_type = input('\nPawn promotion: which piece should your '
-                               'pawn become?\nInput queen, rook. bishop, '
-                               'or knight.\n>>> ').lower()
+        if self.autopromote:
+            new_piece_type = 'queen'
+        else:
+            new_piece_type = input('\nPawn promotion: which piece should your '
+                                   'pawn become?\nInput queen, rook. bishop, '
+                                   'or knight.\n>>> ').lower()
         if new_piece_type == 'queen':
             all_squares[self.square] = Queen('Q', self.color, self.square)
         elif new_piece_type == 'rook':
@@ -301,6 +300,13 @@ class Pawn(_Piece):
             self.has_moved = True
             old_square, self.square = self.square, new_square
             self.update_board_after_move(board, new_square, old_square)
+
+            if self.color == 'white' and self.square in list(range(56, 64)):
+                self.promote_pawn(board)
+                board.last_move_piece = board.squares[new_square]
+            elif self.color == 'black' and self.square in list(range(0, 8)):
+                self.promote_pawn(board)
+                board.last_move_piece = board.squares[new_square]
 
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')

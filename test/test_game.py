@@ -154,7 +154,3 @@ class TestGame(unittest.TestCase):
             if computer_res:
                 break
         self.assertEqual('player wins by checkmate', computer_res)
-
-    # TODO: computer promotes pawn
-    def test_computer_pawn_promotion(self):
-        pass

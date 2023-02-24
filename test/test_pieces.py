@@ -177,12 +177,8 @@ class TestPieces(SetUpTearDown):
             black_pawn.update_moves(chessboard)
             black_pawn.move_piece(chessboard, black_pawn.moves[0])
 
-        white_pawn.update_moves(chessboard)
-        black_pawn.update_moves(chessboard)
-
         self.assertTrue(isinstance(chessboard.squares[56], pieces.Rook))
         self.assertEqual(chessboard.white_pieces, [chessboard.squares[56]])
-
         self.assertTrue(isinstance(chessboard.squares[7], pieces.Knight))
         self.assertEqual(chessboard.black_pieces, [chessboard.squares[7]])
 
@@ -206,12 +202,24 @@ class TestPieces(SetUpTearDown):
 
         white_pawn.move_piece(chessboard, 57)
         black_pawn.move_piece(chessboard, 1)
-
-        white_pawn.update_moves(chessboard)
-        black_pawn.update_moves(chessboard)
-
         self.assertTrue(isinstance(chessboard.squares[57], pieces.Bishop))
         self.assertTrue(isinstance(chessboard.squares[1], pieces.Rook))
+        self.assertEqual(chessboard.white_pieces, [chessboard.squares[57]])
+
+    def test_computer_pawn_promotion(self):
+        """Pawns with Pawn.autopromote=True autopromote to queen."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/P7/8/8/8/8/8/8 w')
+        white_pawn = chessboard.squares[48]
+        white_pawn.has_moved = True
+        self.assertFalse(white_pawn.autopromote)
+        white_pawn.autopromote = True
+        white_pawn.update_moves(chessboard)
+        white_pawn.move_piece(chessboard, 56)
+        self.assertTrue(isinstance(chessboard.squares[56], pieces.Queen))
+        # Moving piece updates Board.last_move...
+        self.assertEqual(chessboard.last_move_from_to, (48, 56))
+        self.assertEqual(chessboard.last_move_piece, chessboard.squares[56])
 
     def test_knight_movement(self):
         """Knight can move in 8 directions when not near the board edge."""

@@ -30,6 +30,11 @@ def perft(chessboard, depth=None):
         return n_moves
 
     for piece in pieces_to_move:
+        # Why does this fix Rh moving to Ng? (Presumably after Ng move and
+        # undo move)
+        piece.update_moves(chessboard)
+        if not isinstance(piece, pieces.King):
+            piece.is_pinned(chessboard)
         prev_moves = piece.moves
         for move in piece.moves:
             # Deepcopy misses twice as many outcomes (~40 at depth 2)

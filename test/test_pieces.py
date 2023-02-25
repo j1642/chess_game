@@ -414,15 +414,9 @@ class TestPieces(SetUpTearDown):
             'r3k2r/8/8/8/8/8/8/R3K2R w')
         white_king = chessboard.white_king
         white_rook_a = chessboard.squares[0]
-        white_rook_h = chessboard.squares[7]
-        white_rook_a.name = 'Ra'
-        white_rook_h.name = 'Rh'
 
         black_king = chessboard.black_king
-        black_rook_a = chessboard.squares[56]
         black_rook_h = chessboard.squares[63]
-        black_rook_a.name = 'ra'
-        black_rook_h.name = 'rh'
 
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()

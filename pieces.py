@@ -837,11 +837,11 @@ class King:
             try:
                 supposed_h7_rook_name = all_squares[7].name
                 supposed_h7_rook_has_moved = all_squares[7].has_moved
-                if supposed_h7_rook_name == 'Rh' \
-                        and supposed_h7_rook_has_moved is False \
-                        and all_squares[5] == all_squares[6] == ' ' \
-                        and 5 not in board.black_controlled_squares \
-                        and 6 not in board.black_controlled_squares:
+                if all([supposed_h7_rook_name[0] == 'R',
+                        supposed_h7_rook_has_moved is False,
+                        all_squares[5] == all_squares[6] == ' ',
+                        5 not in board.black_controlled_squares,
+                        6 not in board.black_controlled_squares]):
                     self.moves.append(6)
                     white_castle_kingside = True
             except AttributeError:
@@ -854,12 +854,12 @@ class King:
                 # Check if castling queenside is possible for white.
                 supposed_a1_rook_name = all_squares[0].name
                 supposed_a1_rook_has_moved = all_squares[0].has_moved
-                if supposed_a1_rook_name == 'Ra' \
-                        and supposed_a1_rook_has_moved is False \
-                        and all_squares[1] == all_squares[2] \
-                        and all_squares[1] == all_squares[3] == ' ' \
-                        and 2 not in board.black_controlled_squares \
-                        and 3 not in board.black_controlled_squares:
+                if all([supposed_a1_rook_name[0] == 'R',
+                        supposed_a1_rook_has_moved is False,
+                        all_squares[1] == all_squares[2],
+                        all_squares[1] == all_squares[3] == ' ',
+                        2 not in board.black_controlled_squares,
+                        3 not in board.black_controlled_squares]):
                     self.moves.append(2)
                     white_castle_queenside = True
             except AttributeError:
@@ -870,11 +870,11 @@ class King:
             try:
                 supposed_h8_rook_name = all_squares[63].name
                 supposed_h8_rook_has_moved = all_squares[63].has_moved
-                if supposed_h8_rook_name == 'rh' \
-                        and supposed_h8_rook_has_moved is False \
-                        and all_squares[61] == all_squares[62] == ' ' \
-                        and 61 not in board.white_controlled_squares \
-                        and 62 not in board.white_controlled_squares:
+                if all([supposed_h8_rook_name[0] == 'r',
+                        supposed_h8_rook_has_moved is False,
+                        all_squares[61] == all_squares[62] == ' ',
+                        61 not in board.white_controlled_squares,
+                        62 not in board.white_controlled_squares]):
                     self.moves.append(62)
                     black_castle_kingside = True
             except AttributeError:
@@ -884,12 +884,12 @@ class King:
             try:
                 supposed_a8_rook_name = all_squares[56].name
                 supposed_a8_rook_has_moved = all_squares[56].has_moved
-                if supposed_a8_rook_name == 'ra' \
-                        and supposed_a8_rook_has_moved is False \
-                        and all_squares[57] == all_squares[58] \
-                        and all_squares[57] == all_squares[59] == ' ' \
-                        and 58 not in board.white_controlled_squares \
-                        and 59 not in board.white_controlled_squares:
+                if all([supposed_a8_rook_name[0] == 'r',
+                        supposed_a8_rook_has_moved is False,
+                        all_squares[57] == all_squares[58],
+                        all_squares[57] == all_squares[59] == ' ',
+                        58 not in board.white_controlled_squares,
+                        59 not in board.white_controlled_squares]):
                     self.moves.append(58)
                     black_castle_queenside = True
             except AttributeError:

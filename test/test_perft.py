@@ -4,37 +4,36 @@
 import unittest
 
 import board
+import chess_utilities
 import pieces
 
 
-# TODO: Board.update() with correct pin calculations.
 # TODO: Undo move function, portable b/w modules
 def perft(chessboard, depth=None):
-    """DFS through move tree and count nodes."""
+    """DFS through move tree and count the nodes."""
     chessboard.update_white_controlled_squares()
     chessboard.update_black_controlled_squares()
     chessboard.white_king.update_moves(chessboard)
 
     if chessboard.last_move_piece.color == 'white':
+        friendly_king = chessboard.black_king
         pieces_to_move = chessboard.black_pieces
-        chessboard.remove_illegal_moves_for_pinned_pieces('black')
-        chessboard.black_king.update_moves(chessboard)
     else:
+        friendly_king = chessboard.white_king
         pieces_to_move = chessboard.white_pieces
-        chessboard.remove_illegal_moves_for_pinned_pieces('white')
-        chessboard.white_king.update_moves(chessboard)
 
     nodes = 0
     n_moves = sum([len(piece.moves) for piece in pieces_to_move])
     if depth == 1:
         return n_moves
 
-    for piece in pieces_to_move:
-        # Why does this fix Rh moving to Ng? (Presumably after Ng move and
-        # undo move)
-        piece.update_moves(chessboard)
-        if not isinstance(piece, pieces.King):
-            piece.is_pinned(chessboard)
+    for i, piece in enumerate(pieces_to_move):
+        # Why does this fix Rh moving to Ng? Presumably after Ng move and
+        # undo move, all chessboard.squares references point to the same
+        # set of objects which are continually modified.
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
         prev_moves = piece.moves
         for move in piece.moves:
             # Deepcopy misses twice as many outcomes (~40 at depth 2)
@@ -49,13 +48,28 @@ def perft(chessboard, depth=None):
             prev_move_piece = chessboard.last_move_piece
             prev_move_from_to = chessboard.last_move_from_to
             piece.move_piece(chessboard, move)
+            if friendly_king.check_if_in_check(
+                    chessboard.white_controlled_squares,
+                    chessboard.black_controlled_squares):
+                friendly_king.in_check = False
+                continue
             nodes += perft(chessboard, depth - 1)
-            # Undo the move. Does not undo promotion -
-            #    Old pawn still has 'piece' reference
+            # Undo the move.
             # chessboard = prev_board
             if switch_has_moved_to_False:
                 piece.has_moved = False
             piece.moves = prev_moves
+            # Amend piece list to undo promotion.
+            # Possible bugs from changing list while iterating over it
+            try:
+                if chessboard.squares[piece.square].name[1] == 'p':
+                    ind = pieces_to_move.index(
+                        chessboard.squares[piece.square])
+                    assert ind == 0
+                    pieces_to_move.remove(chessboard.squares[piece.square])
+                    pieces_to_move.insert(i, piece)
+            except (AttributeError, IndexError):
+                pass
             chessboard.squares[piece.square] = prev_occupant
             chessboard.squares[prev_square] = piece
             piece.square = prev_square
@@ -66,27 +80,24 @@ def perft(chessboard, depth=None):
 
 
 class TestPerft(unittest.TestCase):
-    """Increment Perft depths."""
+    """Check Perft node counts from various positions."""
 
-    def test_perft_1(self):
-        """Depth 1."""
+    # Substituting pin checks for checking if king is in check gives
+    # 42,446/197,281. No errors. Need 'divide' algorithm.
+    def test_perft_initial_position(self, depth=3):
+        """Perft from the normal starting position."""
+        nodes = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609,
+                 6: 119060324}
         chessboard = board.Board()
         chessboard.last_move_piece = pieces.Pawn('p', 'black', 100)
         chessboard.initialize_pieces(autopromote=['white', 'black'])
-        self.assertEqual(perft(chessboard, 1), 20)
+        self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # TODO: Perft 2 has invalid knight move output. Fix Knight.
-    def test_perft_2(self):
-        """Depth 2."""
-        chessboard = board.Board()
-        chessboard.last_move_piece = pieces.Pawn('p', 'black', 100)
-        chessboard.initialize_pieces(autopromote=['white', 'black'])
-        self.assertEqual(perft(chessboard, 2), 400)
-
-    @unittest.skip('More invalid knight moves, friendly capture error')
-    def test_perft_3(self):
-        """Depth 3."""
-        chessboard = board.Board()
-        chessboard.last_move_piece = pieces.Pawn('p', 'black', 100)
-        chessboard.initialize_pieces(autopromote=['white', 'black'])
-        self.assertEqual(perft(chessboard, 3), 8902)
+    # @unittest.skip('Failing. WIP.')
+    def test_kiwipete(self, depth=1):
+        """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
+        nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
+                 6: 8031647685}
+        chessboard = chess_utilities.import_fen_to_board(
+            'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w')
+        self.assertEqual(perft(chessboard, depth), nodes[depth])

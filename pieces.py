@@ -134,7 +134,7 @@ class Pawn(_Piece):
         __repr__()
         update_moves()
         add_en_passant_moves()
-        promote()
+        promote_pawn()
         move_piece()
 
     """
@@ -259,13 +259,13 @@ class Pawn(_Piece):
                                    'pawn become?\nInput queen, rook. bishop, '
                                    'or knight.\n>>> ').lower()
         if new_piece_type == 'queen':
-            all_squares[self.square] = Queen('Q', self.color, self.square)
+            all_squares[self.square] = Queen('Qp', self.color, self.square)
         elif new_piece_type == 'rook':
-            all_squares[self.square] = Rook('R', self.color, self.square)
+            all_squares[self.square] = Rook('Rp', self.color, self.square)
         elif new_piece_type == 'bishop':
-            all_squares[self.square] = Bishop('B', self.color, self.square)
+            all_squares[self.square] = Bishop('Bp', self.color, self.square)
         elif new_piece_type == 'knight':
-            all_squares[self.square] = Knight('N', self.color, self.square)
+            all_squares[self.square] = Knight('Np', self.color, self.square)
         else:
             print('Invalid piece type entered.')
             return self.promote_pawn(board)

@@ -8,6 +8,8 @@ import chess_utilities
 import pieces
 
 
+# TODO: Refactor Perft. Split initial state variables into a separate
+# function that returns a long tuple?
 # TODO: Undo move function, portable b/w modules
 def perft(chessboard, depth=None):
     """DFS through move tree and count the nodes."""
@@ -44,6 +46,15 @@ def perft(chessboard, depth=None):
             except AttributeError:
                 switch_has_moved_to_False = False
             prev_occupant = chessboard.squares[move]
+            try:
+                if prev_occupant.color == 'white':
+                    prev_occupant_ind = chessboard.white_pieces.index(
+                        prev_occupant)
+                else:
+                    prev_occupant_ind = chessboard.black_pieces.index(
+                        prev_occupant)
+            except AttributeError:
+                pass
             prev_square = piece.square
             prev_move_piece = chessboard.last_move_piece
             prev_move_from_to = chessboard.last_move_from_to
@@ -71,6 +82,19 @@ def perft(chessboard, depth=None):
             except (AttributeError, IndexError):
                 pass
             chessboard.squares[piece.square] = prev_occupant
+            try:
+                if prev_occupant.color == 'white':
+                    assert prev_occupant not in chessboard.white_pieces
+                    chessboard.white_pieces.insert(
+                        prev_occupant_ind,
+                        prev_occupant)
+                else:
+                    assert prev_occupant not in chessboard.black_pieces
+                    chessboard.black_pieces.insert(
+                        prev_occupant_ind,
+                        prev_occupant)
+            except AttributeError:
+                pass
             chessboard.squares[prev_square] = piece
             piece.square = prev_square
             chessboard.last_move_piece = prev_move_piece
@@ -82,9 +106,8 @@ def perft(chessboard, depth=None):
 class TestPerft(unittest.TestCase):
     """Check Perft node counts from various positions."""
 
-    # Substituting pin checks for checking if king is in check gives
-    # 42,446/197,281. No errors. Need 'divide' algorithm.
-    def test_perft_initial_position(self, depth=3):
+    # Failing depth 4. 42,446/197,281. No errors. Need 'divide' algorithm.
+    def test_perft_initial_position(self, depth=4):
         """Perft from the normal starting position."""
         nodes = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609,
                  6: 119060324}
@@ -93,11 +116,12 @@ class TestPerft(unittest.TestCase):
         chessboard.initialize_pieces(autopromote=['white', 'black'])
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # @unittest.skip('Failing. WIP.')
-    def test_kiwipete(self, depth=1):
+    # @unittest.skip('Failing depth 2. WIP.')
+    def test_kiwipete(self, depth=2):
         """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
         nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
                  6: 8031647685}
         chessboard = chess_utilities.import_fen_to_board(
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w')
+        # print(chessboard.white_pieces)
         self.assertEqual(perft(chessboard, depth), nodes[depth])

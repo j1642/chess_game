@@ -52,24 +52,28 @@ def print_fen_to_terminal(fen_string):
 
 def import_fen_to_board(fen: str):
     """Convert FEN string to board.Board object.
-    Note that castling does not work unless Rook.name is changed to have
-    the file suffix.
+
+    Does not consider en passant square, half-move count, or move count.
     """
     chessboard = board.Board()
-    fen = fen.split(' ')
-
+    fen = fen.strip().split(' ')
+    if len(fen) > 3:
+        raise ValueError('FEN en passant square and move counts not '
+                         'supported.')
+    castling_options = None
+    if len(fen) == 3:
+        castling_options = fen.pop()
     turn_to_move = fen.pop()
     if turn_to_move == 'w':
         last_move_color = 'black'
     elif turn_to_move == 'b':
         last_move_color = 'white'
+    else:
+        raise ValueError('Invalid symbol for piece color.')
 
     chessboard.last_move_piece = pieces.Pawn('placeholder',
                                              last_move_color,
                                              100)
-
-    if fen[-1] == ' ':
-        fen.pop()
 
     fen = fen[0].split('/')
 
@@ -109,6 +113,32 @@ def import_fen_to_board(fen: str):
                 for _ in range(int(char)):
                     chessboard.squares[squares_ind_counter] = ' '
                     squares_ind_counter += 1
+
+    for piece in chessboard.white_pieces + chessboard.black_pieces:
+        if isinstance(piece, pieces.Pawn):
+            if piece.color == 'white':
+                if piece.square not in pieces.ranks_files.rank_2:
+                    piece.has_moved = True
+            elif piece.square not in pieces.ranks_files.rank_7:
+                piece.has_moved = True
+        elif isinstance(piece, pieces.Rook):
+            if piece.color == 'white':
+                if piece.square not in [0, 7]:
+                    piece.has_moved = True
+            elif piece.square not in [56, 63]:
+                piece.has_moved = True
+        elif isinstance(piece, pieces.King):
+            if piece.color == 'white':
+                if piece.square != 4:
+                    piece.has_moved = True
+            elif piece.square != 60:
+                piece.has_moved = True
+
+    if castling_options:
+        if 'K' not in castling_options and 'Q' not in castling_options:
+            chessboard.white_king.has_moved = True
+        if 'k' not in castling_options and 'q' not in castling_options:
+            chessboard.black_king.has_moved = True
 
     # Kings must be last piece in piece lists for check to work.
     if chessboard.white_king:

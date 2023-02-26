@@ -24,8 +24,12 @@ def perft(chessboard, depth=None):
         pieces_to_move = chessboard.white_pieces
 
     nodes = 0
-    n_moves = sum([len(piece.moves) for piece in pieces_to_move])
     if depth == 1:
+        if chessboard.last_move_piece.color == 'white':
+            chessboard.remove_illegal_moves_for_pinned_pieces('black')
+        else:
+            chessboard.remove_illegal_moves_for_pinned_pieces('white')
+        n_moves = sum([len(piece.moves) for piece in pieces_to_move])
         return n_moves
 
     for i, piece in enumerate(pieces_to_move):

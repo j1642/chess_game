@@ -233,21 +233,19 @@ class Board:
     def find_checking_pieces(self) -> list:
         """Assume a king is in check based on Board.last_move_piece.color.
         Return which piece(s) is/are checking the king.
+
+        Note that this may be called when checked_square isn't in
+        opponent controlled squares, such as when looking for pins.
         """
         # Only one king may be in check at any time.
         if self.last_move_piece.color == 'white':
             checked_king = self.black_king
-            opponent_controlled_squares = self.white_controlled_squares
             opponent_pieces = self.white_pieces
         else:
             checked_king = self.white_king
-            opponent_controlled_squares = self.black_controlled_squares
             opponent_pieces = self.black_pieces
 
         checked_square = checked_king.square
-        # If this AssertionError is raised, check that the kings are the
-        # final list elements in board.white_pieces and board.black_pieces.
-        assert checked_square in opponent_controlled_squares
 
         checking_pieces = []
         # Should update_moves() notice if the opponent's king is attacked?
@@ -288,7 +286,7 @@ class Board:
                     move_direction = 1
                     break
             else:
-                # TODO: Why 6? Shouldn't it be 9 and 7 for diag moves?
+                # Indirectly assign move_direction for rest of function.
                 for move_direction in range(9, 6, -1):
                     if delta % move_direction == 0:
                         break

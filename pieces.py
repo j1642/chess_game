@@ -802,11 +802,12 @@ class King:
             # If a pawn is checking the king, the pawn cannot detect the
             # "invisible" checked king when the pawn's moves are updated in the
             # block above.
-            for checking_piece in checking_pieces:
-                checking_piece.moves.append(self.square)
+            if checking_pieces:
+                for checking_piece in checking_pieces:
+                    checking_piece.moves.append(self.square)
 
-            board.moves_must_escape_check_or_checkmate(board, self,
-                                                       checking_pieces)
+                board.moves_must_escape_check_or_checkmate(board, self,
+                                                           checking_pieces)
 
         self.moves = all_moves
 

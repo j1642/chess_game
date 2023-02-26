@@ -249,10 +249,12 @@ class Pawn(_Piece):
                     en_passant_piece.moves.append(
                         (last_move_from + last_move_to) // 2)
 
-    def promote_pawn(self, board):
+    def promote_pawn(self, board, promote_to=None):
         """Immediately promote pawn when it advances to its final row."""
         all_squares = board.squares
-        if self.autopromote:
+        if promote_to:
+            new_piece_type = promote_to
+        elif self.autopromote:
             new_piece_type = 'queen'
         else:
             new_piece_type = input('\nPawn promotion: which piece should your '
@@ -282,8 +284,28 @@ class Pawn(_Piece):
             board.black_pieces.insert(0, new_piece)
             board.black_pieces.remove(self)
 
-    def move_piece(self, board, new_square: int):
-        """Move the pawn."""
+    def move_piece(self, board, new_square, promote_to=None):
+        """Move the pawn.
+
+        Parameters
+        ----------
+        board : board.Board
+
+        new_square : int or tuple (int, str)
+            Square to move to, or (square to move to, type to promote to)
+
+        promote_to : None or str
+            Piece type to promote to, if promoting. Ex: 'queen'
+
+        """
+        if isinstance(new_square, tuple) and len(new_square) == 2:
+            new_square, promote_to = new_square
+            if any([not isinstance(new_square, int),
+                    not isinstance(promote_to, str)]):
+                raise TypeError("invalid type in 'new_square'")
+        elif not isinstance(new_square, int):
+            raise TypeError("invalid 'new_square' type")
+
         if new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
@@ -302,10 +324,10 @@ class Pawn(_Piece):
             self.update_board_after_move(board, new_square, old_square)
 
             if self.color == 'white' and self.square in list(range(56, 64)):
-                self.promote_pawn(board)
+                self.promote_pawn(board, promote_to)
                 board.last_move_piece = board.squares[new_square]
             elif self.color == 'black' and self.square in list(range(0, 8)):
-                self.promote_pawn(board)
+                self.promote_pawn(board, promote_to)
                 board.last_move_piece = board.squares[new_square]
 
         else:

@@ -13,4 +13,4 @@ repos:
     hooks:
       - id: flake8
         additional_dependencies: [pydocstyle>5.1.0, flake8-docstrings>1.4.0, flake8-force]
-        args: ["--docstring-convention=all", "--ignore=D105,D107,D203,D205,D213,D400,D415,W503"]
+        args: ["--docstring-convention=all", "--ignore=D105,D107,D203,D205,D213,D400,D415,D417,W503"]

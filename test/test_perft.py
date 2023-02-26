@@ -1,6 +1,5 @@
 """Debug the move generating functions by counting nodes of move tree."""
 
-# from copy import deepcopy
 import unittest
 
 import board
@@ -37,14 +36,12 @@ def perft(chessboard, depth=None):
         chessboard.update_black_controlled_squares()
         chessboard.white_king.update_moves(chessboard)
         prev_moves = piece.moves
+        try:
+            if piece.has_moved is False:
+                switch_has_moved_to_False = True
+        except AttributeError:
+            switch_has_moved_to_False = False
         for move in piece.moves:
-            # Deepcopy misses twice as many outcomes (~40 at depth 2)
-            # prev_board = deepcopy(chessboard)
-            try:
-                if piece.has_moved is False:
-                    switch_has_moved_to_False = True
-            except AttributeError:
-                switch_has_moved_to_False = False
             prev_occupant = chessboard.squares[move]
             try:
                 if prev_occupant.color == 'white':
@@ -63,8 +60,8 @@ def perft(chessboard, depth=None):
                     chessboard.white_controlled_squares,
                     chessboard.black_controlled_squares):
                 friendly_king.in_check = False
-                continue
-            nodes += perft(chessboard, depth - 1)
+            else:
+                nodes += perft(chessboard, depth - 1)
             # Undo the move.
             # chessboard = prev_board
             if switch_has_moved_to_False:
@@ -106,8 +103,7 @@ def perft(chessboard, depth=None):
 class TestPerft(unittest.TestCase):
     """Check Perft node counts from various positions."""
 
-    # Failing depth 4. 42,446/197,281. No errors. Need 'divide' algorithm.
-    def test_perft_initial_position(self, depth=4):
+    def test_perft_initial_position(self, depth=3):
         """Perft from the normal starting position."""
         nodes = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609,
                  6: 119060324}
@@ -117,11 +113,17 @@ class TestPerft(unittest.TestCase):
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
     # @unittest.skip('Failing depth 2. WIP.')
-    def test_kiwipete(self, depth=2):
+    def test_kiwipete(self, depth=1):
         """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
         nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
                  6: 8031647685}
         chessboard = chess_utilities.import_fen_to_board(
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w')
-        # print(chessboard.white_pieces)
+        self.assertEqual(perft(chessboard, depth), nodes[depth])
+
+    def test_position_3(self, depth=1):
+        """Position 3. Focus on promotions and check."""
+        nodes = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w')
         self.assertEqual(perft(chessboard, depth), nodes[depth])

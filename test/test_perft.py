@@ -42,11 +42,12 @@ def perft(chessboard, depth=None):
         chessboard.update_black_controlled_squares()
         chessboard.white_king.update_moves(chessboard)
         prev_moves = piece.moves
+        switch_has_moved_to_False = False
         try:
             if piece.has_moved is False:
                 switch_has_moved_to_False = True
         except AttributeError:
-            switch_has_moved_to_False = False
+            pass
         for move in piece.moves:
             prev_occupant = chessboard.squares[move]
             try:

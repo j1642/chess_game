@@ -15,6 +15,15 @@ def perft(chessboard, depth=None):
     chessboard.update_white_controlled_squares()
     chessboard.update_black_controlled_squares()
     chessboard.white_king.update_moves(chessboard)
+    # Add various promotion pieces instead of defaulting to queen.
+    for piece in chessboard.white_pieces + chessboard.black_pieces:
+        if isinstance(piece, pieces.Pawn):
+            for move in piece.moves:
+                if any([move in pieces.ranks_files.rank_1,
+                        move in pieces.ranks_files.rank_8]):
+                    piece.moves.append((move, 'knight'))
+                    piece.moves.append((move, 'bishop'))
+                    piece.moves.append((move, 'rook'))
 
     if chessboard.last_move_piece.color == 'white':
         friendly_king = chessboard.black_king
@@ -111,7 +120,7 @@ def perft(chessboard, depth=None):
 class TestPerft(unittest.TestCase):
     """Check Perft node counts from various positions."""
 
-    # @unittest.skip('temp')
+    # Depth 5 fails in 290 sec. Too high by 1.006x
     def test_perft_initial_position(self, depth=3):
         """Perft from the normal starting position."""
         nodes = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609,
@@ -121,7 +130,7 @@ class TestPerft(unittest.TestCase):
         chessboard.initialize_pieces(autopromote=['white', 'black'])
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # @unittest.skip('Failing depth 2. WIP.')
+    # Fails depth 2.
     def test_kiwipete(self, depth=1):
         """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
         nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
@@ -130,9 +139,24 @@ class TestPerft(unittest.TestCase):
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w')
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
+    # Fails depth 2.
     def test_position_3(self, depth=1):
-        """Position 3. Focus on promotions and check."""
+        """Wiki position 3. Some captures, promotions, and checks."""
         nodes = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
         chessboard = chess_utilities.import_fen_to_board(
             '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w')
         self.assertEqual(perft(chessboard, depth), nodes[depth])
+
+    def test_promotion(self, depth=1):
+        """Promotion FEN from rocechess.ch/perft.html"""
+        nodes = {1: 24, 2: 496, 3: 9483, 4: 182838}
+        chessboard = chess_utilities.import_fen_to_board(
+            'n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b')
+        self.assertEqual(perft(chessboard, depth), nodes[depth])
+
+    @unittest.skip('passes! ~10 sec')
+    def test_short_castling_gives_check(self):
+        """Short castling gives check."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '5k2/8/8/8/8/8/8/4K2R w')
+        self.assertEqual(perft(chessboard, 6), 661072)

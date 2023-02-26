@@ -88,7 +88,6 @@ def perft(chessboard, depth=None):
     chessboard.update_white_controlled_squares()
     chessboard.update_black_controlled_squares()
     chessboard.white_king.update_moves(chessboard)
-    # Add various promotion pieces instead of defaulting to queen.
     for piece in chessboard.white_pieces + chessboard.black_pieces:
         if isinstance(piece, pieces.Pawn):
             for move in piece.moves:
@@ -130,8 +129,10 @@ def perft(chessboard, depth=None):
             saved_move_loop = save_state_per_move(chessboard, move)
 
             piece.move_piece(chessboard, move)
-            chessboard.update_white_controlled_squares()
-            chessboard.update_black_controlled_squares()
+            if friendly_king.color == 'white':
+                chessboard.update_black_controlled_squares()
+            else:
+                chessboard.update_white_controlled_squares()
             if friendly_king.check_if_in_check(
                     chessboard.white_controlled_squares,
                     chessboard.black_controlled_squares):

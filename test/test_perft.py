@@ -6,6 +6,9 @@ import board
 import chess_utilities
 import pieces
 
+a_board = board.Board()
+square_to_alg_notation = {v: k for k, v in a_board.ALGEBRAIC_NOTATION.items()}
+
 
 # TODO: Undo move function, portable b/w modules
 def save_state_per_piece(chessboard, piece, i, pieces_to_move):
@@ -26,6 +29,8 @@ def save_state_per_piece(chessboard, piece, i, pieces_to_move):
 
 def save_state_per_move(chessboard, move):
     """Store once per Perft move loop."""
+    if isinstance(move, tuple):
+        move, _ = move
     prev_occupant = chessboard.squares[move]
     prev_occupant_ind = None
     try:
@@ -83,19 +88,11 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
         pass
 
 
-def perft(chessboard, depth=None):
+def perft(chessboard, depth=None, divide=False):
     """DFS through move tree and count the nodes."""
     chessboard.update_white_controlled_squares()
     chessboard.update_black_controlled_squares()
     chessboard.white_king.update_moves(chessboard)
-    for piece in chessboard.white_pieces + chessboard.black_pieces:
-        if isinstance(piece, pieces.Pawn):
-            for move in piece.moves:
-                if any([move in pieces.ranks_files.rank_1,
-                        move in pieces.ranks_files.rank_8]):
-                    piece.moves.append((move, 'knight'))
-                    piece.moves.append((move, 'bishop'))
-                    piece.moves.append((move, 'rook'))
 
     if chessboard.last_move_piece.color == 'white':
         friendly_king = chessboard.black_king
@@ -104,14 +101,21 @@ def perft(chessboard, depth=None):
         friendly_king = chessboard.white_king
         pieces_to_move = chessboard.white_pieces
 
+    divide_total = 0
     nodes = 0
     if depth == 1:
-        # Slow. Could change to depth=0, check if in check. Quick try
-        # resulted in old check AssertionError.
         if chessboard.last_move_piece.color == 'white':
             chessboard.remove_illegal_moves_for_pinned_pieces('black')
         else:
             chessboard.remove_illegal_moves_for_pinned_pieces('white')
+        for pawn in chessboard.white_pieces + chessboard.black_pieces:
+            if isinstance(pawn, pieces.Pawn):
+                for move in pawn.moves:
+                    if any([move in pieces.ranks_files.rank_1,
+                            move in pieces.ranks_files.rank_8]):
+                        pawn.moves.append((move, 'knight'))
+                        pawn.moves.append((move, 'bishop'))
+                        pawn.moves.append((move, 'rook'))
         n_moves = sum([len(piece.moves) for piece in pieces_to_move])
         return n_moves
 
@@ -122,6 +126,14 @@ def perft(chessboard, depth=None):
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
         chessboard.white_king.update_moves(chessboard)
+        for pawn in chessboard.white_pieces + chessboard.black_pieces:
+            if isinstance(pawn, pieces.Pawn):
+                for move in pawn.moves:
+                    if any([move in pieces.ranks_files.rank_1,
+                            move in pieces.ranks_files.rank_8]):
+                        pawn.moves.append((move, 'knight'))
+                        pawn.moves.append((move, 'bishop'))
+                        pawn.moves.append((move, 'rook'))
 
         saved_piece_loop = save_state_per_piece(chessboard, piece, i,
                                                 pieces_to_move)
@@ -138,11 +150,22 @@ def perft(chessboard, depth=None):
                     chessboard.black_controlled_squares):
                 friendly_king.in_check = False
             else:
-                nodes += perft(chessboard, depth - 1)
+                if divide:
+                    nodes = perft(chessboard, depth - 1)
+                else:
+                    nodes += perft(chessboard, depth - 1)
             # Undo the move.
             undo_move(chessboard, saved_piece_loop, saved_move_loop)
-
-    return nodes
+            if divide:
+                if isinstance(move, tuple):
+                    move, _ = move
+                print(piece.name, square_to_alg_notation[piece.square],
+                      square_to_alg_notation[move], ':', nodes)
+                divide_total += nodes
+    if divide:
+        print('Total:', divide_total)
+    else:
+        return nodes
 
 
 class TestPerft(unittest.TestCase):
@@ -175,8 +198,8 @@ class TestPerft(unittest.TestCase):
             '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w')
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # Fails depth 2.
-    def test_promotion(self, depth=1):
+    # Fails depth 3.
+    def test_promotion(self, depth=2):
         """Promotion FEN from rocechess.ch/perft.html"""
         nodes = {1: 24, 2: 496, 3: 9483, 4: 182838}
         chessboard = chess_utilities.import_fen_to_board(

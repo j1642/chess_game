@@ -25,6 +25,8 @@ def perft(chessboard, depth=None):
 
     nodes = 0
     if depth == 1:
+        # Slow. Could change to depth=0, check if in check. Quick try
+        # resulted in old check AssertionError.
         if chessboard.last_move_piece.color == 'white':
             chessboard.remove_illegal_moves_for_pinned_pieces('black')
         else:
@@ -60,6 +62,8 @@ def perft(chessboard, depth=None):
             prev_move_piece = chessboard.last_move_piece
             prev_move_from_to = chessboard.last_move_from_to
             piece.move_piece(chessboard, move)
+            chessboard.update_white_controlled_squares()
+            chessboard.update_black_controlled_squares()
             if friendly_king.check_if_in_check(
                     chessboard.white_controlled_squares,
                     chessboard.black_controlled_squares):
@@ -67,7 +71,6 @@ def perft(chessboard, depth=None):
             else:
                 nodes += perft(chessboard, depth - 1)
             # Undo the move.
-            # chessboard = prev_board
             if switch_has_moved_to_False:
                 piece.has_moved = False
             piece.moves = prev_moves
@@ -107,6 +110,7 @@ def perft(chessboard, depth=None):
 class TestPerft(unittest.TestCase):
     """Check Perft node counts from various positions."""
 
+    # @unittest.skip('temp')
     def test_perft_initial_position(self, depth=3):
         """Perft from the normal starting position."""
         nodes = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609,

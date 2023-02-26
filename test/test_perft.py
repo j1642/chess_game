@@ -1,5 +1,6 @@
 """Debug the move generating functions by counting nodes of move tree."""
 
+from collections import defaultdict
 import unittest
 
 import board
@@ -101,7 +102,8 @@ def perft(chessboard, depth=None, divide=False):
         friendly_king = chessboard.white_king
         pieces_to_move = chessboard.white_pieces
 
-    divide_total = 0
+    if divide:
+        divided = defaultdict(int)
     nodes = 0
     if depth == 1:
         if chessboard.last_move_piece.color == 'white':
@@ -157,13 +159,22 @@ def perft(chessboard, depth=None, divide=False):
             # Undo the move.
             undo_move(chessboard, saved_piece_loop, saved_move_loop)
             if divide:
+                piece_symbol = ''
                 if isinstance(move, tuple):
-                    move, _ = move
-                print(piece.name, square_to_alg_notation[piece.square],
-                      square_to_alg_notation[move], ':', nodes)
-                divide_total += nodes
+                    move, piece_symbol = move
+                    piece_symbol = piece_symbol[0]
+                    if piece_symbol == 'k':
+                        piece_symbol = 'n'
+                move = ' '.join([piece.name,
+                                square_to_alg_notation[piece.square],
+                                square_to_alg_notation[move],
+                                piece_symbol, ':'])
+                divided[move] += nodes
     if divide:
-        print('Total:', divide_total)
+        print('\n')
+        for k, v in divided.items():
+            print(k, v)
+        print('Total:', sum(divided.values()))
     else:
         return nodes
 
@@ -204,6 +215,7 @@ class TestPerft(unittest.TestCase):
         nodes = {1: 24, 2: 496, 3: 9483, 4: 182838}
         chessboard = chess_utilities.import_fen_to_board(
             'n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b', autopromote=True)
+        # 'n1n5/PPP5/2k5/8/8/8/4Kppp/5N1N b', autopromote=True)
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
     @unittest.skip('passes! ~10 sec')

@@ -114,6 +114,12 @@ def import_fen_to_board(fen: str):
                     chessboard.squares[squares_ind_counter] = ' '
                     squares_ind_counter += 1
 
+    # Kings must be last piece in piece lists for check to work.
+    if chessboard.white_king:
+        chessboard.white_pieces.append(chessboard.white_king)
+    if chessboard.black_king:
+        chessboard.black_pieces.append(chessboard.black_king)
+
     for piece in chessboard.white_pieces + chessboard.black_pieces:
         if isinstance(piece, pieces.Pawn):
             if piece.color == 'white':
@@ -139,12 +145,6 @@ def import_fen_to_board(fen: str):
             chessboard.white_king.has_moved = True
         if 'k' not in castling_options and 'q' not in castling_options:
             chessboard.black_king.has_moved = True
-
-    # Kings must be last piece in piece lists for check to work.
-    if chessboard.white_king:
-        chessboard.white_pieces.append(chessboard.white_king)
-    if chessboard.black_king:
-        chessboard.black_pieces.append(chessboard.black_king)
 
     return chessboard
 

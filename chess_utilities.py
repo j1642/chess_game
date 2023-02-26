@@ -50,7 +50,7 @@ def print_fen_to_terminal(fen_string):
         print(row)
 
 
-def import_fen_to_board(fen: str):
+def import_fen_to_board(fen: str, autopromote=False):
     """Convert FEN string to board.Board object.
 
     Does not consider en passant square, half-move count, or move count.
@@ -127,6 +127,8 @@ def import_fen_to_board(fen: str):
                     piece.has_moved = True
             elif piece.square not in pieces.ranks_files.rank_7:
                 piece.has_moved = True
+            if autopromote:
+                piece.autopromote = True
         elif isinstance(piece, pieces.Rook):
             if piece.color == 'white':
                 if piece.square not in [0, 7]:

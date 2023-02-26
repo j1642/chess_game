@@ -7,9 +7,82 @@ import chess_utilities
 import pieces
 
 
-# TODO: Refactor Perft. Split initial state variables into a separate
-# function that returns a long tuple?
 # TODO: Undo move function, portable b/w modules
+def save_state_per_piece(chessboard, piece, i, pieces_to_move):
+    """Store once per Perft piece loop."""
+    prev_move_piece = chessboard.last_move_piece
+    prev_move_from_to = chessboard.last_move_from_to
+    prev_square = piece.square
+    prev_moves = piece.moves
+    switch_has_moved_to_False = False
+    try:
+        if piece.has_moved is False:
+            switch_has_moved_to_False = True
+    except AttributeError:
+        pass
+    return prev_move_piece, prev_move_from_to, prev_square, prev_moves, \
+        switch_has_moved_to_False, piece, i, pieces_to_move
+
+
+def save_state_per_move(chessboard, move):
+    """Store once per Perft move loop."""
+    prev_occupant = chessboard.squares[move]
+    prev_occupant_ind = None
+    try:
+        if prev_occupant.color == 'white':
+            prev_occupant_ind = chessboard.white_pieces.index(
+                prev_occupant)
+        else:
+            prev_occupant_ind = chessboard.black_pieces.index(
+                prev_occupant)
+    except AttributeError:
+        pass
+
+    return prev_occupant, prev_occupant_ind
+
+
+def undo_move(chessboard, saved_piece_loop, saved_move_loop):
+    """Undo perft move."""
+    prev_move_piece, prev_move_from_to, prev_square, prev_moves, \
+        switch_has_moved_to_False, piece, i, pieces_to_move = saved_piece_loop
+
+    prev_occupant, prev_occupant_ind = saved_move_loop
+
+    if switch_has_moved_to_False:
+        piece.has_moved = False
+    piece.moves = prev_moves
+    chessboard.squares[piece.square] = prev_occupant
+    chessboard.squares[prev_square] = piece
+    piece.square = prev_square
+    chessboard.last_move_piece = prev_move_piece
+    chessboard.last_move_from_to = prev_move_from_to
+    # Amend piece list to undo promotion.
+    # Possible bugs from changing list while iterating over it.
+    # After separating out this func, chessboard[squares] no longer holds
+    # promoted piece 'Xp', but 'Xp' is still in pieces_to_move.
+    try:
+        if pieces_to_move[0].name[1] == 'p':
+            len_before_changes = len(pieces_to_move)
+            pieces_to_move.pop(0)
+            pieces_to_move.insert(i, piece)
+            assert len_before_changes == len(pieces_to_move)
+    except IndexError:
+        pass
+    try:
+        if prev_occupant.color == 'white':
+            assert prev_occupant not in chessboard.white_pieces
+            chessboard.white_pieces.insert(
+                prev_occupant_ind,
+                prev_occupant)
+        else:
+            assert prev_occupant not in chessboard.black_pieces
+            chessboard.black_pieces.insert(
+                prev_occupant_ind,
+                prev_occupant)
+    except AttributeError:
+        pass
+
+
 def perft(chessboard, depth=None):
     """DFS through move tree and count the nodes."""
     chessboard.update_white_controlled_squares()
@@ -50,27 +123,12 @@ def perft(chessboard, depth=None):
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
         chessboard.white_king.update_moves(chessboard)
-        prev_moves = piece.moves
-        switch_has_moved_to_False = False
-        try:
-            if piece.has_moved is False:
-                switch_has_moved_to_False = True
-        except AttributeError:
-            pass
+
+        saved_piece_loop = save_state_per_piece(chessboard, piece, i,
+                                                pieces_to_move)
         for move in piece.moves:
-            prev_occupant = chessboard.squares[move]
-            try:
-                if prev_occupant.color == 'white':
-                    prev_occupant_ind = chessboard.white_pieces.index(
-                        prev_occupant)
-                else:
-                    prev_occupant_ind = chessboard.black_pieces.index(
-                        prev_occupant)
-            except AttributeError:
-                pass
-            prev_square = piece.square
-            prev_move_piece = chessboard.last_move_piece
-            prev_move_from_to = chessboard.last_move_from_to
+            saved_move_loop = save_state_per_move(chessboard, move)
+
             piece.move_piece(chessboard, move)
             chessboard.update_white_controlled_squares()
             chessboard.update_black_controlled_squares()
@@ -81,38 +139,7 @@ def perft(chessboard, depth=None):
             else:
                 nodes += perft(chessboard, depth - 1)
             # Undo the move.
-            if switch_has_moved_to_False:
-                piece.has_moved = False
-            piece.moves = prev_moves
-            # Amend piece list to undo promotion.
-            # Possible bugs from changing list while iterating over it
-            try:
-                if chessboard.squares[piece.square].name[1] == 'p':
-                    ind = pieces_to_move.index(
-                        chessboard.squares[piece.square])
-                    assert ind == 0
-                    pieces_to_move.remove(chessboard.squares[piece.square])
-                    pieces_to_move.insert(i, piece)
-            except (AttributeError, IndexError):
-                pass
-            chessboard.squares[piece.square] = prev_occupant
-            try:
-                if prev_occupant.color == 'white':
-                    assert prev_occupant not in chessboard.white_pieces
-                    chessboard.white_pieces.insert(
-                        prev_occupant_ind,
-                        prev_occupant)
-                else:
-                    assert prev_occupant not in chessboard.black_pieces
-                    chessboard.black_pieces.insert(
-                        prev_occupant_ind,
-                        prev_occupant)
-            except AttributeError:
-                pass
-            chessboard.squares[prev_square] = piece
-            piece.square = prev_square
-            chessboard.last_move_piece = prev_move_piece
-            chessboard.last_move_from_to = prev_move_from_to
+            undo_move(chessboard, saved_piece_loop, saved_move_loop)
 
     return nodes
 
@@ -147,11 +174,12 @@ class TestPerft(unittest.TestCase):
             '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w')
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
+    # Fails depth 2.
     def test_promotion(self, depth=1):
         """Promotion FEN from rocechess.ch/perft.html"""
         nodes = {1: 24, 2: 496, 3: 9483, 4: 182838}
         chessboard = chess_utilities.import_fen_to_board(
-            'n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b')
+            'n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b', autopromote=True)
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
     @unittest.skip('passes! ~10 sec')

@@ -265,9 +265,13 @@ class Board:
 
         Helper function for Board.king_escapes_check_or_checkmate().
         """
+        interposable_checking_pieces = []
+        for piece in checking_pieces:
+            if isinstance(piece, (pieces.Bishop, pieces.Rook, pieces.Queen)):
+                interposable_checking_pieces.append(piece)
         interposition_squares = []
-        # brq_directions = [[+-9, +-7], ...]
-        for checking_piece in checking_pieces:
+
+        for checking_piece in interposable_checking_pieces:
             delta = checked_king.square - checking_piece.square
             # max/min of +-7 in same row
             delta_is_neg = False
@@ -290,7 +294,6 @@ class Board:
                 for move_direction in range(9, 6, -1):
                     if delta % move_direction == 0:
                         break
-            assert move_direction
 
             if delta_is_neg:
                 # Lower king square, higher piece square.
@@ -312,8 +315,9 @@ class Board:
         escape check. If no moves escape check, the game ends by
         checkmate.
         """
-        interpose_squares = self.find_interposition_squares(checking_pieces,
-                                                            checked_king)
+        interpose_squares = self.find_interposition_squares(
+            checking_pieces,
+            checked_king)
 
         # King in double check must move or is in checkmate.
         if len(checking_pieces) > 1:

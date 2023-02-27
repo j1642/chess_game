@@ -231,7 +231,6 @@ class Pawn(_Piece):
                   f'last_move_to={last_move_to}')
         # Last piece moved was a pawn and it advanced two squares.
         en_passant_squares = []
-
         if last_move_to in ranks_files.a_file:
             en_passant_squares = [last_move_to + 1]
         elif last_move_to in ranks_files.h_file:
@@ -243,7 +242,7 @@ class Pawn(_Piece):
 
         for en_passant_square in en_passant_squares:
             en_passant_piece = board.squares[en_passant_square]
-            if isinstance(en_passant_piece, Pawn):
+            if self is en_passant_piece:
                 if board.last_move_piece.color != en_passant_piece.color:
                     # assert self.last_move_piece.square == last_move_to
                     en_passant_piece.moves.append(

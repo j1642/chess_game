@@ -191,11 +191,17 @@ class Pawn(_Piece):
         if friendly_king.check_if_in_check(
                 chessboard.white_controlled_squares,
                 chessboard.black_controlled_squares):
+            friendly_king.in_check = False
             self.moves.remove(self.en_passant_move)
             self.en_passant_move = None
+        # Reset
         chessboard.squares[self.square] = self
         chessboard.squares[capturable_pawn.square] = capturable_pawn
         chessboard.squares[en_passant_square] = ' '
+        if self.color == 'white':
+            chessboard.update_black_controlled_squares()
+        else:
+            chessboard.update_white_controlled_squares()
         return False
 
     def update_moves(self, board):

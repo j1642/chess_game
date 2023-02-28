@@ -100,8 +100,17 @@ class _Piece:
                 chessboard.black_controlled_squares):
             friendly_king.in_check = orig_in_check
             self.restrict_moves_when_pinned(chessboard, friendly_king)
+            # Reset controlled squares after pin check
+            if self.color == 'white':
+                chessboard.update_black_controlled_squares()
+            else:
+                chessboard.update_white_controlled_squares()
             return True
         else:
+            if self.color == 'white':
+                chessboard.update_black_controlled_squares()
+            else:
+                chessboard.update_white_controlled_squares()
             return False
 
     def restrict_moves_when_pinned(self, chessboard, friendly_king):

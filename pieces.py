@@ -132,6 +132,7 @@ class Pawn(_Piece):
     -------
         __init__()
         __repr__()
+        is_pinned()
         update_moves()
         add_en_passant_moves()
         promote_pawn()
@@ -144,6 +145,7 @@ class Pawn(_Piece):
         self.color = white_or_black
         self.square = position
         self.moves = []
+        self.en_passant_move = None
         self.has_moved = False
         self.giving_check = False
         self.protected_squares = []
@@ -153,11 +155,43 @@ class Pawn(_Piece):
         return f'({self.name}, Sq: {self.square}, {self.color}, ' \
             f'has_moved: {self.has_moved})'
 
+    def is_pinned(self, chessboard):
+        """If not pinned (excluding en passant), remove en passant moves if
+        illegal.
+        """
+        if super().is_pinned(chessboard):
+            return True
+        if self.en_passant_move is None:
+            return False
+        capturable_pawn = chessboard.squares[chessboard.last_move_from_to[1]]
+        chessboard.squares[self.square] = ' '
+        chessboard.squares[capturable_pawn.square] = ' '
+        last_move_from, last_move_to = chessboard.last_move_from_to
+        en_passant_square = (last_move_from + last_move_to) // 2
+        assert chessboard.squares[en_passant_square] == ' '
+        chessboard.squares[en_passant_square] = self
+        if self.color == 'white':
+            friendly_king = chessboard.white_king
+            chessboard.update_black_controlled_squares()
+        else:
+            friendly_king = chessboard.black_king
+            chessboard.update_white_controlled_squares()
+        if friendly_king.check_if_in_check(
+                chessboard.white_controlled_squares,
+                chessboard.black_controlled_squares):
+            self.moves.remove(self.en_passant_move)
+            self.en_passant_move = None
+        chessboard.squares[self.square] = self
+        chessboard.squares[capturable_pawn.square] = capturable_pawn
+        chessboard.squares[en_passant_square] = ' '
+        return False
+
     def update_moves(self, board):
         """Update pawn moves."""
         all_squares = board.squares
         self.moves = []
         self.protected_squares = []
+        self.en_passant_move = None
 
         forward_direction = 8
         if self.color == 'black':
@@ -240,13 +274,12 @@ class Pawn(_Piece):
             # Board.last_move_from_to is not None.
             en_passant_squares = [last_move_to + 1, last_move_to - 1]
 
-        for en_passant_square in en_passant_squares:
-            en_passant_piece = board.squares[en_passant_square]
-            if self is en_passant_piece:
-                if board.last_move_piece.color != en_passant_piece.color:
-                    # assert self.last_move_piece.square == last_move_to
-                    en_passant_piece.moves.append(
-                        (last_move_from + last_move_to) // 2)
+        for attacker_square in en_passant_squares:
+            if self.square == attacker_square:
+                if board.last_move_piece.color != self.color:
+                    ep_square = (last_move_from + last_move_to) // 2
+                    self.moves.append(ep_square)
+                    self.en_passant_move = ep_square
 
     def promote_pawn(self, board, promote_to=None):
         """Immediately promote pawn when it advances to its final row."""
@@ -306,17 +339,28 @@ class Pawn(_Piece):
             raise TypeError("invalid 'new_square' type")
 
         if new_square in self.moves:
-            if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
-                                                      Rook, Queen)):
+            captured_piece = None
+            if new_square == self.en_passant_move:
+                captured_piece_square = board.last_move_from_to[1]
+                captured_piece = board.squares[captured_piece_square]
+                assert isinstance(captured_piece, Pawn)
+                en_passant = True
+
+            elif isinstance(board.squares[new_square],
+                            (Pawn, Knight, Bishop, Rook, Queen)):
                 captured_piece = board.squares[new_square]
+                en_passant = False
+
+            elif isinstance(board.squares[new_square], King):
+                raise Exception('King should not be able to be captured.')
+            if captured_piece:
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
                 elif self.color == 'black':
                     board.white_pieces.remove(captured_piece)
-
-            elif isinstance(board.squares[new_square], King):
-                raise Exception('King should not be able to be captured.')
+                if en_passant:
+                    board.squares[captured_piece_square] = ' '
 
             self.has_moved = True
             old_square, self.square = self.square, new_square

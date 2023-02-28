@@ -110,6 +110,9 @@ class _Piece:
         # While protected squares only limit King moves, this is fine.
         # If protected squares gain responsibilities, this is an issue.
         checking_pieces = chessboard.find_checking_pieces()
+        if len(checking_pieces) > 1:
+            self.moves = []
+            return
         checking_piece_sqrs = [piece.square for piece in checking_pieces]
         interpose_or_capture_sqrs = chessboard.find_interposition_squares(
             checking_pieces,

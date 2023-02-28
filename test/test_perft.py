@@ -63,8 +63,12 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
     chessboard.squares[piece.square] = prev_occupant
     chessboard.squares[prev_square] = piece
     piece.square = prev_square
+    move = chessboard.last_move_from_to[1]
     chessboard.last_move_piece = prev_move_piece
     chessboard.last_move_from_to = prev_move_from_to
+    # Undo en passant
+    if isinstance(piece, pieces.Pawn) and move == piece.en_passant_move:
+        chessboard.squares[prev_move_from_to[1]] = prev_move_piece
     # Amend piece list to undo promotion.
     # Possible bugs from changing list while iterating over it.
     # After separating out this func, chessboard[squares] no longer holds
@@ -125,8 +129,8 @@ def divide(chessboard, depth=None):
         chessboard.update_black_controlled_squares()
         chessboard.white_king.update_moves(chessboard)
         replicate_promotion_moves(chessboard)
-        saved_piece_loop = save_state_per_piece(chessboard, piece, i,
-                                                pieces_to_move)
+        saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
+                                                i, pieces_to_move)
         for move in piece.moves:
             saved_move_loop = save_state_per_move(chessboard, move)
             piece.move_piece(chessboard, move)
@@ -190,8 +194,8 @@ def perft(chessboard, depth=None):
         chessboard.update_black_controlled_squares()
         chessboard.white_king.update_moves(chessboard)
         replicate_promotion_moves(chessboard)
-        saved_piece_loop = save_state_per_piece(chessboard, piece, i,
-                                                pieces_to_move)
+        saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
+                                                i, pieces_to_move)
         for move in piece.moves:
             saved_move_loop = save_state_per_move(chessboard, move)
             piece.move_piece(chessboard, move)
@@ -232,8 +236,8 @@ class TestPerft(unittest.TestCase):
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w')
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # Fails depth 2.
-    def test_position_3(self, depth=1):
+    # Fails depth 3.
+    def test_position_3(self, depth=2):
         """Wiki position 3. Some captures, promotions, and checks."""
         nodes = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
         chessboard = chess_utilities.import_fen_to_board(

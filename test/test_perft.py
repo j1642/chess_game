@@ -145,9 +145,6 @@ def replicate_promotion_moves(chessboard):
 
 def divide(chessboard, depth=None):
     """DFS through move tree and print subtree node counts."""
-    chessboard.update_white_controlled_squares()
-    chessboard.update_black_controlled_squares()
-    chessboard.white_king.update_moves(chessboard)
     if chessboard.last_move_piece.color == 'white':
         friendly_king = chessboard.black_king
         pieces_to_move = chessboard.black_pieces
@@ -179,8 +176,8 @@ def divide(chessboard, depth=None):
                 continue
             else:
                 nodes = perft(chessboard, depth - 1)
-            # Undo the move.
             undo_move(chessboard, saved_piece_loop, saved_move_loop)
+
             piece_symbol = ''
             if isinstance(move, tuple):
                 move, piece_symbol = move
@@ -200,9 +197,6 @@ def divide(chessboard, depth=None):
 
 def perft(chessboard, depth=None):
     """DFS through move tree and count the nodes."""
-    chessboard.update_white_controlled_squares()
-    chessboard.update_black_controlled_squares()
-    chessboard.white_king.update_moves(chessboard)
     if chessboard.last_move_piece.color == 'white':
         friendly_king = chessboard.black_king
         pieces_to_move = chessboard.black_pieces
@@ -212,6 +206,9 @@ def perft(chessboard, depth=None):
 
     nodes = 0
     if depth == 1:
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
         if chessboard.last_move_piece.color == 'white':
             chessboard.remove_illegal_moves_for_pinned_pieces('black')
         else:
@@ -242,7 +239,6 @@ def perft(chessboard, depth=None):
                 friendly_king.in_check = False
             else:
                 nodes += perft(chessboard, depth - 1)
-            # Undo the move.
             undo_move(chessboard, saved_piece_loop, saved_move_loop)
     return nodes
 

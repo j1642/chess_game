@@ -128,8 +128,8 @@ class TestPerft(unittest.TestCase):
         chessboard.initialize_pieces(autopromote=['white', 'black'])
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # Fails depth 3.
-    def test_kiwipete(self, depth=2):
+    # Passes depth 3.
+    def test_kiwipete(self, depth=3):
         """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
         nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
                  6: 8031647685}

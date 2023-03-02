@@ -236,10 +236,7 @@ def early_vs_endgame_phase(chessboard):
 
 
 def evaluate_position(chessboard):
-    """Return board position evaluation in centipawns.
-    By convention, a positive value indicates white is winning and black
-    is losing, and vice versa.
-    """
+    """Return board position evaluation in centipawns."""
     # Piece values.
     white_position = sum([piece_values[piece.name[0].lower()]
         for piece in chessboard.white_pieces])
@@ -260,9 +257,9 @@ def evaluate_position(chessboard):
         endgame_piece_eval = white_pst_eg[piece.name[0].lower()][piece.square]
         white_position += midgame_piece_eval * mg_percent \
             + endgame_piece_eval * eg_percent
-    print('mg_percent =', mg_percent)
-    print('eg_percent =', eg_percent)
-    print('white delta =', white_position - orig_white_eval)
+    #print('mg_percent =', mg_percent)
+    #print('eg_percent =', eg_percent)
+    #print('white delta =', white_position - orig_white_eval)
 
     orig_black_eval = black_position
     for piece in chessboard.black_pieces:
@@ -271,15 +268,65 @@ def evaluate_position(chessboard):
         black_position += midgame_piece_eval * mg_percent \
             + endgame_piece_eval * eg_percent
 
-    print('black delta =', black_position - orig_black_eval)
+    #print('black delta =', black_position - orig_black_eval)
 
     total_evaluation = white_position - black_position
     total_evaluation += eval_doubled_blocked_isolated_pawns(chessboard)
+    # Negation for negamax
+    if chessboard.last_move_piece.color == 'white':
+        total_evaluation *= -1
     return total_evaluation
 
 
-def search():
-    pass
+def negamax(chessboard, depth=0):
+    """DFS through move tree and evaluate leaves. Perft-ish."""
+    if chessboard.last_move_piece.color == 'white':
+        friendly_king = chessboard.black_king
+        pieces_to_move = chessboard.black_pieces
+    else:
+        friendly_king = chessboard.white_king
+        pieces_to_move = chessboard.white_pieces
+
+    if depth == 0:
+        #chessboard.update_white_controlled_squares()
+        #chessboard.update_black_controlled_squares()
+        #chessboard.white_king.update_moves(chessboard)
+        #if chessboard.last_move_piece.color == 'white':
+        #    chessboard.remove_illegal_moves_for_pinned_pieces('black')
+        #else:
+        #    chessboard.remove_illegal_moves_for_pinned_pieces('white')
+        #replicate_promotion_moves(chessboard)
+        return evaluate_position(chessboard), chessboard.last_move_from_to
+
+    max_score = -1000000
+    for i, piece in enumerate(pieces_to_move):
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
+        replicate_promotion_moves(chessboard)
+        saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
+                                                i, pieces_to_move)
+        for move in piece.moves:
+            saved_move_loop = save_state_per_move(chessboard, move, piece)
+            piece.move_piece(chessboard, move)
+            if friendly_king.color == 'white':
+                chessboard.update_black_controlled_squares()
+            else:
+                chessboard.update_white_controlled_squares()
+            if friendly_king.check_if_in_check(
+                    chessboard.white_controlled_squares,
+                    chessboard.black_controlled_squares):
+                friendly_king.in_check = False
+            else:
+                raw_score, raw_move = negamax(chessboard, depth - 1)
+                score = -1 * raw_score
+                if score > max_score:
+                    max_score = score
+                    best_move = raw_move
+                    print(chessboard)
+                    print(max_score, best_move)
+            undo_move(chessboard, saved_piece_loop, saved_move_loop)
+    return max_score, best_move
 
 
 def save_state_per_piece(chessboard, piece, i, pieces_to_move):
@@ -419,6 +466,8 @@ if __name__ == '__main__':
         def test_evaluate_position(self):
             chessboard = board.Board()
             chessboard.initialize_pieces()
+            chessboard.last_move_piece = pieces.Pawn('placeholder',
+                                                     'black', 100)
             self.assertEqual(0.0, evaluate_position(chessboard))
 
         def test_pawn_evaluation(self):
@@ -476,5 +525,15 @@ if __name__ == '__main__':
             # [0, 1, 2,     [8, 7, 6,
             #  3, 4, 5, ->   5, 4, 3,
             #  6, 7, 8]      2, 1, 0]
+
+        def test_negamax(self):
+            chessboard = chess_utilities.import_fen_to_board(
+                'k7/8/8/8/6rR/8/8/K7 w')
+            self.assertEqual(negamax(chessboard, 1)[1], (31, 30))
+            chessboard = chess_utilities.import_fen_to_board(
+                'k7/8/8/8/6rR/8/8/K7 b')
+            self.assertEqual(negamax(chessboard, 1)[1], (30, 31))
+            negamax(chessboard, 3)
+
 
     unittest.main()

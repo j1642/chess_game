@@ -1,5 +1,4 @@
-# Minimax with alpha/beta pruning
-# Inverse relation b/w time available for position eval and move searching
+"""Algorithms for deciding computer moves."""
 
 from functools import reduce
 
@@ -25,7 +24,7 @@ def reorder_piece_square_table(pst, color):
         reordered[row][col] = n
     for i, row in enumerate(reordered):
         reordered[i] = list(reversed(row))
-    reordered = reduce(lambda x, y: x+y, reordered)
+    reordered = reduce(lambda x, y: x + y, reordered)
 
     if color == 'black':
         return reordered
@@ -35,7 +34,8 @@ def reorder_piece_square_table(pst, color):
 
 # Initially, tables are ordered from white's perspective (white home ranks
 # at the bottom). Need to reorder to use.
-piece_square_tables_mg = {'p':
+piece_square_tables_mg = {
+    'p':
         [0,   0,   0,   0,   0,   0,  0,   0,
          98, 134,  61,  95,  68, 126, 34, -11,
          -6,   7,  26,  31,  65,  56, 25, -20,
@@ -242,22 +242,13 @@ def evaluate_position(chessboard):
     """
     # Piece values.
     white_position = sum([piece_values[piece.name[0].lower()]
-            for piece in chessboard.white_pieces])
+        for piece in chessboard.white_pieces])
     black_position = sum([piece_values[piece.name[0].lower()]
-            for piece in chessboard.black_pieces])
-    # Move advantage.
-    try:
-        if chessboard.last_move_piece.color == 'white':
-            white_position += 10
-        elif chessboard.last_move_piece.color == 'black':
-            black_position += 10
-    except AttributeError:
-        # Last move piece not set
-        pass
-    # Piece mobility. Better to keep or remove potential duplicates?
+        for piece in chessboard.black_pieces])
+    # Piece mobility.
     white_position += 10 * len(chessboard.white_controlled_squares)
     black_position += 10 * len(chessboard.black_controlled_squares)
-    # Opening/middlegame vs endgame phase taper
+    # Opening/middlegame vs endgame phase taper.
     phase = early_vs_endgame_phase(chessboard)
     eg_percent = phase / 256
     mg_percent = 1 - eg_percent
@@ -268,7 +259,7 @@ def evaluate_position(chessboard):
         midgame_piece_eval = white_pst_mg[piece.name[0].lower()][piece.square]
         endgame_piece_eval = white_pst_eg[piece.name[0].lower()][piece.square]
         white_position += midgame_piece_eval * mg_percent \
-                + endgame_piece_eval * eg_percent
+            + endgame_piece_eval * eg_percent
     print('mg_percent =', mg_percent)
     print('eg_percent =', eg_percent)
     print('white delta =', white_position - orig_white_eval)
@@ -278,7 +269,7 @@ def evaluate_position(chessboard):
         midgame_piece_eval = black_pst_mg[piece.name[0].lower()][piece.square]
         endgame_piece_eval = black_pst_eg[piece.name[0].lower()][piece.square]
         black_position += midgame_piece_eval * mg_percent \
-                + endgame_piece_eval * eg_percent
+            + endgame_piece_eval * eg_percent
 
     print('black delta =', black_position - orig_black_eval)
 
@@ -289,6 +280,134 @@ def evaluate_position(chessboard):
 
 def search():
     pass
+
+
+def save_state_per_piece(chessboard, piece, i, pieces_to_move):
+    """Store once per Perft piece loop."""
+    prev_move_piece = chessboard.last_move_piece
+    prev_move_from_to = chessboard.last_move_from_to
+    prev_square = piece.square
+    prev_moves = piece.moves
+    switch_has_moved_to_False = False
+    try:
+        if piece.has_moved is False:
+            switch_has_moved_to_False = True
+    except AttributeError:
+        pass
+    return prev_move_piece, prev_move_from_to, prev_square, prev_moves, \
+        switch_has_moved_to_False, piece, i, pieces_to_move
+
+
+# DRY. Move piece/move loop into separate func. How?
+def save_state_per_move(chessboard, move, piece):
+    """Store once per Perft move loop."""
+    if isinstance(move, tuple):
+        move, _ = move
+    prev_occupant = chessboard.squares[move]
+    prev_occupant_ind = None
+    try:
+        if prev_occupant.color == 'white':
+            prev_occupant_ind = chessboard.white_pieces.index(
+                prev_occupant)
+        else:
+            prev_occupant_ind = chessboard.black_pieces.index(
+                prev_occupant)
+    except AttributeError:
+        pass
+    ep_captured_piece_ind = None
+    if isinstance(piece, pieces.Pawn) and move == piece.en_passant_move:
+        ep_captured_piece = chessboard.last_move_piece
+        if chessboard.last_move_piece.color == 'white':
+            static_pieces = chessboard.white_pieces
+        else:
+            static_pieces = chessboard.black_pieces
+        ep_captured_piece_ind = static_pieces.index(ep_captured_piece)
+
+    return prev_occupant, prev_occupant_ind, ep_captured_piece_ind
+
+
+def replicate_promotion_moves(chessboard):
+    """Add specific promotion pieces to a pawn's moves. Assumes queen
+    promotion is the default and is already accounted for.
+    """
+    for piece in chessboard.white_pieces + chessboard.black_pieces:
+        if isinstance(piece, pieces.Pawn):
+            for move in piece.moves:
+                if any([move in pieces.ranks_files.rank_1,
+                        move in pieces.ranks_files.rank_8]):
+                    piece.moves.append((move, 'knight'))
+                    piece.moves.append((move, 'bishop'))
+                    piece.moves.append((move, 'rook'))
+
+
+def undo_move(chessboard, saved_piece_loop, saved_move_loop):
+    """Undo perft move."""
+    prev_move_piece, prev_move_from_to, prev_square, prev_moves, \
+        switch_has_moved_to_False, piece, i, pieces_to_move = saved_piece_loop
+
+    prev_occupant, prev_occupant_ind, ep_captured_piece_ind = saved_move_loop
+
+    if switch_has_moved_to_False:
+        piece.has_moved = False
+    piece.moves = prev_moves
+    chessboard.squares[piece.square] = prev_occupant
+    chessboard.squares[prev_square] = piece
+    piece.square = prev_square
+    move = chessboard.last_move_from_to[1]
+    # Undo en passant
+    if ep_captured_piece_ind is not None:
+        chessboard.squares[prev_move_from_to[1]] = prev_move_piece
+        if prev_move_piece.color == 'white':
+            chessboard.white_pieces.insert(
+                ep_captured_piece_ind,
+                prev_move_piece)
+        else:
+            chessboard.black_pieces.insert(
+                ep_captured_piece_ind,
+                prev_move_piece)
+    # Undo castling.
+    if isinstance(piece, pieces.King) and prev_square in [4, 60]:
+        if move in [2, 6, 58, 62]:
+            if move == 2:
+                rook = chessboard.squares[3]
+                chessboard.squares[0], chessboard.squares[3] = rook, ' '
+            elif move == 6:
+                rook = chessboard.squares[5]
+                chessboard.squares[7], chessboard.squares[5] = rook, ' '
+            elif move == 58:
+                rook = chessboard.squares[59]
+                chessboard.squares[56], chessboard.squares[59] = rook, ' '
+            elif move == 62:
+                rook = chessboard.squares[61]
+                chessboard.squares[63], chessboard.squares[61] = rook, ' '
+            rook.has_moved = False
+            piece.has_moved = False
+    chessboard.last_move_piece = prev_move_piece
+    chessboard.last_move_from_to = prev_move_from_to
+    # Amend piece list to undo promotion.
+    # Possible bugs from changing list while iterating over it.
+    try:
+        if pieces_to_move[0].name[1] == 'p':
+            len_before_changes = len(pieces_to_move)
+            pieces_to_move.pop(0)
+            pieces_to_move.insert(i, piece)
+            assert len_before_changes == len(pieces_to_move)
+    except IndexError:
+        pass
+    try:
+        if prev_occupant.color == 'white':
+            assert prev_occupant not in chessboard.white_pieces
+            chessboard.white_pieces.insert(
+                prev_occupant_ind,
+                prev_occupant)
+        else:
+            assert prev_occupant not in chessboard.black_pieces
+            chessboard.black_pieces.insert(
+                prev_occupant_ind,
+                prev_occupant)
+    except AttributeError:
+        pass
+
 
 
 if __name__ == '__main__':

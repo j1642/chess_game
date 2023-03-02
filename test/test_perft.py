@@ -5,142 +5,14 @@ import unittest
 
 import board
 import chess_utilities
+from engine import undo_move, save_state_per_piece, save_state_per_move, \
+    replicate_promotion_moves
 import pieces
 
 
 # Change to class attribute.
 a_board = board.Board()
 square_to_alg_notation = {v: k for k, v in a_board.ALGEBRAIC_NOTATION.items()}
-
-
-# TODO: Undo move function, portable b/w modules.
-# DRY. Move piece/move loop into separate func. How?
-def save_state_per_piece(chessboard, piece, i, pieces_to_move):
-    """Store once per Perft piece loop."""
-    prev_move_piece = chessboard.last_move_piece
-    prev_move_from_to = chessboard.last_move_from_to
-    prev_square = piece.square
-    prev_moves = piece.moves
-    switch_has_moved_to_False = False
-    try:
-        if piece.has_moved is False:
-            switch_has_moved_to_False = True
-    except AttributeError:
-        pass
-    return prev_move_piece, prev_move_from_to, prev_square, prev_moves, \
-        switch_has_moved_to_False, piece, i, pieces_to_move
-
-
-def save_state_per_move(chessboard, move, piece):
-    """Store once per Perft move loop."""
-    if isinstance(move, tuple):
-        move, _ = move
-    prev_occupant = chessboard.squares[move]
-    prev_occupant_ind = None
-    try:
-        if prev_occupant.color == 'white':
-            prev_occupant_ind = chessboard.white_pieces.index(
-                prev_occupant)
-        else:
-            prev_occupant_ind = chessboard.black_pieces.index(
-                prev_occupant)
-    except AttributeError:
-        pass
-    ep_captured_piece_ind = None
-    if isinstance(piece, pieces.Pawn) and move == piece.en_passant_move:
-        ep_captured_piece = chessboard.last_move_piece
-        if chessboard.last_move_piece.color == 'white':
-            static_pieces = chessboard.white_pieces
-        else:
-            static_pieces = chessboard.black_pieces
-        ep_captured_piece_ind = static_pieces.index(ep_captured_piece)
-
-    return prev_occupant, prev_occupant_ind, ep_captured_piece_ind
-
-
-def undo_move(chessboard, saved_piece_loop, saved_move_loop):
-    """Undo perft move."""
-    prev_move_piece, prev_move_from_to, prev_square, prev_moves, \
-        switch_has_moved_to_False, piece, i, pieces_to_move = saved_piece_loop
-
-    prev_occupant, prev_occupant_ind, ep_captured_piece_ind = saved_move_loop
-
-    if switch_has_moved_to_False:
-        piece.has_moved = False
-    piece.moves = prev_moves
-    chessboard.squares[piece.square] = prev_occupant
-    chessboard.squares[prev_square] = piece
-    piece.square = prev_square
-    move = chessboard.last_move_from_to[1]
-    # Undo en passant
-    if ep_captured_piece_ind is not None:
-        chessboard.squares[prev_move_from_to[1]] = prev_move_piece
-        if prev_move_piece.color == 'white':
-            chessboard.white_pieces.insert(
-                ep_captured_piece_ind,
-                prev_move_piece)
-        else:
-            chessboard.black_pieces.insert(
-                ep_captured_piece_ind,
-                prev_move_piece)
-    # Undo castling.
-    if isinstance(piece, pieces.King) and prev_square in [4, 60]:
-        if move in [2, 6, 58, 62]:
-            if move == 2:
-                rook = chessboard.squares[3]
-                chessboard.squares[0], chessboard.squares[3] = rook, ' '
-            elif move == 6:
-                rook = chessboard.squares[5]
-                chessboard.squares[7], chessboard.squares[5] = rook, ' '
-            elif move == 58:
-                rook = chessboard.squares[59]
-                chessboard.squares[56], chessboard.squares[59] = rook, ' '
-            elif move == 62:
-                rook = chessboard.squares[61]
-                chessboard.squares[63], chessboard.squares[61] = rook, ' '
-            rook.has_moved = False
-            piece.has_moved = False
-    chessboard.last_move_piece = prev_move_piece
-    chessboard.last_move_from_to = prev_move_from_to
-    # Amend piece list to undo promotion.
-    # Possible bugs from changing list while iterating over it.
-    # After separating out this func, chessboard[squares] no longer holds
-    # promoted piece 'Xp', but 'Xp' is still in pieces_to_move.
-    try:
-        if pieces_to_move[0].name[1] == 'p':
-            len_before_changes = len(pieces_to_move)
-            pieces_to_move.pop(0)
-            pieces_to_move.insert(i, piece)
-            assert len_before_changes == len(pieces_to_move)
-    except IndexError:
-        pass
-    try:
-        if prev_occupant.color == 'white':
-            assert prev_occupant not in chessboard.white_pieces
-            chessboard.white_pieces.insert(
-                prev_occupant_ind,
-                prev_occupant)
-        else:
-            assert prev_occupant not in chessboard.black_pieces
-            chessboard.black_pieces.insert(
-                prev_occupant_ind,
-                prev_occupant)
-    except AttributeError:
-        pass
-
-
-def replicate_promotion_moves(chessboard):
-    """Add specific promotion pieces to a pawn's moves. Assumes queen
-    promotion is the default and is already accounted for.
-    """
-    for piece in chessboard.white_pieces + chessboard.black_pieces:
-        if isinstance(piece, pieces.Pawn):
-            for move in piece.moves:
-                if any([move in pieces.ranks_files.rank_1,
-                        move in pieces.ranks_files.rank_8]):
-                    piece.moves.append((move, 'knight'))
-                    piece.moves.append((move, 'bishop'))
-                    piece.moves.append((move, 'rook'))
 
 
 def divide(chessboard, depth=None):

@@ -30,8 +30,6 @@ class Board:
         self.black_pieces = []
         self.white_controlled_squares = []
         self.black_controlled_squares = []
-        self.white_moves = []
-        self.black_moves = []
         self.white_king = None
         self.black_king = None
         self.last_move_piece = None
@@ -139,16 +137,6 @@ class Board:
                 if isinstance(piece, pieces.Pawn):
                     piece.autopromote = True
 
-    def update_moves_white(self):
-        """Support for update_white_controlled_squares() method."""
-        for piece in self.white_pieces:
-            piece.update_moves(self)
-
-    def update_moves_black(self):
-        """Support for update_black_controlled_squares() method."""
-        for piece in self.black_pieces:
-            piece.update_moves(self)
-
     def update_king_moves(self):
         """King moves are dependant on the possbile moves of all opponent
         pieces, so they must be updated last.
@@ -179,15 +167,10 @@ class Board:
         white_controlled_squares = []
         self.white_moves = []
 
-        self.update_moves_white()
         for piece in self.white_pieces:
+            piece.update_moves(self)
             for move in piece.moves:
-                self.white_moves.append(move)
-                if isinstance(piece, pieces.Pawn):
-                    if abs(piece.square - move) == 7 \
-                            or abs(piece.square - move) == 9:
-                        white_controlled_squares.append(move)
-                else:
+                if not isinstance(piece, pieces.Pawn):
                     white_controlled_squares.append(move)
             for square in piece.protected_squares:
                 white_controlled_squares.append(square)
@@ -201,15 +184,10 @@ class Board:
         black_controlled_squares = []
         self.black_moves = []
 
-        self.update_moves_black()
         for piece in self.black_pieces:
+            piece.update_moves(self)
             for move in piece.moves:
-                self.black_moves.append(move)
-                if isinstance(piece, pieces.Pawn):
-                    if abs(piece.square - move) == 7 \
-                            or abs(piece.square - move) == 9:
-                        black_controlled_squares.append(move)
-                else:
+                if not isinstance(piece, pieces.Pawn):
                     black_controlled_squares.append(move)
             for square in piece.protected_squares:
                 black_controlled_squares.append(square)

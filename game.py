@@ -14,6 +14,7 @@ import traceback
 
 import board
 import chess_utilities
+import engine
 import gui
 import pieces
 
@@ -67,14 +68,12 @@ class Game:
             self.computer_color = 'black'
             self.white_turn = self.player_turn
             self.black_turn = self.computer_turn
-            self.player_moves = self.board.white_moves
             self.player_king = self.board.white_king
         elif selected_color.lower() == 'black':
             self.player_color = 'black'
             self.computer_color = 'white'
             self.black_turn = self.player_turn
             self.white_turn = self.computer_turn
-            self.player_moves = self.board.black_moves
             self.player_king = self.board.black_king
         else:
             print('Invalid piece color.')
@@ -90,12 +89,12 @@ class Game:
         """
         if self.computer_color == 'white':
             computer_pieces = self.board.white_pieces
-            computer_moves = self.board.white_moves
-        elif self.computer_color == 'black':
-            computer_pieces = self.board.black_pieces
-            computer_moves = self.board.black_moves
         else:
-            raise Exception
+            computer_pieces = self.board.black_pieces
+        computer_moves = []
+        for piece in computer_pieces:
+            for computer_move in piece.moves:
+                computer_moves.append(computer_move)
         computer_king = [piece for piece in computer_pieces
                          if isinstance(piece, pieces.King)][0]
 
@@ -134,11 +133,15 @@ class Game:
     def player_turn(self, old_square=None):
         """Human turn."""
         if self.player_color == 'white':
-            self.player_moves = self.board.white_moves
+            player_pieces = self.board.white_pieces
         elif self.player_color == 'black':
-            self.player_moves = self.board.black_moves
+            player_pieces = self.board.black_pieces
+        player_moves = []
+        for piece in player_pieces:
+            for move in piece.moves:
+                player_moves.append(move)
         # TODO: DRY. Centralize computer and player checkmate/stalemate.
-        if self.player_moves == []:
+        if player_moves == []:
             if self.player_king.in_check:
                 print('Computer wins by checkmate! Thank you for playing!')
                 return 'computer wins by checkmate'
@@ -161,7 +164,7 @@ class Game:
 
     def is_valid_square(self, user_input) -> bool:
         """Validate user move input."""
-        if user_input.isdigit():
+        if isinstance(user_input, int) or user_input.isdigit():
             square = int(user_input)
             if (0 <= square and square <= 63):
                 return True
@@ -222,9 +225,6 @@ class Game:
         self.board.update_white_controlled_squares()
         self.board.update_black_controlled_squares()
         self.board.white_king.update_moves(self.board)
-        # Black king should not have to update again b/c
-        # white_controlled_squares were known prior to the black king
-        # updating its moves.
 
     # TODO: Entered infinite loop when checkmating as the black pieces.
     def play(self):
@@ -245,7 +245,13 @@ class Game:
             self.between_moves()
             self.board.remove_illegal_moves_for_pinned_pieces('black')
             self.display.update_gui(self.board)
-            res_black_turn = self.black_turn()
+            # res_black_turn = self.black_turn()
+            # Engine provides illegal moves sometimes, which are noticed
+            # by <piece>.move_piece
+            comp_move = engine.negamax(self.board, 2)[1]
+            print(comp_move)
+            print(self.board.squares[comp_move[0]].moves)
+            res_black_turn = self.computer_turn(move=comp_move)
             if res_black_turn:
                 sys.exit(0)
 

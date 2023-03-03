@@ -222,7 +222,7 @@ class Pawn(_Piece):
             if all_squares[square_in_front] == ' ':
                 if self.has_moved:
                     self.moves.append(square_in_front)
-                elif self.has_moved is False:
+                else:
                     self.moves.append(square_in_front)
                     two_squares_ahead = square_in_front + forward_direction
                     if all_squares[two_squares_ahead] == ' ':
@@ -232,17 +232,17 @@ class Pawn(_Piece):
             if self.square in ranks_files.a_file:
                 if self.color == 'white':
                     capture_directions = (9,)
-                elif self.color == 'black':
+                else:
                     capture_directions = (-7,)
             elif self.square in ranks_files.h_file:
                 if self.color == 'white':
                     capture_directions = (7,)
-                elif self.color == 'black':
+                else:
                     capture_directions = (-9,)
             else:
                 if self.color == 'white':
                     capture_directions = (7, 9)
-                elif self.color == 'black':
+                else:
                     capture_directions = (-7, -9)
 
             # Check for valid captures and protected squares.
@@ -328,7 +328,7 @@ class Pawn(_Piece):
         if self.color == 'white':
             board.white_pieces.insert(0, new_piece)
             board.white_pieces.remove(self)
-        elif self.color == 'black':
+        else:
             new_piece.name = new_piece.name.lower()
             board.black_pieces.insert(0, new_piece)
             board.black_pieces.remove(self)
@@ -374,7 +374,7 @@ class Pawn(_Piece):
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
-                elif self.color == 'black':
+                else:
                     board.white_pieces.remove(captured_piece)
                 if en_passant:
                     board.squares[captured_piece_square] = ' '
@@ -460,16 +460,13 @@ class Knight(_Piece):
                     continue
 
         # Remove moves where there is a friendly piece.
-        # Add these moves to protected_squares attribute.
         all_moves_copy = all_moves.copy()
         for square in all_moves_copy:
             try:
-                square_contents = all_squares[square].color
-                if square_contents == self.color:
+                if self.color == all_squares[square].color:
                     all_moves.remove(square)
                     self.protected_squares.append(square)
             except AttributeError:
-                assert all_squares[square] == ' '
                 continue
 
         self.moves = all_moves
@@ -483,7 +480,7 @@ class Knight(_Piece):
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
-                elif self.color == 'black':
+                else:
                     board.white_pieces.remove(captured_piece)
 
             elif isinstance(board.squares[new_square], King):
@@ -535,7 +532,6 @@ class Bishop(_Piece):
             for diagonal_scalar in range(1, 8):
                 new_square = self.square + direction * diagonal_scalar
                 if -1 < new_square < 64:
-                    # Is new square empty, a friendly piece, or opposing piece?
                     if all_squares[new_square] == ' ':
                         pass
                     elif self.color == all_squares[new_square].color:
@@ -546,9 +542,9 @@ class Bishop(_Piece):
                         all_moves.append(new_square)
                         break
                     else:
-                        raise Exception('Square is not empty, but it is'
-                                        'also not occupied by a friendly '
-                                        'or opponent piece.')
+                        raise ValueError('Square is not empty, but it is'
+                                         'also not occupied by a friendly '
+                                         'or opponent piece.')
 
                     all_moves.append(new_square)
                     # Do not allow piece to move over the side of the board.
@@ -559,10 +555,6 @@ class Bishop(_Piece):
                 else:
                     # No use searching past the top or bottom of the board.
                     break
-
-        # if friendly_piece or opponent_piece in direction a or b or c or d:
-            # remove moves past the blocking piece
-
         self.moves = all_moves
 
     def move_piece(self, board, new_square: int):
@@ -574,7 +566,7 @@ class Bishop(_Piece):
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
-                elif self.color == 'black':
+                else:
                     board.white_pieces.remove(captured_piece)
 
             elif isinstance(board.squares[new_square], King):
@@ -628,7 +620,6 @@ class Rook(_Piece):
             for vert_horiz_scalar in range(1, 8):
                 new_square = self.square + direction * vert_horiz_scalar
                 if -1 < new_square < 64:
-                    # Is new square empty, a friendly piece, or opposing piece?
                     if all_squares[new_square] == ' ':
                         all_moves.append(new_square)
                     elif self.color == all_squares[new_square].color:
@@ -639,19 +630,17 @@ class Rook(_Piece):
                         all_moves.append(new_square)
                         break
                     else:
-                        raise Exception('Square is not empty, but also is'
-                                        ' not occupied by a friendly or '
-                                        'opponent piece.')
+                        raise ValueError('Square is not empty, but also is'
+                                         ' not occupied by a friendly or '
+                                         'opponent piece.')
 
                     if new_square in ranks_files.a_file and direction == -1:
                         break
                     elif new_square in ranks_files.h_file and direction == 1:
                         break
 
-                # Square is not between 0 and 63, inclusive.
                 else:
                     break
-
         self.moves = all_moves
 
     def move_piece(self, board, new_square: int, castling=False):
@@ -666,11 +655,11 @@ class Rook(_Piece):
                 # Next two exceptions should only appear if castling code
                 # has a bug.
                 else:
-                    raise Exception('Rook', self.name, 'cannot castle to',
-                                    new_square)
+                    raise ValueError('Rook', self.name, 'cannot castle to',
+                                     new_square)
             else:
-                raise Exception(f'Castling rook "{self.name}" is illegal. '
-                                f'Rook "{self.name}" has already moved.')
+                raise ValueError(f'rook "{self.name}" has already moved '
+                                 ' and cannot castle')
 
         elif new_square in self.moves:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
@@ -679,7 +668,7 @@ class Rook(_Piece):
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
-                elif self.color == 'black':
+                else:
                     board.white_pieces.remove(captured_piece)
 
             elif isinstance(board.squares[new_square], King):
@@ -715,7 +704,6 @@ class Queen(_Piece):
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color})'
 
-    # Could replace this with bishop.moves + rook.moves from the queen's square
     def update_moves(self, board):
         """Update queen moves."""
         all_squares = board.squares
@@ -744,9 +732,9 @@ class Queen(_Piece):
                         all_moves.append(new_square)
                         break
                     else:
-                        raise Exception('Square is not empty, but is '
-                                        'not occupied by a friendly or '
-                                        'opponent piece.')
+                        raise ValueError('square is not empty, but is '
+                                         'not occupied by a friendly or '
+                                         'opponent piece')
                     all_moves.append(new_square)
                     # Prevent crossing board sides.
                     if new_square in ranks_files.a_file \
@@ -755,7 +743,6 @@ class Queen(_Piece):
                     elif new_square in ranks_files.h_file \
                             and direction in (9, 1, -7):
                         break
-                # Prevent move calculations past top or bottom of board.
                 else:
                     break
 
@@ -770,7 +757,7 @@ class Queen(_Piece):
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
-                elif self.color == 'black':
+                else:
                     board.white_pieces.remove(captured_piece)
 
             elif isinstance(board.squares[new_square], King):
@@ -818,11 +805,8 @@ class King:
         all_squares = board.squares
         all_moves = []
         self.protected_squares = []
-
         directions = [7, 8, 9, -1, 1, -9, -8, -7]
 
-        # Separate if/elif for ranks (rows) and files (columns).
-        # A piece can be in both the first rank and the H file.
         if self.square in ranks_files.rank_1:
             directions = directions[:5]
         elif self.square in ranks_files.rank_8:
@@ -847,23 +831,18 @@ class King:
                 all_moves.append(self.square + direction)
 
         self.protected_squares = all_moves.copy()
-
         # Remove moves where a friendly piece is. Castling checks this within
         # its own block.
-        all_moves_copy = all_moves.copy()
-        for square in all_moves_copy:
+        for square in self.protected_squares:
             try:
-                if all_squares[square].color == self.color:
+                if self.color == all_squares[square].color:
                     all_moves.remove(square)
-                    self.protected_squares.append(square)
             except AttributeError:
-                assert all_squares[square] == ' '
                 continue
 
         # Prevent checked king from moving into a square where the king
         # would still be in check, but where the new square was not
         # under attack previously.
-
         # E.g. A checked king moving from e1 to f1 with the opponent's rook
         # on a1 would still be in check.
         if self.check_if_in_check(board.white_controlled_squares,
@@ -873,7 +852,7 @@ class King:
             board.squares[self.square] = ' '
             if self.color == 'white':
                 board.update_black_controlled_squares()
-            elif self.color == 'black':
+            else:
                 board.update_white_controlled_squares()
             board.squares[self.square] = self
 
@@ -883,16 +862,12 @@ class King:
             if checking_pieces:
                 for checking_piece in checking_pieces:
                     checking_piece.moves.append(self.square)
-
+                # Remove illegal friendly piece moves.
                 board.moves_must_escape_check_or_checkmate(board, self,
                                                            checking_pieces)
 
         self.moves = all_moves
-
         self.add_castling_moves(board)
-
-        # Remove illegal moves. If in check, this includes moves that would
-        # keep the king in check (implemented in the block above).
         self.remove_moves_to_attacked_squares(board.white_controlled_squares,
                                               board.black_controlled_squares)
 
@@ -909,9 +884,8 @@ class King:
         white_castle_kingside = False
         black_castle_queenside = False
         black_castle_kingside = False
-
         if self.color == 'white' and self.square == 4:
-            # Check if castling kingside is possible for white.
+            # Can white castle kingside
             try:
                 supposed_h7_rook_name = all_squares[7].name
                 supposed_h7_rook_has_moved = all_squares[7].has_moved
@@ -923,13 +897,9 @@ class King:
                     self.moves.append(6)
                     white_castle_kingside = True
             except AttributeError:
-                # No assert all_squares[7] == ' ' because there could be a
-                # piece present. Some pieces have a name without having the
-                # has_moved attribute.
                 pass
-
             try:
-                # Check if castling queenside is possible for white.
+                # Can white castle queenside
                 supposed_a1_rook_name = all_squares[0].name
                 supposed_a1_rook_has_moved = all_squares[0].has_moved
                 if all([supposed_a1_rook_name[0] == 'R',
@@ -944,7 +914,7 @@ class King:
                 pass
 
         elif self.color == 'black' and self.square == 60:
-            # Check if castling kingside is possible for black.
+            # Can black castle kingside
             try:
                 supposed_h8_rook_name = all_squares[63].name
                 supposed_h8_rook_has_moved = all_squares[63].has_moved
@@ -957,8 +927,7 @@ class King:
                     black_castle_kingside = True
             except AttributeError:
                 pass
-
-            # Check if castling queenside is possible for black.
+            # Can black castle queenside
             try:
                 supposed_a8_rook_name = all_squares[56].name
                 supposed_a8_rook_has_moved = all_squares[56].has_moved
@@ -985,20 +954,21 @@ class King:
         """
         if self.color == 'white':
             opponent_controlled_squares = black_controlled_squares
-        elif self.color == 'black':
+        else:
             opponent_controlled_squares = white_controlled_squares
-
-        moves_copy = self.moves.copy()
-        for move in moves_copy:
-            if move in opponent_controlled_squares:
-                self.moves.remove(move)
+        # Sets slower in profiler, faster in isolated experiment.
+        # self.moves = list(set(self.moves) - set(opponent_controlled_squares))
+        for opponent_square in opponent_controlled_squares:
+            if opponent_square in self.moves:
+                # There should be no duplicates in self.moves
+                self.moves.remove(opponent_square)
 
     def check_if_in_check(self, white_controlled_squares: set,
                           black_controlled_squares: set):
         """Check if self (king) is in check."""
         if self.color == 'white':
             opponent_controlled_squares = black_controlled_squares
-        elif self.color == 'black':
+        else:
             opponent_controlled_squares = white_controlled_squares
 
         if self.square in opponent_controlled_squares:
@@ -1023,7 +993,7 @@ class King:
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
-                elif self.color == 'black':
+                else:
                     board.white_pieces.remove(captured_piece)
 
             elif isinstance(board.squares[new_square], King):
@@ -1041,7 +1011,7 @@ class King:
                     elif new_square == 6:
                         white_rook_h = board.squares[7]
                         white_rook_h.move_piece(board, 5, castling=True)
-                elif self.color == 'black':
+                else:
                     if new_square == 58:
                         black_rook_a = board.squares[56]
                         black_rook_a.move_piece(board, 59, castling=True)

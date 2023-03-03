@@ -159,7 +159,6 @@ class Pawn(_Piece):
         self.moves = []
         self.en_passant_move = None
         self.has_moved = False
-        self.giving_check = False
         self.protected_squares = []
         self.autopromote = False
 
@@ -413,7 +412,6 @@ class Knight(_Piece):
         self.color = white_or_black
         self.square = position
         self.moves = []
-        self.giving_check = False
         self.protected_squares = []
 
     def __repr__(self):
@@ -516,7 +514,6 @@ class Bishop(_Piece):
         self.color = white_or_black
         self.square = position
         self.moves = []
-        self.giving_check = False
         self.protected_squares = []
 
     def __repr__(self):
@@ -609,7 +606,6 @@ class Rook(_Piece):
         self.square = position
         self.moves = []
         self.has_moved = False
-        self.giving_check = False
         self.protected_squares = []
 
     def __repr__(self):
@@ -714,7 +710,6 @@ class Queen(_Piece):
         self.color = white_or_black
         self.square = position
         self.moves = []
-        self.giving_check = False
         self.protected_squares = []
 
     def __repr__(self):
@@ -905,7 +900,6 @@ class King:
         """Add any possible castling moves to self.moves."""
         # Could be less repetitive. What is the straightforward fix?
         all_squares = board.squares
-
         if self.has_moved or self.in_check:
             return
 
@@ -989,8 +983,6 @@ class King:
 
         Helper method to King.update_moves().
         """
-        # Remove illegal king moves into opponent controlled squares.
-        # King cannot willingly move into check.
         if self.color == 'white':
             opponent_controlled_squares = black_controlled_squares
         elif self.color == 'black':

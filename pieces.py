@@ -78,39 +78,55 @@ class _Piece:
 
     """
 
-    # This drastically increases the calculations per turn, but does not
-    # noticeably slow test times or computer response time in game.
-    # Hypothetical optimization 1: remove all pieces/pawns besides king
-    #   and check if king is in check. If True, there may be a pin, so
-    #   check if each individual piece is pinned.
     def is_pinned(self, chessboard):
-        """Detect if a piece is pinned. If pinned, remove illegal moves."""
+        """Detect if a piece is pinned. If pinned, remove illegal moves.
+
+        Do a quick preliminary check to find if there is a pin. If so,
+        restrict pinned piece moves.
+        """
+        orig_white_controlled_squares = chessboard.white_controlled_squares
+        orig_black_controlled_squares = chessboard.black_controlled_squares
+        w_attacked_sqrs = []
+        b_attacked_sqrs = []
         chessboard.squares[self.square] = ' '
         if self.color == 'white':
             friendly_king = chessboard.white_king
-            chessboard.update_black_controlled_squares()
+            b_attacked_sqrs = chessboard.find_sliding_controlled_squares(
+                'black')
         else:
             friendly_king = chessboard.black_king
-            chessboard.update_white_controlled_squares()
+            w_attacked_sqrs = chessboard.find_sliding_controlled_squares(
+                'white')
         chessboard.squares[self.square] = self
 
         orig_in_check = friendly_king.in_check
         if friendly_king.check_if_in_check(
-                chessboard.white_controlled_squares,
-                chessboard.black_controlled_squares):
+                # Note that these values are artificial. See above.
+                w_attacked_sqrs,
+                b_attacked_sqrs):
             friendly_king.in_check = orig_in_check
+            chessboard.squares[self.square] = ' '
+            if self.color == 'white':
+                chessboard.update_black_controlled_squares()
+            else:
+                chessboard.update_white_controlled_squares()
+            chessboard.squares[self.square] = self
             self.restrict_moves_when_pinned(chessboard, friendly_king)
             # Reset controlled squares after pin check
             if self.color == 'white':
-                chessboard.update_black_controlled_squares()
+                chessboard.black_controlled_squares = \
+                    orig_black_controlled_squares
             else:
-                chessboard.update_white_controlled_squares()
+                chessboard.white_controlled_squares = \
+                    orig_white_controlled_squares
             return True
         else:
             if self.color == 'white':
-                chessboard.update_black_controlled_squares()
+                chessboard.black_controlled_squares = \
+                    orig_black_controlled_squares
             else:
-                chessboard.update_white_controlled_squares()
+                chessboard.white_controlled_squares = \
+                    orig_white_controlled_squares
             return False
 
     def restrict_moves_when_pinned(self, chessboard, friendly_king):
@@ -187,6 +203,8 @@ class Pawn(_Piece):
         else:
             friendly_king = chessboard.black_king
             chessboard.update_white_controlled_squares()
+        orig_white_controlled_sqrs = chessboard.white_controlled_squares
+        orig_black_controlled_sqrs = chessboard.black_controlled_squares
         if friendly_king.check_if_in_check(
                 chessboard.white_controlled_squares,
                 chessboard.black_controlled_squares):
@@ -198,9 +216,9 @@ class Pawn(_Piece):
         chessboard.squares[capturable_pawn.square] = capturable_pawn
         chessboard.squares[en_passant_square] = ' '
         if self.color == 'white':
-            chessboard.update_black_controlled_squares()
+            chessboard.black_controlled_squares = orig_black_controlled_sqrs
         else:
-            chessboard.update_white_controlled_squares()
+            chessboard.white_controlled_squares = orig_white_controlled_sqrs
         return False
 
     def update_moves(self, board):
@@ -229,21 +247,14 @@ class Pawn(_Piece):
                         self.moves.append(two_squares_ahead)
 
             # Limit capture directions if pawn is in the A or H file.
-            if self.square in ranks_files.a_file:
-                if self.color == 'white':
-                    capture_directions = (9,)
-                else:
-                    capture_directions = (-7,)
-            elif self.square in ranks_files.h_file:
-                if self.color == 'white':
-                    capture_directions = (7,)
-                else:
-                    capture_directions = (-9,)
+            if self.color == 'white':
+                capture_directions = (9, 7)
             else:
-                if self.color == 'white':
-                    capture_directions = (7, 9)
-                else:
-                    capture_directions = (-7, -9)
+                capture_directions = (-7, -9)
+            if self.square in ranks_files.a_file:
+                capture_directions = capture_directions[:1]
+            elif self.square in ranks_files.h_file:
+                capture_directions = capture_directions[1:]
 
             # Check for valid captures and protected squares.
             for direction in capture_directions:
@@ -252,10 +263,8 @@ class Pawn(_Piece):
                 try:
                     square_contents = all_squares[diagonal_square].color
                     if square_contents != self.color:
-                        # Capturing opponent's piece is a legal move.
                         self.moves.append(diagonal_square)
                 except AttributeError:
-                    assert all_squares[diagonal_square] == ' '
                     continue
         else:
             raise TypeError('Pawn should not exist on final rank.')
@@ -610,11 +619,12 @@ class Rook(_Piece):
         all_moves = []
         self.protected_squares = []
 
-        directions = (-8, -1, 1, 8)
         if self.square in ranks_files.a_file:
             directions = (-8, 1, 8)
         elif self.square in ranks_files.h_file:
             directions = (-8, -1, 8)
+        else:
+            directions = (-8, -1, 1, 8)
 
         for direction in directions:
             for vert_horiz_scalar in range(1, 8):
@@ -745,7 +755,6 @@ class Queen(_Piece):
                         break
                 else:
                     break
-
         self.moves = all_moves
 
     def move_piece(self, board, new_square: int):
@@ -759,13 +768,10 @@ class Queen(_Piece):
                     board.black_pieces.remove(captured_piece)
                 else:
                     board.white_pieces.remove(captured_piece)
-
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
-
             old_square, self.square = self.square, new_square
             self.update_board_after_move(board, new_square, old_square)
-
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'

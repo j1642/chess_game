@@ -1,5 +1,6 @@
 """Debug the move generating functions by counting nodes of move tree."""
 
+import cProfile
 from collections import defaultdict
 import unittest
 
@@ -9,6 +10,9 @@ from engine import undo_move, save_state_per_piece, save_state_per_move, \
     replicate_promotion_moves
 import pieces
 
+
+pr = cProfile.Profile()
+pr.disable()
 
 # Change to class attribute.
 a_board = board.Board()
@@ -128,16 +132,21 @@ class TestPerft(unittest.TestCase):
         chessboard.initialize_pieces(autopromote=['white', 'black'])
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # Passes depth 3.
+    # Fails depth 4. Off by 0.9999x
     def test_kiwipete(self, depth=3):
         """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
         nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
                  6: 8031647685}
         chessboard = chess_utilities.import_fen_to_board(
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w')
-        self.assertEqual(perft(chessboard, depth), nodes[depth])
+        pr.enable()
+        node_count = perft(chessboard, depth)
+        pr.disable()
+        pr.dump_stats('profile.pstat')
 
-    # Fails depth 5. Off by 0.9999x
+        self.assertEqual(node_count, nodes[depth])
+
+    # Error depth 5.
     def test_position_3(self, depth=4):
         """Wiki position 3. Some captures, promotions, and checks."""
         nodes = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}

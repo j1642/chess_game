@@ -194,6 +194,26 @@ class Board:
 
         self.black_controlled_squares = set(black_controlled_squares)
 
+    def find_sliding_controlled_squares(self, color):
+        """Return squares controlled by sliding pieces of given color.
+        Use for detecting pins only.
+        """
+        if color == 'white':
+            color_pieces = self.white_pieces
+        elif color == 'black':
+            color_pieces = self.black_pieces
+        else:
+            raise ValueError('Invalid piece color')
+        sliding_pieces_controlled_squares = []
+        for piece in color_pieces:
+            if isinstance(piece, (pieces.Bishop, pieces.Rook, pieces.Queen)):
+                orig_moves = piece.moves
+                piece.update_moves(self)
+                for move in piece.moves:
+                    sliding_pieces_controlled_squares.append(move)
+                piece.moves = orig_moves
+        return sliding_pieces_controlled_squares
+
     def remove_illegal_moves_for_pinned_pieces(self, piece_color):
         """Find and restrict pinned pieces.
         Should be called immediately before their turn.

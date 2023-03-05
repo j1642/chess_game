@@ -165,7 +165,6 @@ class Board:
         discrepancies between controlled_squares and set of one color's moves.
         """
         white_controlled_squares = []
-        self.white_moves = []
 
         for piece in self.white_pieces:
             piece.update_moves(self)
@@ -182,7 +181,6 @@ class Board:
         white king moves which would put it in check.
         """
         black_controlled_squares = []
-        self.black_moves = []
 
         for piece in self.black_pieces:
             piece.update_moves(self)

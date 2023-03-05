@@ -186,10 +186,15 @@ class Pawn(_Piece):
         """If not pinned (excluding en passant), remove en passant moves if
         illegal.
         """
+        # If king is genuinely in check, outside of pin checks, then
+        # super.is_pinned() returns True and Pawn.moves already has no moves,
+        # en passant or otherwise.
         if super().is_pinned(chessboard):
             return True
         if self.en_passant_move is None:
             return False
+        orig_white_controlled_sqrs = chessboard.white_controlled_squares
+        orig_black_controlled_sqrs = chessboard.black_controlled_squares
         capturable_pawn = chessboard.squares[chessboard.last_move_from_to[1]]
         chessboard.squares[self.square] = ' '
         chessboard.squares[capturable_pawn.square] = ' '
@@ -203,14 +208,20 @@ class Pawn(_Piece):
         else:
             friendly_king = chessboard.black_king
             chessboard.update_white_controlled_squares()
-        orig_white_controlled_sqrs = chessboard.white_controlled_squares
-        orig_black_controlled_sqrs = chessboard.black_controlled_squares
+        orig_in_check = friendly_king.in_check
         if friendly_king.check_if_in_check(
                 chessboard.white_controlled_squares,
                 chessboard.black_controlled_squares):
-            friendly_king.in_check = False
-            self.moves.remove(self.en_passant_move)
-            self.en_passant_move = None
+            friendly_king.in_check = orig_in_check
+            if self.en_passant_move is not None and self.moves != []:
+                self.moves.remove(self.en_passant_move)
+                self.en_passant_move = None
+            else:
+                # King is in check from a double moved pawn. En passant
+                # will capture the checking pawn.
+                # Moves list is empty b/c all moves which don't escape
+                # check were removed. Keeping this move is the exception.
+                self.moves.append(self.en_passant_move)
         # Reset
         chessboard.squares[self.square] = self
         chessboard.squares[capturable_pawn.square] = capturable_pawn

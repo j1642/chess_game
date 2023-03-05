@@ -146,7 +146,7 @@ class TestPerft(unittest.TestCase):
 
         self.assertEqual(node_count, nodes[depth])
 
-    # Error depth 5.
+    # Fails depth 5.
     def test_position_3(self, depth=4):
         """Wiki position 3. Some captures, promotions, and checks."""
         nodes = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
@@ -168,3 +168,14 @@ class TestPerft(unittest.TestCase):
         chessboard = chess_utilities.import_fen_to_board(
             '5k2/8/8/8/8/8/8/4K2R w')
         self.assertEqual(perft(chessboard, 6), 661072)
+
+    def test_discovered_check_makes_en_passant_illegal(self):
+        """Illegal en passant due to discoverd check."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '5b2/4p3/8/5P2/1K6/8/8/7k b')
+        self.assertEqual(perft(chessboard, 4), 4584)
+        chessboard.squares[52].update_moves(chessboard)
+        chessboard.squares[52].move_piece(chessboard, 36)
+        # 5b2/8/8/4pP2/1K6/8/8/7k w - e6 0 1
+        perft(chessboard, 1)
+        self.assertEqual(perft(chessboard, 1), 6)

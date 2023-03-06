@@ -11,10 +11,15 @@ def reorder_piece_square_table(pst, color):
     """Given a piece-square table (list, a8 to h1), return a reordered
     list. The new order is a1 to h1, ..., a8 to h8.
     """
+    if color == 'black':
+        return pst
+    elif color != 'white':
+        raise ValueError('Invalid piece color')
     # Flexibility for testing short model lists.
     row_length = int(len(pst) ** 0.5)
     if row_length ** 2 != len(pst):
         raise ValueError('Piece-square table length must be a square.')
+
     reordered = [[0] * row_length for n in range(row_length)]
     row = -1
     for i, n in enumerate(pst):
@@ -25,9 +30,6 @@ def reorder_piece_square_table(pst, color):
     for i, row in enumerate(reordered):
         reordered[i] = list(reversed(row))
     reordered = reduce(lambda x, y: x + y, reordered)
-
-    if color == 'black':
-        return reordered
     reordered.reverse()
     return reordered
 
@@ -148,17 +150,15 @@ piece_square_tables_eg = {'p':
 piece_values = {'p': 100, 'n': 300, 'b': 300, 'r': 500, 'q': 900,
                 'k': 10000}
 # Transform early/middle-game piece-square tables.
+black_pst_mg = piece_square_tables_mg
 white_pst_mg = {}
-black_pst_mg = {}
 for k, v in piece_square_tables_mg.items():
     white_pst_mg[k] = reorder_piece_square_table(v, 'white')
-    black_pst_mg[k] = reorder_piece_square_table(v, 'black')
 # Transform endgame tables.
+black_pst_eg = piece_square_tables_eg
 white_pst_eg = {}
-black_pst_eg = {}
 for k, v in piece_square_tables_eg.items():
     white_pst_eg[k] = reorder_piece_square_table(v, 'white')
-    black_pst_eg[k] = reorder_piece_square_table(v, 'black')
 
 
 def eval_doubled_blocked_isolated_pawns(chessboard):
@@ -250,25 +250,18 @@ def evaluate_position(chessboard):
     eg_percent = phase / 256
     mg_percent = 1 - eg_percent
 
-    orig_white_eval = white_position
     # Apply piece-square tables with phase taper percentages.
     for piece in chessboard.white_pieces:
         midgame_piece_eval = white_pst_mg[piece.name[0].lower()][piece.square]
         endgame_piece_eval = white_pst_eg[piece.name[0].lower()][piece.square]
         white_position += midgame_piece_eval * mg_percent \
             + endgame_piece_eval * eg_percent
-    #print('mg_percent =', mg_percent)
-    #print('eg_percent =', eg_percent)
-    #print('white delta =', white_position - orig_white_eval)
 
-    orig_black_eval = black_position
     for piece in chessboard.black_pieces:
         midgame_piece_eval = black_pst_mg[piece.name[0].lower()][piece.square]
         endgame_piece_eval = black_pst_eg[piece.name[0].lower()][piece.square]
         black_position += midgame_piece_eval * mg_percent \
             + endgame_piece_eval * eg_percent
-
-    #print('black delta =', black_position - orig_black_eval)
 
     total_evaluation = white_position - black_position
     total_evaluation += eval_doubled_blocked_isolated_pawns(chessboard)
@@ -335,7 +328,6 @@ def save_state_per_piece(chessboard, piece, i, pieces_to_move):
         switch_has_moved_to_False, piece, i, pieces_to_move
 
 
-# DRY. Move piece/move loop into separate func. How?
 def save_state_per_move(chessboard, move, piece):
     """Store once per Perft move loop."""
     if isinstance(move, tuple):
@@ -378,7 +370,7 @@ def replicate_promotion_moves(chessboard):
 
 
 def undo_move(chessboard, saved_piece_loop, saved_move_loop):
-    """Undo perft move."""
+    """Undo move while traversing the move tree."""
     prev_move_piece, prev_move_from_to, prev_square, prev_moves, \
         switch_has_moved_to_False, piece, i, pieces_to_move = saved_piece_loop
 
@@ -456,22 +448,55 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
         pass
 
 
-
 if __name__ == '__main__':
     import unittest
 
     class TestEngine(unittest.TestCase):
-        # TODO: Seriously test eval
 
-        @unittest.skip('Piece square tables not equal?')
         def test_evaluate_position(self):
+            """Net zero evaluation at the starting position."""
             chessboard = board.Board()
             chessboard.initialize_pieces()
             chessboard.last_move_piece = pieces.Pawn('placeholder',
                                                      'black', 100)
+            chessboard.update_white_controlled_squares()
+            chessboard.update_black_controlled_squares()
+            self.assertEqual(
+                    eval_doubled_blocked_isolated_pawns(chessboard),
+                    0)
+
+            board_eval = 0
+            board_eval += sum([piece_values[piece.name[0].lower()]
+                for piece in chessboard.white_pieces])
+            board_eval -= sum([piece_values[piece.name[0].lower()]
+                for piece in chessboard.black_pieces])
+            self.assertEqual(board_eval, 0)
+
+            board_eval += 10 * len(chessboard.white_controlled_squares)
+            board_eval -= 10 * len(chessboard.black_controlled_squares)
+            self.assertEqual(board_eval, 0)
+
+            game_phase = early_vs_endgame_phase(chessboard)
+            self.assertEqual(game_phase, 0)
+
+            for piece in chessboard.white_pieces:
+                value = white_pst_mg[piece.name[0].lower()][piece.square]
+                board_eval += value
+            for piece in chessboard.black_pieces:
+                value = black_pst_mg[piece.name[0]][piece.square]
+                board_eval -= value
+            self.assertEqual(board_eval, 0)
+
             self.assertEqual(0.0, evaluate_position(chessboard))
 
+        def test_piece_squares_tables(self):
+            """Square values reflect across the board's horizontal midline."""
+            self.assertEqual(white_pst_mg['k'][4], black_pst_mg['k'][60])
+            self.assertEqual(white_pst_mg['k'][6], black_pst_mg['k'][62])
+            self.assertEqual(white_pst_mg['k'][12], black_pst_mg['k'][52])
+
         def test_pawn_evaluation(self):
+            """Net pawn evaluation at starting position."""
             chessboard = board.Board()
             chessboard.initialize_pieces()
             self.assertEqual(
@@ -479,6 +504,7 @@ if __name__ == '__main__':
                 eval_doubled_blocked_isolated_pawns(chessboard))
 
         def test_phase_eval(self):
+            """Detect game phase out of 256 (beginning, middle, end)."""
             chessboard = board.Board()
             # Empty board approximates end of game.
             self.assertEqual(
@@ -490,14 +516,16 @@ if __name__ == '__main__':
                 0)
 
         def test_doubled_pawns_eval(self):
+            """Detect and evaluate doubled pawns."""
             chessboard = chess_utilities.import_fen_to_board(
                 '8/8/8/8/2P5/8/PPP5/8 w')
-            # Update moves or eval thinks pawns are blocked.
+            # Update moves or eval will consider the pawns to be blocked.
             chessboard.update_white_controlled_squares()
             evaluation = eval_doubled_blocked_isolated_pawns(chessboard)
             self.assertEqual(evaluation, -50)
 
         def test_blocked_pawns_eval(self):
+            """Detect and evaluate blocked pawns."""
             chessboard = chess_utilities.import_fen_to_board(
                 '8/8/8/8/8/bb6/PPP5/8 w')
             chessboard.update_white_controlled_squares()
@@ -505,6 +533,7 @@ if __name__ == '__main__':
             self.assertEqual(evaluation, -100)
 
         def test_isolated_pawns_eval(self):
+            """Detect and evaluate isolated pawns."""
             chessboard = chess_utilities.import_fen_to_board(
                 '8/8/8/8/8/8/P1P4P/8 w')
             chessboard.update_white_controlled_squares()
@@ -512,6 +541,7 @@ if __name__ == '__main__':
             self.assertEqual(evaluation, -150)
 
         def test_reorder_piece_square_table(self):
+            """White piece square tables require derivation."""
             mini_pst = [6, 7, 8,
                         3, 4, 5,
                         0, 1, 2]
@@ -520,7 +550,17 @@ if __name__ == '__main__':
                 list(range(9)))
             self.assertEqual(
                 reorder_piece_square_table(mini_pst, 'black'),
-                list(range(8, -1, -1)))
+                mini_pst)
+            mini_pst = [12, 13, 14, 15,
+                         8,  9, 10, 11,
+                         4,  5,  6,  7,
+                         0,  1,  2,  3]
+            self.assertEqual(
+                reorder_piece_square_table(mini_pst, 'white'),
+                list(range(16)))
+            self.assertEqual(
+                reorder_piece_square_table(mini_pst, 'black'),
+                mini_pst)
             # Reverse essentially reflects across the two bisecting
             # axes.
             # [0, 1, 2,     [8, 7, 6,
@@ -528,6 +568,7 @@ if __name__ == '__main__':
             #  6, 7, 8]      2, 1, 0]
 
         def test_negamax(self):
+            """Search function finds the best move."""
             chessboard = chess_utilities.import_fen_to_board(
                 'k7/8/8/8/6rR/8/8/K7 w')
             self.assertEqual(negamax(chessboard, 3)[1], (31, 30))
@@ -535,6 +576,5 @@ if __name__ == '__main__':
                 'k7/8/8/8/6rR/8/8/K7 b')
             self.assertEqual(negamax(chessboard, 3)[1], (30, 31))
             negamax(chessboard, 3)
-
 
     unittest.main()

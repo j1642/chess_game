@@ -106,12 +106,16 @@ def perft(chessboard, depth=None):
             saved_move_loop = save_state_per_move(chessboard, move, piece)
             piece.move_piece(chessboard, move)
             if friendly_king.color == 'white':
-                chessboard.update_black_controlled_squares()
+                w_controlled_sqrs = None
+                b_controlled_sqrs = chessboard.find_sliding_controlled_squares(
+                    'black')
             else:
-                chessboard.update_white_controlled_squares()
+                b_controlled_sqrs = None
+                w_controlled_sqrs = chessboard.find_sliding_controlled_squares(
+                    'white')
             if friendly_king.check_if_in_check(
-                    chessboard.white_controlled_squares,
-                    chessboard.black_controlled_squares):
+                    w_controlled_sqrs,
+                    b_controlled_sqrs):
                 friendly_king.in_check = False
             else:
                 nodes += perft(chessboard, depth - 1)
@@ -177,5 +181,4 @@ class TestPerft(unittest.TestCase):
         chessboard.squares[52].update_moves(chessboard)
         chessboard.squares[52].move_piece(chessboard, 36)
         # 5b2/8/8/4pP2/1K6/8/8/7k w - e6 0 1
-        perft(chessboard, 1)
         self.assertEqual(perft(chessboard, 1), 6)

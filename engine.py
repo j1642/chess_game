@@ -233,6 +233,28 @@ def early_vs_endgame_phase(chessboard):
     return phase
 
 
+def generate_move_tree(chessboard, pieces_to_move):
+    """Make move tree generator."""
+    move = None
+    for i, piece in enumerate(pieces_to_move):
+        try:
+            if piece == pieces_to_move[-1] and move == piece.moves[-1]:
+                StopIteration
+        except IndexError:
+            StopIteration
+        chessboard.update_white_controlled_squares()
+        chessboard.update_black_controlled_squares()
+        chessboard.white_king.update_moves(chessboard)
+        replicate_promotion_moves(chessboard)
+        saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
+                                                i, pieces_to_move)
+        for move in piece.moves:
+            saved_move_loop = save_state_per_move(chessboard, move, piece)
+            piece.move_piece(chessboard, move)
+            yield chessboard
+            undo_move(chessboard, saved_piece_loop, saved_move_loop)
+
+
 def evaluate_position(chessboard):
     """Return board position evaluation in centipawns."""
     # Piece values.
@@ -305,10 +327,11 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf')):
                                  -1 * alpha)
                 raw_score = values[0]
                 score = -1 * raw_score
+                # Fail hard when score exceeds beta boundary.
                 if score >= beta:
                     best_move = chessboard.last_move_from_to
                     undo_move(chessboard, saved_piece_loop, saved_move_loop)
-                    return beta, best_move, 'failing hard'
+                    return beta, best_move
                 if score > alpha:
                     alpha = score
                     best_move = chessboard.last_move_from_to

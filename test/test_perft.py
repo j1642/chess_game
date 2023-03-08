@@ -6,8 +6,7 @@ import unittest
 
 import board
 import chess_utilities
-from engine import undo_move, save_state_per_piece, save_state_per_move, \
-    replicate_promotion_moves
+from engine import replicate_promotion_moves, generate_move_tree
 import pieces
 
 
@@ -19,7 +18,7 @@ a_board = board.Board()
 square_to_alg_notation = {v: k for k, v in a_board.ALGEBRAIC_NOTATION.items()}
 
 
-def divide(chessboard, depth=None):
+def divide(chessboard, depth):
     """DFS through move tree and print subtree node counts."""
     if chessboard.last_move_piece.color == 'white':
         friendly_king = chessboard.black_king
@@ -30,48 +29,41 @@ def divide(chessboard, depth=None):
 
     divided = defaultdict(int)
     nodes = 0
-    for i, piece in enumerate(pieces_to_move):
-        chessboard.update_white_controlled_squares()
-        chessboard.update_black_controlled_squares()
-        chessboard.white_king.update_moves(chessboard)
-        replicate_promotion_moves(chessboard)
-        saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
-                                                i, pieces_to_move)
-        for move in piece.moves:
-            saved_move_loop = save_state_per_move(chessboard, move, piece)
-            piece.move_piece(chessboard, move)
-            if friendly_king.color == 'white':
-                chessboard.update_black_controlled_squares()
-            else:
-                chessboard.update_white_controlled_squares()
-            if friendly_king.check_if_in_check(
-                    chessboard.white_controlled_squares,
-                    chessboard.black_controlled_squares):
-                friendly_king.in_check = False
-                undo_move(chessboard, saved_piece_loop, saved_move_loop)
-                continue
-            else:
-                nodes = perft(chessboard, depth - 1)
-            undo_move(chessboard, saved_piece_loop, saved_move_loop)
+    for chessboard in generate_move_tree(chessboard, pieces_to_move):
+        if friendly_king.color == 'white':
+            chessboard.update_black_controlled_squares()
+        else:
+            chessboard.update_white_controlled_squares()
+        if friendly_king.check_if_in_check(
+                chessboard.white_controlled_squares,
+                chessboard.black_controlled_squares):
+            friendly_king.in_check = False
+            continue
+        else:
+            nodes = perft(chessboard, depth - 1)
 
-            piece_symbol = ''
-            if isinstance(move, tuple):
-                move, piece_symbol = move
-                piece_symbol = piece_symbol[0]
-                if piece_symbol == 'k':
-                    piece_symbol = 'n'
-            move = ' '.join([piece.name,
-                             square_to_alg_notation[piece.square],
-                             square_to_alg_notation[move],
-                             piece_symbol, ':'])
-            divided[move] += nodes
+        piece_symbol = ''
+        try:
+            # Last move was a pawn promotion.
+            if chessboard.last_move_piece.name[1] == 'p':
+                move = chessboard.last_move_from_to[1]
+                piece_symbol = chessboard.last_move_piece.name[0].lower()
+        except IndexError:
+            move = chessboard.last_move_from_to[1]
+        prev_square = chessboard.last_move_from_to[0]
+        piece_name = chessboard.last_move_piece.name[0]
+        move = ' '.join([piece_name,
+                         square_to_alg_notation[prev_square],
+                         square_to_alg_notation[move],
+                         piece_symbol, ':'])
+        divided[move] += nodes
     print('\n')
     for k, v in divided.items():
         print(k, v)
     print('Total:', sum(divided.values()))
 
 
-def perft(chessboard, depth=None):
+def perft(chessboard, depth):
     """DFS through move tree and count the nodes."""
     if chessboard.last_move_piece.color == 'white':
         friendly_king = chessboard.black_king
@@ -96,38 +88,28 @@ def perft(chessboard, depth=None):
     elif depth == 0:
         return 1
 
-    for i, piece in enumerate(pieces_to_move):
-        chessboard.update_white_controlled_squares()
-        chessboard.update_black_controlled_squares()
-        chessboard.white_king.update_moves(chessboard)
-        replicate_promotion_moves(chessboard)
-        saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
-                                                i, pieces_to_move)
-        for move in piece.moves:
-            saved_move_loop = save_state_per_move(chessboard, move, piece)
-            piece.move_piece(chessboard, move)
-            if friendly_king.color == 'white':
-                w_controlled_sqrs = None
-                b_controlled_sqrs = chessboard.find_sliding_controlled_squares(
-                    'black')
-            else:
-                b_controlled_sqrs = None
-                w_controlled_sqrs = chessboard.find_sliding_controlled_squares(
-                    'white')
-            if friendly_king.check_if_in_check(
-                    w_controlled_sqrs,
-                    b_controlled_sqrs):
-                friendly_king.in_check = False
-            else:
-                nodes += perft(chessboard, depth - 1)
-            undo_move(chessboard, saved_piece_loop, saved_move_loop)
+    for chessboard in generate_move_tree(chessboard, pieces_to_move):
+        if friendly_king.color == 'white':
+            w_controlled_sqrs = None
+            b_controlled_sqrs = chessboard.find_sliding_controlled_squares(
+                'black')
+        else:
+            b_controlled_sqrs = None
+            w_controlled_sqrs = chessboard.find_sliding_controlled_squares(
+                'white')
+        if friendly_king.check_if_in_check(
+                w_controlled_sqrs,
+                b_controlled_sqrs):
+            friendly_king.in_check = False
+        else:
+            nodes += perft(chessboard, depth - 1)
     return nodes
 
 
 class TestPerft(unittest.TestCase):
     """Check Perft node counts from various positions."""
 
-    # Depth 5 fails in 290 sec. Too high by 1.006x
+    # Depth 5 fails. Too high by 1.006x
     def test_perft_initial_position(self, depth=3):
         """Perft from the normal starting position."""
         nodes = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609,
@@ -144,11 +126,7 @@ class TestPerft(unittest.TestCase):
                  6: 8031647685}
         chessboard = chess_utilities.import_fen_to_board(
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w')
-        pr.enable()
         node_count = perft(chessboard, depth)
-        pr.disable()
-        pr.dump_stats('profile.pstat')
-
         self.assertEqual(node_count, nodes[depth])
 
     # Fails depth 5.

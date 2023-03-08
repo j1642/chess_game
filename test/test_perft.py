@@ -92,6 +92,7 @@ def perft(chessboard, depth=None):
         replicate_promotion_moves(chessboard)
         n_moves = sum([len(piece.moves) for piece in pieces_to_move])
         return n_moves
+    # For divide(depth=1)
     elif depth == 0:
         return 1
 

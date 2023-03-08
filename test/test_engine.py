@@ -1,11 +1,15 @@
 """Tests for engine.py, especially move tree search and node evaluation."""
-
+import cProfile
 import unittest
 
 import board
 import chess_utilities
 import engine
 import pieces
+
+
+pr = cProfile.Profile()
+pr.disable()
 
 
 class TestEngine(unittest.TestCase):
@@ -135,7 +139,8 @@ class TestEngine(unittest.TestCase):
         """Search function finds the best move."""
         chessboard = chess_utilities.import_fen_to_board(
             'k7/8/8/8/6rR/8/8/K7 w')
-        self.assertEqual(engine.negamax(chessboard, 3)[1], (31, 30))
+        self.assertEqual(engine.negamax(chessboard, 4)[1], (31, 30))
         chessboard = chess_utilities.import_fen_to_board(
             'k7/8/8/8/6rR/8/8/K7 b')
-        self.assertEqual(engine.negamax(chessboard, 3)[1], (30, 31))
+        search = engine.negamax(chessboard, 4)
+        self.assertEqual(search[1], (30, 31))

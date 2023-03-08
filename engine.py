@@ -2,8 +2,6 @@
 
 from functools import reduce
 
-import board
-import chess_utilities
 import pieces
 
 
@@ -185,7 +183,7 @@ def eval_doubled_blocked_isolated_pawns(chessboard):
                 else:
                     black_pawns_per_file[i] += 1
     for color, pawns_per_file in enumerate([white_pawns_per_file,
-                black_pawns_per_file]):
+                                            black_pawns_per_file]):
         pawn_eval = 0
         for i, pawn_count in enumerate(pawns_per_file):
             # Doubled pawns
@@ -239,9 +237,9 @@ def evaluate_position(chessboard):
     """Return board position evaluation in centipawns."""
     # Piece values.
     white_position = sum([piece_values[piece.name[0].lower()]
-        for piece in chessboard.white_pieces])
+                          for piece in chessboard.white_pieces])
     black_position = sum([piece_values[piece.name[0].lower()]
-        for piece in chessboard.black_pieces])
+                          for piece in chessboard.black_pieces])
     # Piece mobility.
     white_position += 10 * len(chessboard.white_controlled_squares)
     black_position += 10 * len(chessboard.black_controlled_squares)
@@ -271,7 +269,7 @@ def evaluate_position(chessboard):
     return total_evaluation
 
 
-def negamax(chessboard, depth=0):
+def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf')):
     """DFS through move tree and evaluate leaves. Perft-ish."""
     if depth == 0:
         return evaluate_position(chessboard), chessboard.last_move_from_to
@@ -283,7 +281,7 @@ def negamax(chessboard, depth=0):
         friendly_king = chessboard.white_king
         pieces_to_move = chessboard.white_pieces
 
-    max_score = -1000000
+    best_move = None
     for i, piece in enumerate(pieces_to_move):
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
@@ -303,13 +301,19 @@ def negamax(chessboard, depth=0):
                     chessboard.black_controlled_squares):
                 friendly_king.in_check = False
             else:
-                raw_score, _ = negamax(chessboard, depth - 1)
+                values = negamax(chessboard, depth - 1, -1 * beta,
+                                 -1 * alpha)
+                raw_score = values[0]
                 score = -1 * raw_score
-                if score > max_score:
-                    max_score = score
+                if score >= beta:
+                    best_move = chessboard.last_move_from_to
+                    undo_move(chessboard, saved_piece_loop, saved_move_loop)
+                    return beta, best_move, 'failing hard'
+                if score > alpha:
+                    alpha = score
                     best_move = chessboard.last_move_from_to
             undo_move(chessboard, saved_piece_loop, saved_move_loop)
-    return max_score, best_move
+    return alpha, best_move
 
 
 def save_state_per_piece(chessboard, piece, i, pieces_to_move):

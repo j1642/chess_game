@@ -1,8 +1,11 @@
 """Algorithms for deciding computer moves."""
 
 from functools import reduce
+import logging
 
 import pieces
+
+# logging.basicConfig(level=logging.DEBUG)
 
 
 def reorder_piece_square_table(pst, color):
@@ -448,18 +451,23 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
                 chessboard.squares[63], chessboard.squares[61] = rook, ' '
             rook.has_moved = False
             piece.has_moved = False
-    chessboard.last_move_piece = prev_move_piece
-    chessboard.last_move_from_to = prev_move_from_to
-    # Amend piece list to undo promotion.
+    # Undo promotion piece list changes.
     # Possible bugs from changing list while iterating over it.
     try:
-        if pieces_to_move[0].name[1] == 'p':
+        if chessboard.last_move_piece.name[1] == 'p' \
+                and isinstance(piece, pieces.Pawn):
             len_before_changes = len(pieces_to_move)
-            pieces_to_move.pop(0)
+            removed_piece = pieces_to_move.pop(0)
+            assert removed_piece.color == piece.color
+            logging.debug(f"Undo: removing {removed_piece} from piece list")
             pieces_to_move.insert(i, piece)
+            logging.debug(f"Undo: adding {piece} to piece list")
+            assert piece is not removed_piece
             assert len_before_changes == len(pieces_to_move)
     except IndexError:
         pass
+    chessboard.last_move_piece = prev_move_piece
+    chessboard.last_move_from_to = prev_move_from_to
     try:
         if prev_occupant.color == 'white':
             assert prev_occupant not in chessboard.white_pieces

@@ -32,6 +32,9 @@ Equivalent integer representation.
 | 0  | 1  | 2  | ... | 7  |
 """
 
+import logging
+# logging.basicConfig(level=logging.DEBUG)
+
 
 class RanksFiles:
     """Holds iterables for limiting piece movement."""
@@ -392,10 +395,17 @@ class Pawn(_Piece):
                 raise Exception('King should not be able to be captured.')
             if captured_piece:
                 assert captured_piece.color != self.color
+                logging.debug(f"{self} captures {captured_piece}")
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
+                    logging.debug('removing captured_piece from black_pieces')
+                    logging.debug('len(black_pieces) = '
+                                  f'{len(board.black_pieces)}')
                 else:
                     board.white_pieces.remove(captured_piece)
+                    logging.debug('removing captured_piece from white_pieces')
+                    logging.debug('len(white_pieces) = '
+                                  f'{len(board.white_pieces)}')
                 if en_passant:
                     board.squares[captured_piece_square] = ' '
 

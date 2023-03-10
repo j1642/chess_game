@@ -119,7 +119,7 @@ class TestPerft(unittest.TestCase):
         chessboard.initialize_pieces(autopromote=['white', 'black'])
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # Fails depth 4. Off by 0.9999x
+    # Passes depth 4.
     def test_kiwipete(self, depth=3):
         """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
         nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
@@ -135,12 +135,14 @@ class TestPerft(unittest.TestCase):
         nodes = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
         chessboard = chess_utilities.import_fen_to_board(
             '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w')
+        # Divide 5 to this position ended with matching numbers.
+        #    '8/2p5/3p4/1K6/1R3p1k/8/4P1P1/8 b')
         self.assertEqual(perft(chessboard, depth), nodes[depth])
 
-    # Error at depth 4.
-    def test_promotion(self, depth=3):
+    # Passes depth 5.
+    def test_promotion(self, depth=4):
         """Promotion FEN from rocechess.ch/perft.html"""
-        nodes = {1: 24, 2: 496, 3: 9483, 4: 182838}
+        nodes = {1: 24, 2: 496, 3: 9483, 4: 182838, 5: 3605103}
         chessboard = chess_utilities.import_fen_to_board(
             'n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b', autopromote=True)
         self.assertEqual(perft(chessboard, depth), nodes[depth])

@@ -319,14 +319,17 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf')):
         for move in piece.moves:
             saved_move_loop = save_state_per_move(chessboard, move, piece)
             piece.move_piece(chessboard, move)
-            # TODO: speed up with sliding piece update only?
             if friendly_king.color == 'white':
-                chessboard.update_black_controlled_squares()
+                w_controlled_sqrs = None
+                b_controlled_sqrs = chessboard.find_sliding_controlled_squares(
+                    'black')
             else:
-                chessboard.update_white_controlled_squares()
+                b_controlled_sqrs = None
+                w_controlled_sqrs = chessboard.find_sliding_controlled_squares(
+                    'white')
             if friendly_king.check_if_in_check(
-                    chessboard.white_controlled_squares,
-                    chessboard.black_controlled_squares):
+                    w_controlled_sqrs,
+                    b_controlled_sqrs):
                 friendly_king.in_check = False
             else:
                 values = negamax(chessboard, depth - 1, -1 * beta,
@@ -511,7 +514,8 @@ def uci():
         elif command[0] == 'd':
             print('\n', chessboard)
         elif command[0] == 'stop':
-            # print "bestmove a1b1"
+            # stop calculation thread, print "bestmove xxxx"
+            # be ready to continue calculations from stop point
             pass
         elif command[0] == 'quit':
             # Exit

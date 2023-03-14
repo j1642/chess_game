@@ -3,6 +3,8 @@
 from functools import reduce
 import logging
 
+import board
+import chess_utilities
 import pieces
 
 # logging.basicConfig(level=logging.DEBUG)
@@ -317,6 +319,7 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf')):
         for move in piece.moves:
             saved_move_loop = save_state_per_move(chessboard, move, piece)
             piece.move_piece(chessboard, move)
+            # TODO: speed up with sliding piece update only?
             if friendly_king.color == 'white':
                 chessboard.update_black_controlled_squares()
             else:
@@ -481,3 +484,71 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
                 prev_occupant)
     except AttributeError:
         pass
+
+
+def uci():
+    """Interact with the engine using the Universal Chess Interface
+    (UCI).
+    """
+    # TODO: Complete UCI
+    engine_name = 'Unnamed Engine 0.x'
+    chessboard = board.Board()
+    print(engine_name)
+    print('Incomplete UCI.')
+    # If/elif or dict of functions?
+    command = input().strip().split()
+    command = [word.strip() for word in command]
+    assert '' not in command
+    if len(command) == 1:
+        if command[0] == 'uci':
+            print('id name', engine_name)
+            print('id author j1642')
+            print('uciok')
+        elif command[0] == 'isready':
+            print('readyok')
+        elif command[0] == 'ucinewgame':
+            print('readyok')
+        elif command[0] == 'd':
+            print('\n', chessboard)
+        elif command[0] == 'stop':
+            # print "bestmove a1b1"
+            pass
+        elif command[0] == 'quit':
+            # Exit
+            pass
+        elif command[0] == 'register':
+            # Not planned.
+            return
+        elif command[0] == 'ucinewgame':
+            # Not planned.
+            return
+        else:
+            if command[0] not in ['position', 'go']:
+                print('Unknown command.')
+    if command[0] == 'position':
+        if any([chessboard.white_king is None,
+                chessboard.black_king is None,
+                len(chessboard.white_pieces + chessboard.black_pieces) < 2
+                ]):
+            return
+        elif command[1] == 'fen':
+            # check for 'moves' after fen string
+            fen = None
+            # fen = command[3:...]
+            # TODO: utils cannot handle full FEN string
+            chessboard = chess_utilities.import_fen_to_board(fen)
+        elif command[1] == 'startpos':
+            chessboard.initialize_pieces()
+            # check for 'moves'
+    if command[0] == 'go':
+        # Lots of subcommands. Find index (if exists) of each first?
+        if command[1] == 'depth':
+            if command[2].isdigit():
+                negamax(chessboard, int(command[2]))
+                # print "info depth 1 seldepth 0", ...
+    else:
+        print('Unknown command.')
+
+
+if __name__ == '__main__':
+    uci()

@@ -27,28 +27,11 @@ class GUI:
 
         self.dark_squares, self.light_squares = self.find_dark_light_squares()
         self.image_references = [0] * 64
+        self.buttons = [0] * 64
         self.root = tk.Tk()
         self.root.geometry('400x405+380+430')
         self.root.title('Chess')
         self.perspective = None
-
-        # TODO: Closing the window exits the program in the terminal.
-        # TODO: Remove exit button and delete button blocks.
-        # exit_button = tk.Button(self.root,
-        #                   text='Exit',
-        #                   command= lambda : self.root.destroy())
-        # exit_button.grid(column=9, row=1) #sticky='se')
-
-        # delete_button = tk.Button(self.root,
-        #                          text='Click to delete',
-        #                          command= lambda : delete_button.destroy())
-        # delete_button.grid(column=9, row=2) #sticky='se')
-
-        # for i in self.root:
-        print(self.root)
-
-        # self.update_gui(chessboard)
-        # self.root.mainloop()
 
     def find_dark_light_squares(self) -> tuple:
         """Return sets of which chessboard squares are dark and which are
@@ -132,6 +115,8 @@ class GUI:
             image_path = tk.PhotoImage(file=image_path)
             # Need to store Photoimage object reference to display it
             # after the for loop and function end.
+            # Re-initializing images list on every update...() does not
+            # fix memory leak
             self.image_references[ind] = image_path
 
             self.find_command_make_button(chessboard,
@@ -164,13 +149,21 @@ class GUI:
         else:
             command = lambda: selected_piece.move_piece(chessboard, index)
 
-        button = tk.Button(
-            self.root,
-            image=image,
-            highlightthickness=0,
-            bd=0,
-            borderwidth=0,
-            # Commands not currently supported.
-            command=self.empty_function())
-
-        button.grid(column=column, row=row)
+        # Changing images through button updating slows memory leak.
+        # Leak is presumably from excess button creation.
+        if self.buttons[index] == 0:
+            button = tk.Button(
+                self.root,
+                image=image,
+                highlightthickness=0,
+                bd=0,
+                borderwidth=0,
+                padx=0,
+                pady=0,
+                # Commands not currently supported.
+                command=self.empty_function())
+            self.buttons[index] = button
+        else:
+            self.buttons[index]['image'] = image
+        self.buttons[index].grid(column=column, row=row, padx=0, pady=0,
+                                 ipadx=0, ipady=0)

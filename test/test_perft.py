@@ -13,9 +13,7 @@ import pieces
 pr = cProfile.Profile()
 pr.disable()
 
-# Change to class attribute.
-a_board = board.Board()
-square_to_alg_notation = {v: k for k, v in a_board.ALGEBRAIC_NOTATION.items()}
+square_to_alg_notation = board.Board.int_to_alg_notation
 
 
 def divide(chessboard, depth):

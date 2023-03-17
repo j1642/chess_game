@@ -139,6 +139,10 @@ class Board:
                 if isinstance(piece, pieces.Pawn):
                     piece.autopromote = True
 
+        self.last_move_piece = pieces.Pawn('placeholder',
+                                           'black',
+                                           100)
+
     def update_king_moves(self):
         """King moves are dependant on the possbile moves of all opponent
         pieces, so they must be updated last.

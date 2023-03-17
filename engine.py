@@ -296,7 +296,8 @@ def evaluate_position(chessboard):
     return total_evaluation
 
 
-def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf')):
+def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
+            stop=None, quit=None):
     """DFS through move tree and evaluate leaves. Perft-ish."""
     if depth == 0:
         return evaluate_position(chessboard), chessboard.last_move_from_to
@@ -333,7 +334,7 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf')):
                 friendly_king.in_check = False
             else:
                 values = negamax(chessboard, depth - 1, -1 * beta,
-                                 -1 * alpha)
+                                 -1 * alpha, stop, quit)
                 raw_score = values[0]
                 score = -1 * raw_score
                 # Fail hard when score exceeds beta boundary.
@@ -345,6 +346,13 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf')):
                     alpha = score
                     best_move = chessboard.last_move_from_to
             undo_move(chessboard, saved_piece_loop, saved_move_loop)
+            try:
+                if quit.is_set():
+                    sys.exit(0)
+                elif stop.is_set():
+                    return alpha, best_move
+            except AttributeError:
+                pass
     return alpha, best_move
 
 
@@ -489,70 +497,105 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
         pass
 
 
-def uci():
-    """Interact with the engine using the Universal Chess Interface
-    (UCI).
-    """
-    # TODO: Complete UCI
-    engine_name = 'Unnamed Engine 0.x'
-    chessboard = board.Board()
-    print(engine_name)
-    print('Incomplete UCI.')
-    # If/elif or dict of functions?
-    command = input().strip().split()
-    command = [word.strip() for word in command]
-    assert '' not in command
-    if len(command) == 1:
-        if command[0] == 'uci':
-            print('id name', engine_name)
-            print('id author j1642')
-            print('uciok')
-        elif command[0] == 'isready':
-            print('readyok')
-        elif command[0] == 'ucinewgame':
-            print('readyok')
-        elif command[0] == 'd':
-            print('\n', chessboard)
-        elif command[0] == 'stop':
-            # stop calculation thread, print "bestmove xxxx"
-            # be ready to continue calculations from stop point
-            pass
-        elif command[0] == 'quit':
-            # Exit
-            pass
-        elif command[0] == 'register':
-            # Not planned.
-            return
-        elif command[0] == 'ucinewgame':
-            # Not planned.
-            return
-        else:
-            if command[0] not in ['position', 'go']:
-                print('Unknown command.')
-    if command[0] == 'position':
-        if any([chessboard.white_king is None,
-                chessboard.black_king is None,
-                len(chessboard.white_pieces + chessboard.black_pieces) < 2
-                ]):
-            return
-        elif command[1] == 'fen':
-            # check for 'moves' after fen string
-            fen = None
-            # fen = command[3:...]
-            # TODO: utils cannot handle full FEN string
-            chessboard = chess_utilities.import_fen_to_board(fen)
-        elif command[1] == 'startpos':
-            chessboard.initialize_pieces()
-            # check for 'moves'
-    if command[0] == 'go':
-        # Lots of subcommands. Find index (if exists) of each first?
-        if command[1] == 'depth':
-            if command[2].isdigit():
-                negamax(chessboard, int(command[2]))
-                # print "info depth 1 seldepth 0", ...
-    else:
-        print('Unknown command.')
-
-
 if __name__ == '__main__':
-    uci()
+    import sys
+    import time
+    import threading
+
+    def uci(command: str, stop: threading.Event, quit: threading.Event):
+        """Interact with the engine using the Universal Chess Interface
+        (UCI).
+        """
+        # TODO: Complete UCI
+        global chessboard
+        engine_name = 'Unnamed Engine 0.x'
+        command = command.split()
+        command = [word.strip() for word in command]
+        assert '' not in command
+        print(command)
+        if command == []:
+            return
+        if len(command) == 1:
+            if command[0] == 'uci':
+                print('id name', engine_name)
+                print('id author j1642')
+                print('uciok')
+            elif command[0] == 'isready':
+                print('readyok')
+            elif command[0] == 'ucinewgame':
+                print('readyok')
+            elif command[0] == 'd':
+                print('\n', chessboard, sep='')
+            elif command[0] == 'stop':
+                raise ValueError('stop command should not flow to here')
+            elif command[0] == 'quit':
+                raise ValueError('quit command should not flow to here')
+            elif command[0] == 'register':
+                # Not planned.
+                return
+            elif command[0] == 'ucinewgame':
+                # Not planned.
+                return
+            else:
+                if command[0] not in ['position', 'go']:
+                    print('Unknown command.')
+        if command[0] == 'position':
+            if command[1] == 'fen':
+                # check for 'moves' after fen string
+                fen = None
+                # fen = command[3:...]
+                # TODO: utils cannot handle full FEN string
+                chessboard = chess_utilities.import_fen_to_board(fen)
+            elif command[1] == 'startpos':
+                chessboard.initialize_pieces()
+                # check for 'moves'
+            elif any([chessboard.white_king is None,
+                     chessboard.black_king is None,
+                     len(chessboard.white_pieces + chessboard.black_pieces) < 2
+                      ]):
+                return
+        elif command[0] == 'go':
+            # Lots of subcommands. Find index (if exists) of each first?
+            depth = float('inf')
+            if command[1] == 'depth':
+                if command[2].isdigit():
+                    # print "info depth 1 seldepth 0", ...
+                    depth = int(command[2])
+                else:
+                    print('Unknown command')
+                    return
+
+                def print_bestmove(depth, stop, quit):
+                    """Second thread, may be inturrupted by Events."""
+                    bestmove = negamax(chessboard, depth,
+                                       stop=stop, quit=quit)[1]
+                    bestmove = [board.Board.int_to_alg_notation[i]
+                                for i in bestmove]
+                    print('bestmove', ''.join(bestmove))
+                    stop.clear()
+
+                t2 = threading.Thread(target=print_bestmove,
+                                      args=(depth, stop, quit))
+                t2.start()
+        elif len(command) > 1:
+            print('Unknown command.')
+
+    def get_uci_input(stop: threading.Event, quit: threading.Event):
+        """Control threading.Events, pass on other inputs."""
+        command = input().strip()
+        if command == 'quit':
+            quit.set()
+            sys.exit(0)
+        elif command == 'stop':
+            stop.set()
+        else:
+            uci(command, stop, quit)
+
+    quit = threading.Event()
+    stop = threading.Event()
+    chessboard = board.Board()
+    print('Unnamed Engine 0.x')
+    print('Incomplete UCI.')
+    while not quit.is_set():
+        get_uci_input(stop, quit)
+        time.sleep(0.3)

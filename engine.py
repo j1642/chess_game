@@ -297,24 +297,56 @@ def evaluate_position(chessboard):
 
 
 def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
-            stop=None, quit=None):
-    """DFS through move tree and evaluate leaves. Perft-ish."""
+            stop=None, quit=None, searchmoves=None):
+    """DFS through move tree and evaluate leaves.
+
+    Parameters
+    ----------
+    chessboard : board.Board
+    depth : int
+        Maximum number of plies to search.
+    alpha : float
+    beta : float
+    stop : threading.Event
+        If set, stop the search.
+    quit : threading.Event
+        If set, quit the engine.
+    searchmoves : None or list of tuples [(piece_0, move), ...]
+        Group of same-colored pieces to exclusively include in the move
+        tree. For uci() "go" command.
+
+    """
     if depth == 0:
         return evaluate_position(chessboard), chessboard.last_move_from_to
 
-    if chessboard.last_move_piece.color == 'white':
-        friendly_king = chessboard.black_king
-        pieces_to_move = chessboard.black_pieces
+    if searchmoves is None:
+        if chessboard.last_move_piece.color == 'white':
+            friendly_king = chessboard.black_king
+            pieces_to_move = chessboard.black_pieces
+        else:
+            friendly_king = chessboard.white_king
+            pieces_to_move = chessboard.white_pieces
     else:
-        friendly_king = chessboard.white_king
-        pieces_to_move = chessboard.white_pieces
+        pieces_to_move = []
+        moves_to_search = []
+        for search_piece, search_move in searchmoves:
+            pieces_to_move.append(search_piece)
+            moves_to_search.append(search_move)
+        if pieces_to_move[0].color == 'white':
+            friendly_king = chessboard.white_king
+        else:
+            friendly_king = chessboard.black_king
 
     best_move = None
     for i, piece in enumerate(pieces_to_move):
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
         chessboard.white_king.update_moves(chessboard)
+        if searchmoves:
+            for i, search_piece in enumerate(pieces_to_move):
+                search_piece.moves = [moves_to_search[i]]
         replicate_promotion_moves(chessboard)
+
         saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
                                                 i, pieces_to_move)
         for move in piece.moves:
@@ -585,19 +617,51 @@ if __name__ == '__main__':
 
         elif command[0] == 'go':
             # Lots of subcommands. Find index (if exists) of each first?
+            searchmoves = None
+            if 'searchmoves' in command:
+                # Only look at subtrees of given moves.
+                searchmoves = []
+                searchmoves_ind = command.index('searchmoves')
+                for move in command[searchmoves_ind + 1:]:
+                    move = move.lower()
+                    if not all([move[0].isalpha(), move[2].isalpha(),
+                                move[1].isdigit(), move[3].isdigit,
+                                len(move) == 4]):
+                        return
+                    square_from = board.Board.ALGEBRAIC_NOTATION[move[:2]]
+                    square_to = board.Board.ALGEBRAIC_NOTATION[move[2:]]
+                    moving_piece = chessboard.squares[square_from]
+                    if moving_piece.color == chessboard.last_move_piece.color:
+                        return
+                    if moving_piece == chessboard.white_king:
+                        chessboard.update_black_controlled_squares()
+                        chessboard.white_king.update_moves(chessboard)
+                    elif moving_piece == chessboard.black_king:
+                        chessboard.update_white_controlled_squares()
+                        chessboard.black_king.update_moves(chessboard)
+                    else:
+                        moving_piece.update_moves(chessboard)
+                    if square_to not in moving_piece.moves:
+                        return
+                    searchmoves.append((moving_piece, square_to))
+
             depth = float('inf')
             if command[1] == 'depth':
-                if command[2].isdigit():
-                    # print "info depth 1 seldepth 0", ...
-                    depth = int(command[2])
-                else:
-                    print('Unknown command')
+                try:
+                    if command[2].isdigit():
+                        # print "info depth 1 seldepth 0", ...
+                        depth = int(command[2])
+                    else:
+                        print('Unknown command')
+                        return
+                except IndexError:
                     return
 
                 def print_bestmove(depth, stop, quit):
                     """Second thread, may be inturrupted by Events."""
                     bestmove = negamax(chessboard, depth,
-                                       stop=stop, quit=quit)[1]
+                                       stop=stop, quit=quit,
+                                       searchmoves=searchmoves)[1]
                     bestmove = [board.Board.int_to_alg_notation[i]
                                 for i in bestmove]
                     print('bestmove', ''.join(bestmove))

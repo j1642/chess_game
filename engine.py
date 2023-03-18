@@ -527,9 +527,11 @@ if __name__ == '__main__':
             elif command[0] == 'd':
                 print('\n', chessboard, sep='')
             elif command[0] == 'stop':
-                raise ValueError('stop command should not flow to here')
+                # stop should not flow to here
+                return
             elif command[0] == 'quit':
-                raise ValueError('quit command should not flow to here')
+                # quit should not flow to here
+                return
             elif command[0] == 'register':
                 # Not planned.
                 return
@@ -537,23 +539,50 @@ if __name__ == '__main__':
                 # Not planned.
                 return
             else:
-                if command[0] not in ['position', 'go']:
+                if command[0] in ['position', 'go']:
+                    return
+                else:
                     print('Unknown command.')
         if command[0] == 'position':
             if command[1] == 'fen':
-                # check for 'moves' after fen string
                 fen = None
                 # fen = command[3:...]
                 # TODO: utils cannot handle full FEN string
                 chessboard = chess_utilities.import_fen_to_board(fen)
             elif command[1] == 'startpos':
+                chessboard = board.Board()
                 chessboard.initialize_pieces()
-                # check for 'moves'
             elif any([chessboard.white_king is None,
                      chessboard.black_king is None,
                      len(chessboard.white_pieces + chessboard.black_pieces) < 2
                       ]):
                 return
+            if 'moves' in command:
+                moves_ind = command.index('moves')
+                for move in command[moves_ind + 1:]:
+                    move = move.lower()
+                    if not all([move[0].isalpha(), move[2].isalpha(),
+                                move[1].isdigit(), move[3].isdigit,
+                                len(move) == 4]):
+                        return
+                    square_from = board.Board.ALGEBRAIC_NOTATION[move[:2]]
+                    square_to = board.Board.ALGEBRAIC_NOTATION[move[2:]]
+                    moving_piece = chessboard.squares[square_from]
+                    if moving_piece.color == chessboard.last_move_piece.color:
+                        return
+                    if moving_piece == chessboard.white_king:
+                        chessboard.update_black_controlled_squares()
+                        chessboard.white_king.update_moves(chessboard)
+                    elif moving_piece == chessboard.black_king:
+                        chessboard.update_white_controlled_squares()
+                        chessboard.black_king.update_moves(chessboard)
+                    else:
+                        moving_piece.update_moves(chessboard)
+                    if square_to not in moving_piece.moves:
+                        return
+                    else:
+                        moving_piece.move_piece(chessboard, square_to)
+
         elif command[0] == 'go':
             # Lots of subcommands. Find index (if exists) of each first?
             depth = float('inf')

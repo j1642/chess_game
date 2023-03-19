@@ -8,14 +8,17 @@
   </a>
 </p>
 
-A playable chess engine.
+A playable UCI chess engine.
 
 ### Features
+- [UCI communication protocol](https://www.wbec-ridderkerk.nl/html/UCIProtocol.html)
+([Universal Chess Interface](https://en.wikipedia.org/wiki/Universal_Chess_Interface))
+
 - Board representation
   - 1D board array with separate piece lists. Hybrid of square- and piece-centric designs.
 - Move generation
   - [Pseudo-legal](https://www.chessprogramming.org/Move_Generation#Pseudo-legal), legality checked during move tree traversal
-  - [Perft and Divide](https://www.chessprogramming.org/Perft) debugging functions
+  - [Perft and divide](https://www.chessprogramming.org/Perft) debugging functions
 - Search
   - [Negamax](https://www.chessprogramming.org/Negamax) algorithm
   - [Alpha-beta](https://www.chessprogramming.org/Alpha-Beta) optimizations
@@ -26,10 +29,15 @@ A playable chess engine.
   - [Evaluation tapering](https://www.chessprogramming.org/Tapered_Eval)
  
 
-### To play:
-Clone or unzip the repository (green Code button --> Download ZIP), and run
+### Use:
+Clone or unzip the repository (green Code button --> Download ZIP).
+##### To play chess,
 ```
 $ python3 game.py
+```
+##### To run the engine,
+```
+$ python3 engine.py
 ```
 
 ### Dependencies:

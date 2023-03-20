@@ -221,3 +221,10 @@ class TestBoard(unittest.TestCase):
         for piece in chessboard.white_pieces + chessboard.black_pieces:
             if isinstance(piece, pieces.Pawn):
                 self.assertTrue(piece.autopromote)
+
+    def test_find_zobrst_hash(self):
+        """Hash value is a deterministic constant."""
+        chessboard = board.Board()
+        chessboard.initialize_pieces()
+        self.assertEqual(chessboard.find_zobrist_hash(),
+                         5655539188076520372)

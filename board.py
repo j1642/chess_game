@@ -1,6 +1,8 @@
-"""The Board class represents the chessboard, storing piece locations, the
-previous move, and methods which broadly operate on each piece color.
+"""The Board class represents the chessboard. It stores piece locations,
+the previous move, and methods which broadly operate on each piece color.
 """
+import random
+
 import pieces
 
 
@@ -13,6 +15,7 @@ class Board:
         __init__()
         __repr__()
         initialize_pieces()
+        find_zobrist_hash()
         update_moves_white()
         update_moves_black()
         update_king_moves()
@@ -37,6 +40,16 @@ class Board:
         'h7': 55, 'a8': 56, 'b8': 57, 'c8': 58, 'd8': 59, 'e8': 60,
         'f8': 61, 'g8': 62, 'h8': 63}
     int_to_alg_notation = {v: k for k, v in ALGEBRAIC_NOTATION.items()}
+
+    random.seed(104)
+    hash_nums = []
+    # PNBRQKpnbrqk on squares [0, 64).
+    for _ in range(len('PNBRQKpnbrqk')):
+        hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(64)])
+    # Black to move is True.
+    hash_nums.append(random.randint(0, 2 ** 64 - 1))
+    # File of a valid ep square, A to H.
+    hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(8)])
 
     def __init__(self):
         self.squares = [' '] * 64
@@ -142,6 +155,27 @@ class Board:
         self.last_move_piece = pieces.Pawn('placeholder',
                                            'black',
                                            100)
+        self.last_move_from_to = (-1, -1)
+
+    def find_zobrist_hash(self):
+        """Return Zobrist hash of the position."""
+        zobrist_hash = 0
+        for piece in self.white_pieces + self.black_pieces:
+            if piece.color == 'white':
+                color = 0
+            else:
+                color = 6
+            for i, name in enumerate('pnbrqk'):
+                if piece.name[0].lower() == name:
+                    piece_type = i
+            zobrist_hash ^= self.hash_nums[color + piece_type][piece.square]
+        if self.last_move_piece.color == 'white':
+            zobrist_hash ^= self.hash_nums[12]
+        if all([self.last_move_piece.name[0].lower() == 'p',
+                abs(self.last_move_from_to[0]
+                    - self.last_move_from_to[1]) == 16]):
+            zobrist_hash ^= self.hash_nums[-1][piece.square % 8]
+        return zobrist_hash
 
     def update_king_moves(self):
         """King moves are dependant on the possbile moves of all opponent

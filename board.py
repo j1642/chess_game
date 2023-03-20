@@ -61,6 +61,7 @@ class Board:
         self.black_king = None
         self.last_move_piece = None
         self.last_move_from_to = (None, None)
+        self.zobrist_hash = None
         # Convert a square as algebraic notation to Board.squares index.
 
     def __repr__(self):
@@ -175,6 +176,7 @@ class Board:
                 abs(self.last_move_from_to[0]
                     - self.last_move_from_to[1]) == 16]):
             zobrist_hash ^= self.hash_nums[-1][piece.square % 8]
+        self.zobrist_hash = zobrist_hash
         return zobrist_hash
 
     def update_king_moves(self):

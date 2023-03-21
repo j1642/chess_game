@@ -222,7 +222,7 @@ class TestBoard(unittest.TestCase):
             if isinstance(piece, pieces.Pawn):
                 self.assertTrue(piece.autopromote)
 
-    def test_find_zobrist_hash(self):
+    def test_update_zobrist_hash_starting_position(self):
         """Hash value is a deterministic constant."""
         chessboard = board.Board()
         chessboard.initialize_pieces()

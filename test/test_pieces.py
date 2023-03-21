@@ -110,12 +110,31 @@ class TestPieces(SetUpTearDown):
         expected = chessboard.hash_nums[0][39]
         self.assertEqual(chessboard.zobrist_hash, expected)
 
-    @unittest.skip('')
     def test_zobrist_hash_castling(self):
         """Hash includes any remaining castling rights."""
-        # TODO: Hash castling availablility.
-        # TODO: Perft stopped working? super slow?
-        self.assertEqual(0, 1)
+        chessboard = chess_utilities.import_fen_to_board(
+            'r3k2r/8/8/8/8/8/8/R3K2R w')
+        chessboard.update_zobrist_hash()
+        expected = chessboard.hash_nums[3][0] ^ chessboard.hash_nums[3][7] \
+            ^ chessboard.hash_nums[5][4] ^ chessboard.hash_nums[11][60] \
+            ^ chessboard.hash_nums[9][56] ^ chessboard.hash_nums[9][63]
+        for num in chessboard.hash_nums[14]:
+            expected ^= num
+        self.assertEqual(chessboard.zobrist_hash, expected)
+
+        chessboard.white_king.update_moves(chessboard)
+        chessboard.white_king.move_piece(chessboard, 12)
+        expected ^= chessboard.hash_nums[12] ^ chessboard.hash_nums[14][0] \
+            ^ chessboard.hash_nums[14][1] ^ chessboard.hash_nums[5][4] \
+            ^ chessboard.hash_nums[5][12]
+        self.assertEqual(chessboard.zobrist_hash, expected)
+
+        chessboard.squares[56].update_moves(chessboard)
+        chessboard.squares[56].move_piece(chessboard, 0)
+        expected ^= chessboard.hash_nums[12] ^ chessboard.hash_nums[9][56] \
+            ^ chessboard.hash_nums[9][0] ^ chessboard.hash_nums[3][0] \
+            ^ chessboard.hash_nums[14][3]
+        self.assertEqual(chessboard.zobrist_hash, expected)
 
     def test_pawn_movement(self):
         """Pawns can move forward by one or two squares on their first move.

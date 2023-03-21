@@ -50,7 +50,7 @@ class Board:
     hash_nums.append(random.randint(0, 2 ** 64 - 1))
     # File of a valid ep square, A to H.
     hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(8)])
-    # Castling.
+    # Castling available. K kingside, K queenside, k kingside, k queenside.
     hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(4)])
 
     def __init__(self):
@@ -65,7 +65,7 @@ class Board:
         self.last_move_from_to = (-1, -1)
         self.zobrist_hash = 0
         self.ep_hash_to_undo = None
-        # Convert a square as algebraic notation to Board.squares index.
+        self.applied_initial_castling_hash = False
 
     def __repr__(self):
         """Print the board setup, starting from the eighth rank (row)."""
@@ -161,19 +161,20 @@ class Board:
                                            100)
         self.last_move_from_to = (-1, -1)
 
-    def update_zobrist_hash(self, pieces=None, switch_turn=False):
+    def update_zobrist_hash(self, changed_pieces=None, switch_turn=False,
+                            lose_castling=False):
         """Return Zobrist hash of the position and update hash attribute."""
         if switch_turn:
             self.zobrist_hash ^= self.hash_nums[12]
-        if not pieces:
-            pieces = self.white_pieces + self.black_pieces
-        for piece in pieces:
+        if not changed_pieces:
+            changed_pieces = self.white_pieces + self.black_pieces
+        for piece in changed_pieces:
             if piece.color == 'white':
                 color = 0
             else:
                 color = 6
             piece_name = piece.name[0].lower()
-            # If/elif should be faster than for loop. Not profiled.
+            # If/elif should be faster than for loop? Not profiled.
             if piece_name == 'p':
                 piece_type = 0
             elif piece_name == 'n':
@@ -199,14 +200,58 @@ class Board:
                     - self.last_move_from_to[1]) == 16]):
             self.zobrist_hash ^= self.hash_nums[13][piece.square % 8]
             self.ep_hash_to_undo = self.hash_nums[13][piece.square % 8]
-        castling_available = [0] * 4
-        if self.white_king:
-            castling_available[0], castling_available[1] = \
-                self.white_king.add_castling_moves(self)
-        if self.black_king:
-            castling_available[2], castling_available[3] = \
-                self.black_king.add_castling_moves(self)
-        # TODO: finish castling.
+
+        kings_rooks_on_start_squares = False
+        if not self.applied_initial_castling_hash:
+            if self.white_king is self.squares[4] \
+                    and self.black_king is self.squares[60] \
+                    and isinstance(self.squares[0], pieces.Rook) \
+                    and isinstance(self.squares[7], pieces.Rook) \
+                    and isinstance(self.squares[56], pieces.Rook) \
+                    and isinstance(self.squares[63], pieces.Rook) \
+                    and self.squares[0].color == 'white' \
+                    and self.squares[7].color == 'white' \
+                    and self.squares[56].color == 'black' \
+                    and self.squares[63].color == 'black':
+                kings_rooks_on_start_squares = True
+        if not self.applied_initial_castling_hash \
+                and kings_rooks_on_start_squares:
+            castling_available = [False] * 4
+            if self.white_king:
+                castling_available[0], castling_available[1] = \
+                    self.white_king.add_castling_moves(self)
+            if self.black_king:
+                castling_available[2], castling_available[3] = \
+                    self.black_king.add_castling_moves(self)
+            for i, castle_move in enumerate(castling_available):
+                if castle_move is True:
+                    self.zobrist_hash ^= self.hash_nums[14][i]
+            self.applied_initial_castling_hash = True
+
+        if lose_castling and self.white_king and self.black_king:
+            for piece in changed_pieces:
+                if piece is self.white_king:
+                    self.zobrist_hash ^= self.hash_nums[14][0]
+                    self.zobrist_hash ^= self.hash_nums[14][1]
+                elif piece is self.black_king:
+                    self.zobrist_hash ^= self.hash_nums[14][2]
+                    self.zobrist_hash ^= self.hash_nums[14][3]
+                elif isinstance(piece, pieces.Rook):
+                    if piece.color == 'white':
+                        friendly_king = self.white_king
+                    else:
+                        friendly_king = self.black_king
+                    if not piece.has_moved and not friendly_king.has_moved:
+                        if piece.square == 7:
+                            self.zobrist_hash ^= self.hash_nums[14][0]
+                        elif piece.square == 0:
+                            self.zobrist_hash ^= self.hash_nums[14][1]
+                        elif piece.square == 63:
+                            self.zobrist_hash ^= self.hash_nums[14][2]
+                        elif piece.square == 56:
+                            self.zobrist_hash ^= self.hash_nums[14][3]
+                        else:
+                            raise ValueError('invalid rook square')
 
     def update_king_moves(self):
         """King moves are dependant on the possbile moves of all opponent

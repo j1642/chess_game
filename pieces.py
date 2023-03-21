@@ -687,6 +687,7 @@ class Rook(_Piece):
         """Move the rook."""
         if castling:
             if not self.has_moved:
+                self.has_moved = True
                 # Do not check if new_square is in self.moves
                 if self.color == 'white' and new_square in (3, 5):
                     old_square, self.square = self.square, new_square
@@ -705,23 +706,32 @@ class Rook(_Piece):
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
                 captured_piece = board.squares[new_square]
-                board.update_zobrist_hash([captured_piece, self])
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
                 else:
                     board.white_pieces.remove(captured_piece)
-
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
-            else:
-                board.update_zobrist_hash([self])
+
+            if not self.has_moved:
+                try:
+                    if captured_piece:
+                        board.update_zobrist_hash([captured_piece, self],
+                                                  lose_castling=True)
+                except UnboundLocalError:
+                    board.update_zobrist_hash([self], lose_castling=True)
+            elif self.has_moved:
+                try:
+                    if captured_piece:
+                        board.update_zobrist_hash([captured_piece, self])
+                except UnboundLocalError:
+                    board.update_zobrist_hash([self])
+            self.has_moved = True
             old_square, self.square = self.square, new_square
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
-
-        self.has_moved = True
         self.update_board_after_move(board, new_square, old_square)
 
 
@@ -1032,7 +1042,6 @@ class King:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
                 captured_piece = board.squares[new_square]
-                board.update_zobrist_hash([captured_piece, self])
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
@@ -1041,10 +1050,6 @@ class King:
 
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
-            else:
-                board.update_zobrist_hash([self])
-
-            old_square, self.square = self.square, new_square
 
             # Check if king is castling. If so, move the corresponding rook.
             # Validity of castling controlled in King.update_moves().
@@ -1063,8 +1068,22 @@ class King:
                     elif new_square == 62:
                         black_rook_h = board.squares[63]
                         black_rook_h.move_piece(board, 61, castling=True)
+            if self.has_moved is False:
+                self.has_moved = True
+                try:
+                    if captured_piece:
+                        board.update_zobrist_hash([captured_piece, self],
+                                                  lose_castling=True)
+                except UnboundLocalError:
+                    board.update_zobrist_hash([self], lose_castling=True)
+            elif self.has_moved:
+                try:
+                    if captured_piece:
+                        board.update_zobrist_hash([captured_piece, self])
+                except UnboundLocalError:
+                    board.update_zobrist_hash([self])
 
-            self.has_moved = True
+            old_square, self.square = self.square, new_square
             self.update_board_after_move(board, new_square, old_square)
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')

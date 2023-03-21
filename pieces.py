@@ -154,6 +154,7 @@ class _Piece:
         chessboard.last_move_piece = self
         chessboard.last_move_from_to = (old_sq, new_sq)
         chessboard.squares[old_sq], chessboard.squares[new_sq] = ' ', self
+        chessboard.update_zobrist_hash([self], switch_turn=True)
 
 
 class Pawn(_Piece):
@@ -393,8 +394,11 @@ class Pawn(_Piece):
 
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
+            else:
+                board.update_zobrist_hash([self])
             if captured_piece:
                 assert captured_piece.color != self.color
+                board.update_zobrist_hash([captured_piece, self])
                 logging.debug(f"{self} captures {captured_piece}")
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
@@ -507,6 +511,7 @@ class Knight(_Piece):
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
                 captured_piece = board.squares[new_square]
+                board.update_zobrist_hash([captured_piece, self])
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
@@ -515,7 +520,8 @@ class Knight(_Piece):
 
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
-
+            else:
+                board.update_zobrist_hash([self])
             old_square, self.square = self.square, new_square
             self.update_board_after_move(board, new_square, old_square)
 
@@ -593,6 +599,7 @@ class Bishop(_Piece):
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
                 captured_piece = board.squares[new_square]
+                board.update_zobrist_hash([captured_piece, self])
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
@@ -601,6 +608,8 @@ class Bishop(_Piece):
 
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
+            else:
+                board.update_zobrist_hash([self])
 
             old_square, self.square = self.square, new_square
             self.update_board_after_move(board, new_square, old_square)
@@ -675,7 +684,7 @@ class Rook(_Piece):
         self.moves = all_moves
 
     def move_piece(self, board, new_square: int, castling=False):
-        """Move rook."""
+        """Move the rook."""
         if castling:
             if not self.has_moved:
                 # Do not check if new_square is in self.moves
@@ -696,6 +705,7 @@ class Rook(_Piece):
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
                 captured_piece = board.squares[new_square]
+                board.update_zobrist_hash([captured_piece, self])
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
@@ -704,6 +714,8 @@ class Rook(_Piece):
 
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
+            else:
+                board.update_zobrist_hash([self])
             old_square, self.square = self.square, new_square
         else:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
@@ -784,6 +796,7 @@ class Queen(_Piece):
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
                 captured_piece = board.squares[new_square]
+                board.update_zobrist_hash([captured_piece, self])
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
@@ -791,6 +804,8 @@ class Queen(_Piece):
                     board.white_pieces.remove(captured_piece)
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
+            else:
+                board.update_zobrist_hash([self])
             old_square, self.square = self.square, new_square
             self.update_board_after_move(board, new_square, old_square)
         else:
@@ -902,15 +917,11 @@ class King:
         """Add any possible castling moves to self.moves."""
         # Could be less repetitive. What is the straightforward fix?
         all_squares = board.squares
-        if self.has_moved or self.in_check:
-            return
+        if self.has_moved:
+            return False, False
 
-        # Booleans and contents of return statements for
-        # chess_utilities.export_board_to_FEN().
-        white_castle_queenside = False
-        white_castle_kingside = False
-        black_castle_queenside = False
-        black_castle_kingside = False
+        castle_kingside = False
+        castle_queenside = False
         if self.color == 'white' and self.square == 4:
             # Can white castle kingside
             try:
@@ -921,8 +932,9 @@ class King:
                         all_squares[5] == all_squares[6] == ' ',
                         5 not in board.black_controlled_squares,
                         6 not in board.black_controlled_squares]):
-                    self.moves.append(6)
-                    white_castle_kingside = True
+                    castle_kingside = True
+                    if not self.in_check:
+                        self.moves.append(6)
             except AttributeError:
                 pass
             try:
@@ -935,8 +947,9 @@ class King:
                         all_squares[1] == all_squares[3] == ' ',
                         2 not in board.black_controlled_squares,
                         3 not in board.black_controlled_squares]):
-                    self.moves.append(2)
-                    white_castle_queenside = True
+                    castle_queenside = True
+                    if not self.in_check:
+                        self.moves.append(2)
             except AttributeError:
                 pass
 
@@ -950,8 +963,9 @@ class King:
                         all_squares[61] == all_squares[62] == ' ',
                         61 not in board.white_controlled_squares,
                         62 not in board.white_controlled_squares]):
-                    self.moves.append(62)
-                    black_castle_kingside = True
+                    castle_kingside = True
+                    if not self.in_check:
+                        self.moves.append(62)
             except AttributeError:
                 pass
             # Can black castle queenside
@@ -964,13 +978,13 @@ class King:
                         all_squares[57] == all_squares[59] == ' ',
                         58 not in board.white_controlled_squares,
                         59 not in board.white_controlled_squares]):
-                    self.moves.append(58)
-                    black_castle_queenside = True
+                    castle_queenside = True
+                    if not self.in_check:
+                        self.moves.append(58)
             except AttributeError:
                 pass
 
-        return (white_castle_kingside, white_castle_queenside,
-                black_castle_kingside, black_castle_queenside)
+        return castle_kingside, castle_queenside
 
     def remove_moves_to_attacked_squares(self, white_controlled_squares: set,
                                          black_controlled_squares: set):
@@ -1010,6 +1024,7 @@ class King:
         chessboard.last_move_piece = self
         chessboard.last_move_from_to = (old_sq, new_sq)
         chessboard.squares[old_sq], chessboard.squares[new_sq] = ' ', self
+        chessboard.update_zobrist_hash([self], switch_turn=True)
 
     def move_piece(self, board, new_square: int):
         """Move the king."""
@@ -1017,6 +1032,7 @@ class King:
             if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
                                                       Rook, Queen)):
                 captured_piece = board.squares[new_square]
+                board.update_zobrist_hash([captured_piece, self])
                 assert captured_piece.color != self.color
                 if self.color == 'white':
                     board.black_pieces.remove(captured_piece)
@@ -1025,6 +1041,8 @@ class King:
 
             elif isinstance(board.squares[new_square], King):
                 raise Exception('King should not be able to be captured.')
+            else:
+                board.update_zobrist_hash([self])
 
             old_square, self.square = self.square, new_square
 

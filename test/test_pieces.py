@@ -19,9 +19,13 @@ class SetUpTearDown(unittest.TestCase):
         chessboard = board.Board()
         global all_squares
         all_squares = chessboard.squares
+        chessboard.last_move_piece = pieces.Pawn('placeholder',
+                                                 'black',
+                                                 100)
 
     def tearDown(self):
         """Remove variables used in previous test."""
+        # Refactor? May decrease test isolation if removed.
         global chessboard
         del chessboard
         global all_squares
@@ -61,6 +65,57 @@ class TestPieces(SetUpTearDown):
         # This test will fail if the new_squares are changed, so it works.
         for ind, piece in enumerate(white_pieces):
             self.assertEqual(all_squares[new_squares[ind]], piece)
+
+    def test_zobrist_hash_updates_on_piece_movement(self):
+        """Piece moves update the hash."""
+        chessboard = chess_utilities.import_fen_to_board('8/8/8/8/8/8/8/6NR w')
+        chessboard.update_zobrist_hash()
+        expected = chessboard.hash_nums[1][6] ^ chessboard.hash_nums[3][7]
+        self.assertEqual(chessboard.zobrist_hash, expected)
+
+        chessboard.squares[7].update_moves(chessboard)
+        chessboard.squares[7].move_piece(chessboard, 15)
+        expected = chessboard.hash_nums[1][6] ^ chessboard.hash_nums[3][15]\
+            ^ chessboard.hash_nums[12]
+        self.assertEqual(chessboard.zobrist_hash, expected)
+
+    def test_zobrist_hash_updates_on_capture(self):
+        """Captures update the hash."""
+        chessboard = chess_utilities.import_fen_to_board('8/8/8/8/8/8/7q/7R w')
+        chessboard.update_zobrist_hash()
+        expected = chessboard.hash_nums[10][15] ^ chessboard.hash_nums[3][7]
+        self.assertEqual(chessboard.zobrist_hash, expected)
+
+        chessboard.squares[7].update_moves(chessboard)
+        chessboard.squares[7].move_piece(chessboard, 15)
+        self.assertEqual(
+            chessboard.zobrist_hash,
+            chessboard.hash_nums[3][15] ^ chessboard.hash_nums[12])
+
+    def test_zobrist_hash_updates_on_double_pawn_move(self):
+        """Hash includes existence/expiration of an en passant square."""
+        chessboard = chess_utilities.import_fen_to_board('8/8/8/8/8/8/7P/8 w')
+        chessboard.update_zobrist_hash()
+        expected = chessboard.hash_nums[0][15]
+        self.assertEqual(chessboard.zobrist_hash, expected)
+        # Double pawn move. Switch turn to black.
+        chessboard.squares[15].update_moves(chessboard)
+        chessboard.squares[15].move_piece(chessboard, 31)
+        expected = chessboard.hash_nums[0][31] ^ chessboard.hash_nums[12] \
+            ^ chessboard.hash_nums[13][7]
+        self.assertEqual(chessboard.zobrist_hash, expected)
+        # Undo double pawn move xor on the next move. Returned to white turn
+        chessboard.squares[31].update_moves(chessboard)
+        chessboard.squares[31].move_piece(chessboard, 39)
+        expected = chessboard.hash_nums[0][39]
+        self.assertEqual(chessboard.zobrist_hash, expected)
+
+    @unittest.skip('')
+    def test_zobrist_hash_castling(self):
+        """Hash includes any remaining castling rights."""
+        # TODO: Hash castling availablility.
+        # TODO: Perft stopped working? super slow?
+        self.assertEqual(0, 1)
 
     def test_pawn_movement(self):
         """Pawns can move forward by one or two squares on their first move.

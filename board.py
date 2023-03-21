@@ -15,7 +15,7 @@ class Board:
         __init__()
         __repr__()
         initialize_pieces()
-        find_zobrist_hash()
+        update_zobrist_hash()
         update_moves_white()
         update_moves_black()
         update_king_moves()
@@ -50,6 +50,8 @@ class Board:
     hash_nums.append(random.randint(0, 2 ** 64 - 1))
     # File of a valid ep square, A to H.
     hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(8)])
+    # Castling.
+    hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(4)])
 
     def __init__(self):
         self.squares = [' '] * 64
@@ -60,8 +62,9 @@ class Board:
         self.white_king = None
         self.black_king = None
         self.last_move_piece = None
-        self.last_move_from_to = (None, None)
-        self.zobrist_hash = None
+        self.last_move_from_to = (-1, -1)
+        self.zobrist_hash = 0
+        self.ep_hash_to_undo = None
         # Convert a square as algebraic notation to Board.squares index.
 
     def __repr__(self):
@@ -158,26 +161,52 @@ class Board:
                                            100)
         self.last_move_from_to = (-1, -1)
 
-    def find_zobrist_hash(self):
-        """Return Zobrist hash of the position."""
-        zobrist_hash = 0
-        for piece in self.white_pieces + self.black_pieces:
+    def update_zobrist_hash(self, pieces=None, switch_turn=False):
+        """Return Zobrist hash of the position and update hash attribute."""
+        if switch_turn:
+            self.zobrist_hash ^= self.hash_nums[12]
+        if not pieces:
+            pieces = self.white_pieces + self.black_pieces
+        for piece in pieces:
             if piece.color == 'white':
                 color = 0
             else:
                 color = 6
-            for i, name in enumerate('pnbrqk'):
-                if piece.name[0].lower() == name:
-                    piece_type = i
-            zobrist_hash ^= self.hash_nums[color + piece_type][piece.square]
-        if self.last_move_piece.color == 'white':
-            zobrist_hash ^= self.hash_nums[12]
+            piece_name = piece.name[0].lower()
+            # If/elif should be faster than for loop. Not profiled.
+            if piece_name == 'p':
+                piece_type = 0
+            elif piece_name == 'n':
+                piece_type = 1
+            elif piece_name == 'b':
+                piece_type = 2
+            elif piece_name == 'r':
+                piece_type = 3
+            elif piece_name == 'q':
+                piece_type = 4
+            elif piece_name == 'k':
+                piece_type = 5
+            else:
+                raise ValueError(f'Invalid name: {piece.name}')
+            self.zobrist_hash ^= \
+                self.hash_nums[color + piece_type][piece.square]
+
+        if self.ep_hash_to_undo is not None:
+            self.zobrist_hash ^= self.ep_hash_to_undo
+            self.ep_hash_to_undo = None
         if all([self.last_move_piece.name[0].lower() == 'p',
                 abs(self.last_move_from_to[0]
                     - self.last_move_from_to[1]) == 16]):
-            zobrist_hash ^= self.hash_nums[-1][piece.square % 8]
-        self.zobrist_hash = zobrist_hash
-        return zobrist_hash
+            self.zobrist_hash ^= self.hash_nums[13][piece.square % 8]
+            self.ep_hash_to_undo = self.hash_nums[13][piece.square % 8]
+        castling_available = [0] * 4
+        if self.white_king:
+            castling_available[0], castling_available[1] = \
+                self.white_king.add_castling_moves(self)
+        if self.black_king:
+            castling_available[2], castling_available[3] = \
+                self.black_king.add_castling_moves(self)
+        # TODO: finish castling.
 
     def update_king_moves(self):
         """King moves are dependant on the possbile moves of all opponent

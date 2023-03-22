@@ -226,6 +226,6 @@ class TestBoard(unittest.TestCase):
         """Hash value is a deterministic constant."""
         chessboard = board.Board()
         chessboard.initialize_pieces()
-        chessboard.update_zobrist_hash(),
+        chessboard.update_zobrist_hash()
         self.assertEqual(chessboard.zobrist_hash,
-                         5655539188076520372)
+                         14313509199228036511)

@@ -212,20 +212,18 @@ class Board:
                     and self.squares[0].color == 'white' \
                     and self.squares[7].color == 'white' \
                     and self.squares[56].color == 'black' \
-                    and self.squares[63].color == 'black':
+                    and self.squares[63].color == 'black' \
+                    and self.squares[0].has_moved is False \
+                    and self.squares[7].has_moved is False \
+                    and self.squares[56].has_moved is False \
+                    and self.squares[63].has_moved is False \
+                    and self.white_king.has_moved is False \
+                    and self.black_king.has_moved is False:
                 kings_rooks_on_start_squares = True
         if not self.applied_initial_castling_hash \
                 and kings_rooks_on_start_squares:
-            castling_available = [False] * 4
-            if self.white_king:
-                castling_available[0], castling_available[1] = \
-                    self.white_king.add_castling_moves(self)
-            if self.black_king:
-                castling_available[2], castling_available[3] = \
-                    self.black_king.add_castling_moves(self)
-            for i, castle_move in enumerate(castling_available):
-                if castle_move is True:
-                    self.zobrist_hash ^= self.hash_nums[14][i]
+            for hash_num in self.hash_nums[14]:
+                self.zobrist_hash ^= hash_num
             self.applied_initial_castling_hash = True
 
         if lose_castling and self.white_king and self.black_king:

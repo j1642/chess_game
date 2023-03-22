@@ -552,17 +552,21 @@ if __name__ == '__main__':
                 print('id name', engine_name)
                 print('id author j1642')
                 print('uciok')
+                return
             elif command[0] == 'isready':
                 print('readyok')
+                return
             elif command[0] == 'ucinewgame':
                 print('readyok')
+                return
             elif command[0] == 'd':
                 print('\n', chessboard, sep='')
+                return
             elif command[0] == 'stop':
-                # stop should not flow to here
+                # stop should not flow to here.
                 return
             elif command[0] == 'quit':
-                # quit should not flow to here
+                # quit should not flow to here.
                 return
             elif command[0] == 'register':
                 # Not planned.
@@ -616,7 +620,7 @@ if __name__ == '__main__':
                         moving_piece.move_piece(chessboard, square_to)
 
         elif command[0] == 'go':
-            # Lots of subcommands. Find index (if exists) of each first?
+            # TODO: info stdout, time commands.
             searchmoves = None
             if 'searchmoves' in command:
                 # Only look at subtrees of given moves.
@@ -649,7 +653,7 @@ if __name__ == '__main__':
             if command[1] == 'depth':
                 try:
                     if command[2].isdigit():
-                        # print "info depth 1 seldepth 0", ...
+                        # TODO: print "info depth 1 seldepth 0", ...
                         depth = int(command[2])
                     else:
                         print('Unknown command')
@@ -658,7 +662,7 @@ if __name__ == '__main__':
                     return
 
                 def print_bestmove(depth, stop, quit):
-                    """Second thread, may be inturrupted by Events."""
+                    """Second thread, may be interrupted by Events."""
                     bestmove = negamax(chessboard, depth,
                                        stop=stop, quit=quit,
                                        searchmoves=searchmoves)[1]

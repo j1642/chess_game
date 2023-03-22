@@ -282,6 +282,7 @@ class Board:
 
         for piece in self.white_pieces:
             piece.update_moves(self)
+            # TODO: switch next two lines
             for move in piece.moves:
                 if not isinstance(piece, pieces.Pawn):
                     white_controlled_squares.append(move)
@@ -298,6 +299,7 @@ class Board:
 
         for piece in self.black_pieces:
             piece.update_moves(self)
+            # TODO: switch next two lines
             for move in piece.moves:
                 if not isinstance(piece, pieces.Pawn):
                     black_controlled_squares.append(move)
@@ -447,12 +449,27 @@ class Board:
                                        + checking_pieces_squares)
 
         for piece in friendly_pieces:
-            if not isinstance(piece, pieces.King):
-                if len(checking_pieces) == 1:
-                    legal_moves = all_legal_moves_in_check & set(piece.moves)
-                    piece.moves = list(legal_moves)
-                elif len(checking_pieces) > 1:
-                    piece.moves = []
-                else:
-                    raise ValueError('Length of checking_pieces should be'
-                                     ' >= 1')
+            if isinstance(piece, pieces.King):
+                continue
+            if len(checking_pieces) == 1:
+                legal_moves = all_legal_moves_in_check & set(piece.moves)
+                piece.moves = list(legal_moves)
+                if isinstance(checking_pieces[0], pieces.Pawn) \
+                        and isinstance(piece, pieces.Pawn) \
+                        and piece.en_passant_move \
+                        and abs(checking_pieces[0].square - piece.square) == 1:
+                    if piece.color == 'white' \
+                            and piece.square in pieces.ranks_files.rank_6 \
+                            and checking_pieces[0].square \
+                            in pieces.ranks_files.rank_6:
+                        piece.moves.append(piece.en_passant_move)
+                    elif piece.color == 'black' \
+                            and piece.square in pieces.ranks_files.rank_4 \
+                            and checking_pieces[0].square \
+                            in pieces.ranks_files.rank_4:
+                        piece.moves.append(piece.en_passant_move)
+            elif len(checking_pieces) > 1:
+                piece.moves = []
+            else:
+                raise ValueError('Length of checking_pieces should be'
+                                 ' >= 1')

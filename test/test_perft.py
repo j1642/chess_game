@@ -161,3 +161,12 @@ class TestPerft(unittest.TestCase):
         chessboard.squares[52].move_piece(chessboard, 36)
         # 5b2/8/8/4pP2/1K6/8/8/7k w - e6 0 1
         self.assertEqual(perft(chessboard, 1), 6)
+
+    def test_en_passant_escapes_check(self):
+        """En passant can be legal when king is in check."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/K7/7k/5p2/8/6P1/8 w')
+        chessboard.squares[14].update_moves(chessboard)
+        chessboard.squares[14].move_piece(chessboard, 30)
+        # 8/8/K7/7k/5pP1/8/8/8 b - g3 0 1
+        self.assertEqual(perft(chessboard, 2), 33)

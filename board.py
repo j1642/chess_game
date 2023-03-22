@@ -282,9 +282,8 @@ class Board:
 
         for piece in self.white_pieces:
             piece.update_moves(self)
-            # TODO: switch next two lines
-            for move in piece.moves:
-                if not isinstance(piece, pieces.Pawn):
+            if not isinstance(piece, pieces.Pawn):
+                for move in piece.moves:
                     white_controlled_squares.append(move)
             for square in piece.protected_squares:
                 white_controlled_squares.append(square)
@@ -299,9 +298,8 @@ class Board:
 
         for piece in self.black_pieces:
             piece.update_moves(self)
-            # TODO: switch next two lines
-            for move in piece.moves:
-                if not isinstance(piece, pieces.Pawn):
+            if not isinstance(piece, pieces.Pawn):
+                for move in piece.moves:
                     black_controlled_squares.append(move)
             for square in piece.protected_squares:
                 black_controlled_squares.append(square)

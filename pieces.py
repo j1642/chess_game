@@ -367,46 +367,45 @@ class Pawn(_Piece):
         self.protected_squares = []
         self.en_passant_move = None
 
-        forward_direction = 8
-        if self.color == 'black':
+        if self.color == 'white':
+            forward_direction = 8
+        else:
             forward_direction = -8
 
         square_in_front = self.square + forward_direction
-
-        if 0 <= square_in_front <= 63:
-            self.add_en_passant_moves(board)
-            # Prevent forward moves if there is a piece blocking the way.
-            if all_squares[square_in_front] == ' ':
-                if self.has_moved:
-                    self.moves.append(square_in_front)
-                else:
-                    self.moves.append(square_in_front)
-                    two_squares_ahead = square_in_front + forward_direction
-                    if all_squares[two_squares_ahead] == ' ':
-                        self.moves.append(two_squares_ahead)
-
-            # Limit capture directions if pawn is in the A or H file.
-            if self.color == 'white':
-                capture_directions = (9, 7)
-            else:
-                capture_directions = (-7, -9)
-            if self.square in ranks_files.a_file:
-                capture_directions = capture_directions[:1]
-            elif self.square in ranks_files.h_file:
-                capture_directions = capture_directions[1:]
-
-            # Check for valid captures and protected squares.
-            for direction in capture_directions:
-                diagonal_square = self.square + direction
-                self.protected_squares.append(diagonal_square)
-                try:
-                    square_contents = all_squares[diagonal_square].color
-                    if square_contents != self.color:
-                        self.moves.append(diagonal_square)
-                except AttributeError:
-                    continue
-        else:
+        if not 0 <= square_in_front <= 63:
             raise TypeError('Pawn should not exist on final rank.')
+
+        try:
+            if self.color != board.last_move_piece.color:
+                self.add_en_passant_moves(board)
+        except AttributeError:
+            pass
+        # Prevent forward moves if there is a piece blocking the way.
+        if all_squares[square_in_front] == ' ':
+            self.moves.append(square_in_front)
+            if not self.has_moved:
+                two_squares_ahead = square_in_front + forward_direction
+                if all_squares[two_squares_ahead] == ' ':
+                    self.moves.append(two_squares_ahead)
+        # Limit capture directions if pawn is in the A or H file.
+        if self.color == 'white':
+            capture_directions = (9, 7)
+        else:
+            capture_directions = (-7, -9)
+        if self.square in ranks_files.a_file:
+            capture_directions = capture_directions[:1]
+        elif self.square in ranks_files.h_file:
+            capture_directions = capture_directions[1:]
+        # Check for valid captures and protected squares.
+        for direction in capture_directions:
+            diagonal_square = self.square + direction
+            self.protected_squares.append(diagonal_square)
+            try:
+                if self.color != all_squares[diagonal_square].color:
+                    self.moves.append(diagonal_square)
+            except AttributeError:
+                pass
 
     def add_en_passant_moves(self, board):
         """Check for any valid en passant captures.
@@ -418,18 +417,11 @@ class Pawn(_Piece):
         if board.last_move_from_to == (None, None):
             return
         last_move_from, last_move_to = board.last_move_from_to
-        try:
-            if not isinstance(board.last_move_piece, Pawn):
-                return
-            elif abs(last_move_from - last_move_to) != 16:
-                return
-        except TypeError:
-            print('TypeError in Pawn.add_en_passant_moves(). Possibly caused',
-                  'by chessboard.last_move_from_to being (None, None).',
-                  f'last_move_from={last_move_from}',
-                  f'last_move_to={last_move_to}')
+        if abs(last_move_from - last_move_to) != 16:
+            return
+        if not isinstance(board.last_move_piece, Pawn):
+            return
         # Last piece moved was a pawn and it advanced two squares.
-        en_passant_squares = []
         if last_move_to in ranks_files.a_file:
             en_passant_squares = [last_move_to + 1]
         elif last_move_to in ranks_files.h_file:
@@ -439,12 +431,10 @@ class Pawn(_Piece):
             # Board.last_move_from_to is not None.
             en_passant_squares = [last_move_to + 1, last_move_to - 1]
 
-        for attacker_square in en_passant_squares:
-            if self.square == attacker_square:
-                if board.last_move_piece.color != self.color:
-                    ep_square = (last_move_from + last_move_to) // 2
-                    self.moves.append(ep_square)
-                    self.en_passant_move = ep_square
+        if self.square in en_passant_squares:
+            ep_square = (last_move_from + last_move_to) // 2
+            self.moves.append(ep_square)
+            self.en_passant_move = ep_square
 
     def promote_pawn(self, board, promote_to=None):
         """Immediately promote pawn when it advances to its final row."""
@@ -495,62 +485,58 @@ class Pawn(_Piece):
             Piece type to promote to, if promoting. Ex: 'queen'
 
         """
-        if isinstance(new_square, tuple) and len(new_square) == 2:
-            new_square, promote_to = new_square
-            if any([not isinstance(new_square, int),
-                    not isinstance(promote_to, str)]):
-                raise TypeError("invalid type in 'new_square'")
-        elif not isinstance(new_square, int):
-            raise TypeError("invalid 'new_square' type")
+        try:
+            if len(new_square) == 2:
+                new_square, promote_to = new_square
+        except TypeError:
+            pass
 
-        if new_square in self.moves:
-            captured_piece = None
-            if new_square == self.en_passant_move:
-                captured_piece_square = board.last_move_from_to[1]
-                captured_piece = board.squares[captured_piece_square]
-                assert isinstance(captured_piece, Pawn)
-                en_passant = True
-
-            elif isinstance(board.squares[new_square],
-                            (Pawn, Knight, Bishop, Rook, Queen)):
-                captured_piece = board.squares[new_square]
-                en_passant = False
-
-            elif isinstance(board.squares[new_square], King):
-                raise Exception('King should not be able to be captured.')
-            else:
-                board.update_zobrist_hash([self])
-            if captured_piece:
-                assert captured_piece.color != self.color
-                board.update_zobrist_hash([captured_piece, self])
-                logging.debug(f"{self} captures {captured_piece}")
-                if self.color == 'white':
-                    board.black_pieces.remove(captured_piece)
-                    logging.debug('removing captured_piece from black_pieces')
-                    logging.debug('len(black_pieces) = '
-                                  f'{len(board.black_pieces)}')
-                else:
-                    board.white_pieces.remove(captured_piece)
-                    logging.debug('removing captured_piece from white_pieces')
-                    logging.debug('len(white_pieces) = '
-                                  f'{len(board.white_pieces)}')
-                if en_passant:
-                    board.squares[captured_piece_square] = ' '
-
-            self.has_moved = True
-            old_square, self.square = self.square, new_square
-            self.update_board_after_move(board, new_square, old_square)
-
-            if self.color == 'white' and self.square in list(range(56, 64)):
-                self.promote_pawn(board, promote_to)
-                board.last_move_piece = board.squares[new_square]
-            elif self.color == 'black' and self.square in list(range(0, 8)):
-                self.promote_pawn(board, promote_to)
-                board.last_move_piece = board.squares[new_square]
-
-        else:
+        if new_square not in self.moves:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
+        captured_piece = None
+        if new_square == self.en_passant_move:
+            captured_piece_square = board.last_move_from_to[1]
+            captured_piece = board.squares[captured_piece_square]
+            assert isinstance(captured_piece, Pawn)
+            en_passant = True
+
+        elif isinstance(board.squares[new_square],
+                        (Pawn, Knight, Bishop, Rook, Queen)):
+            captured_piece = board.squares[new_square]
+            en_passant = False
+
+        elif isinstance(board.squares[new_square], King):
+            raise Exception('King should not be able to be captured.')
+        else:
+            board.update_zobrist_hash([self])
+        if captured_piece:
+            assert captured_piece.color != self.color
+            board.update_zobrist_hash([captured_piece, self])
+            logging.debug(f"{self} captures {captured_piece}")
+            if self.color == 'white':
+                board.black_pieces.remove(captured_piece)
+                logging.debug('removing captured_piece from black_pieces')
+                logging.debug('len(black_pieces) = '
+                              f'{len(board.black_pieces)}')
+            else:
+                board.white_pieces.remove(captured_piece)
+                logging.debug('removing captured_piece from white_pieces')
+                logging.debug('len(white_pieces) = '
+                              f'{len(board.white_pieces)}')
+            if en_passant:
+                board.squares[captured_piece_square] = ' '
+
+        self.has_moved = True
+        old_square, self.square = self.square, new_square
+        self.update_board_after_move(board, new_square, old_square)
+
+        if self.color == 'white' and self.square in ranks_files.rank_8:
+            self.promote_pawn(board, promote_to)
+            board.last_move_piece = board.squares[new_square]
+        elif self.color == 'black' and self.square in ranks_files.rank_1:
+            self.promote_pawn(board, promote_to)
+            board.last_move_piece = board.squares[new_square]
 
 
 class Knight(_Piece):

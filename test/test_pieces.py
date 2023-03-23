@@ -856,3 +856,30 @@ class TestPieces(SetUpTearDown):
 
         self.assertTrue(white_rook.is_pinned(chessboard))
         self.assertEqual(white_rook.moves, [0, 1, 2])
+
+    def test_is_pinned_alignment(self):
+        """Piece orientation and ordering determines pin presence."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/8/8/8/8/8/2KRq3 w')
+        white_rook = chessboard.squares[3]
+        self.assertTrue(white_rook.is_pinned(chessboard))
+
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/8/8/8/8/8/2KR1qqq w')
+        white_rook = chessboard.squares[3]
+        self.assertTrue(white_rook.is_pinned(chessboard))
+
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/8/8/8/8/8/q1KR1qqq w')
+        white_rook = chessboard.squares[3]
+        self.assertTrue(white_rook.is_pinned(chessboard))
+
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/8/8/8/8/8/q1KRbqqq w')
+        white_rook = chessboard.squares[3]
+        self.assertFalse(white_rook.is_pinned(chessboard))
+
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/8/8/8/8/8/8/q1KRBqqq w')
+        white_rook = chessboard.squares[3]
+        self.assertFalse(white_rook.is_pinned(chessboard))

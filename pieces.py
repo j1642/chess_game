@@ -111,8 +111,9 @@ class _Piece:
     def is_pinned(self, chessboard):
         """Detect if a piece is pinned. If pinned, remove illegal moves.
 
-        Do a quick preliminary check to find if there is a pin. If so,
-        restrict pinned piece moves.
+        Initially checks if piece alignment between self, friendly king,
+        and opponent's sliding pieces (bishop, rook, queen) can have a
+        pin.
         """
         if self.color == 'white':
             friendly_king = chessboard.white_king
@@ -151,7 +152,9 @@ class _Piece:
             shared = (top_left_low_right_diagonal, 'diagonal')
         else:
             return False
+
         possible_pin = False
+        pinning_pieces_squares = []
         if shared[1] == 'diagonal':
             pinning_pieces = (Bishop, Queen)
         else:
@@ -162,10 +165,52 @@ class _Piece:
                         and isinstance(chessboard.squares[square],
                                        pinning_pieces):
                     possible_pin = True
+                    pinning_pieces_squares.append(square)
             except AttributeError:
-                continue
+                pass
         if not possible_pin:
             return False
+
+        king_found = False
+        pinned_piece_found = False
+        shared = sorted(list(shared[0]))
+        pinning_pieces_squares.sort()
+        if friendly_king.square < self.square:
+            for pinning_piece_square in pinning_pieces_squares:
+                if self.square < pinning_piece_square:
+                    break
+            else:
+                return False
+        elif friendly_king.square > self.square:
+            for pinning_piece_square in pinning_pieces_squares:
+                if self.square > pinning_piece_square:
+                    break
+            else:
+                return False
+            shared = reversed(shared)
+        else:
+            return False
+        for square in shared:
+            if not king_found:
+                if square == friendly_king.square:
+                    king_found = True
+            else:
+                if not pinned_piece_found:
+                    if square == self.square:
+                        pinned_piece_found = True
+                    elif chessboard.squares[square] != ' ':
+                        # Blocking piece between self and king.
+                        return False
+                else:
+                    try:
+                        if square == pinning_piece_square:
+                            # Correct piece order for a pin.
+                            break
+                        elif chessboard.squares[square].color:
+                            # Blocking piece.
+                            return False
+                    except AttributeError:
+                        pass
 
         orig_white_controlled_squares = chessboard.white_controlled_squares
         orig_black_controlled_squares = chessboard.black_controlled_squares
@@ -303,8 +348,7 @@ class Pawn(_Piece):
             else:
                 # King is in check from a double moved pawn. En passant
                 # will capture the checking pawn.
-                # Moves list is empty b/c all moves which don't escape
-                # check were removed. Keeping this move is the exception.
+                # Implementation moved to Board.moves_must_escape_...()
                 pass
         # Reset
         chessboard.squares[self.square] = self

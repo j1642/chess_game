@@ -66,6 +66,33 @@ class RanksFiles:
         self.ranks = (self.rank_1, self.rank_2, self.rank_3, self.rank_4,
                       self.rank_5, self.rank_6, self.rank_7, self.rank_8)
 
+        # Only includes diagonals which may contain pins, 3+ squares long
+        self.top_left_low_right_diagonals = [
+            {i for i in range(16, 0, -7)},
+            {i for i in range(24, 0, -7)},
+            {i for i in range(32, 0, -7)},
+            {i for i in range(40, 0, -7)},
+            {i for i in range(48, 0, -7)},
+            {i for i in range(56, 0, -7)},
+            {i for i in range(57, 14, -7)},
+            {i for i in range(58, 22, -7)},
+            {i for i in range(59, 30, -7)},
+            {i for i in range(60, 38, -7)},
+            {i for i in range(61, 46, -7)}]
+
+        self.low_left_top_right_diagonals = [
+            {i for i in range(5, 24, 9)},
+            {i for i in range(4, 32, 9)},
+            {i for i in range(3, 40, 9)},
+            {i for i in range(2, 48, 9)},
+            {i for i in range(1, 56, 9)},
+            {i for i in range(0, 64, 9)},
+            {i for i in range(8, 64, 9)},
+            {i for i in range(16, 64, 9)},
+            {i for i in range(24, 64, 9)},
+            {i for i in range(32, 64, 9)},
+            {i for i in range(40, 64, 9)}]
+
 
 ranks_files = RanksFiles()
 
@@ -87,6 +114,59 @@ class _Piece:
         Do a quick preliminary check to find if there is a pin. If so,
         restrict pinned piece moves.
         """
+        if self.color == 'white':
+            friendly_king = chessboard.white_king
+        else:
+            friendly_king = chessboard.black_king
+
+        for rank in ranks_files.ranks:
+            if self.square in rank:
+                break
+        else:
+            raise ValueError('square must be in one rank')
+        for file_ in ranks_files.files:
+            if self.square in file_:
+                break
+        else:
+            raise ValueError('square must be in one file')
+        for low_left_top_right_diagonal \
+                in ranks_files.low_left_top_right_diagonals:
+            if self.square in low_left_top_right_diagonal:
+                break
+        else:
+            assert self.square in [48, 56, 57, 6, 7, 15]
+        for top_left_low_right_diagonal in \
+                ranks_files.top_left_low_right_diagonals:
+            if self.square in top_left_low_right_diagonal:
+                break
+        else:
+            assert self.square in [0, 1, 8, 62, 63, 55]
+        if friendly_king.square in rank:
+            shared = (rank, 'rank')
+        elif friendly_king.square in file_:
+            shared = (file_, 'file')
+        elif friendly_king.square in low_left_top_right_diagonal:
+            shared = (low_left_top_right_diagonal, 'diagonal')
+        elif friendly_king.square in top_left_low_right_diagonal:
+            shared = (top_left_low_right_diagonal, 'diagonal')
+        else:
+            return False
+        possible_pin = False
+        if shared[1] == 'diagonal':
+            pinning_pieces = (Bishop, Queen)
+        else:
+            pinning_pieces = (Rook, Queen)
+        for square in shared[0]:
+            try:
+                if self.color != chessboard.squares[square].color \
+                        and isinstance(chessboard.squares[square],
+                                       pinning_pieces):
+                    possible_pin = True
+            except AttributeError:
+                continue
+        if not possible_pin:
+            return False
+
         orig_white_controlled_squares = chessboard.white_controlled_squares
         orig_black_controlled_squares = chessboard.black_controlled_squares
         w_attacked_sqrs = []
@@ -225,7 +305,7 @@ class Pawn(_Piece):
                 # will capture the checking pawn.
                 # Moves list is empty b/c all moves which don't escape
                 # check were removed. Keeping this move is the exception.
-                self.moves.append(self.en_passant_move)
+                pass
         # Reset
         chessboard.squares[self.square] = self
         chessboard.squares[capturable_pawn.square] = capturable_pawn

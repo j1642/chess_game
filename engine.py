@@ -353,16 +353,12 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
             saved_move_loop = save_state_per_move(chessboard, move, piece)
             piece.move_piece(chessboard, move)
             if friendly_king.color == 'white':
-                w_controlled_sqrs = None
-                b_controlled_sqrs = chessboard.find_sliding_controlled_squares(
-                    'black')
+                chessboard.update_black_controlled_squares()
             else:
-                b_controlled_sqrs = None
-                w_controlled_sqrs = chessboard.find_sliding_controlled_squares(
-                    'white')
+                chessboard.update_white_controlled_squares()
             if friendly_king.check_if_in_check(
-                    w_controlled_sqrs,
-                    b_controlled_sqrs):
+                    chessboard.white_controlled_squares,
+                    chessboard.black_controlled_squares):
                 friendly_king.in_check = False
             else:
                 values = negamax(chessboard, depth - 1, -1 * beta,

@@ -973,7 +973,6 @@ class King:
             directions = directions[:5]
         elif self.square in ranks_files.rank_8:
             directions = directions[3:]
-
         if self.square in ranks_files.a_file:
             for direction in (7, -1, -9):
                 try:
@@ -987,26 +986,23 @@ class King:
                 except ValueError:
                     continue
 
+        if self.color == 'white':
+            opponent_controlled_squares = board.black_controlled_squares
+        else:
+            opponent_controlled_squares = board.white_controlled_squares
         for direction in directions:
             new_square = self.square + direction
-            if -1 < new_square < 64:
-                all_moves.append(self.square + direction)
+            self.protected_squares.append(new_square)
+            if new_square not in opponent_controlled_squares:
+                all_moves.append(new_square)
 
-        self.protected_squares = all_moves.copy()
-        # Remove moves where a friendly piece is. Castling checks this within
-        # its own block.
         for square in self.protected_squares:
             try:
                 if self.color == all_squares[square].color:
                     all_moves.remove(square)
-            except AttributeError:
+            except (AttributeError, ValueError):
                 continue
 
-        # Prevent checked king from moving into a square where the king
-        # would still be in check, but where the new square was not
-        # under attack previously.
-        # E.g. A checked king moving from e1 to f1 with the opponent's rook
-        # on a1 would still be in check.
         if self.check_if_in_check(board.white_controlled_squares,
                                   board.black_controlled_squares):
             checking_pieces = board.find_checking_pieces()
@@ -1017,7 +1013,6 @@ class King:
             else:
                 board.update_white_controlled_squares()
             board.squares[self.square] = self
-
             # If a pawn is checking the king, the pawn cannot detect the
             # "invisible" checked king when the pawn's moves are updated in the
             # block above.
@@ -1037,11 +1032,9 @@ class King:
         """Add any possible castling moves to self.moves."""
         # Could be less repetitive. What is the straightforward fix?
         all_squares = board.squares
-        if self.has_moved:
-            return False, False
+        if self.has_moved or self.in_check:
+            return
 
-        castle_kingside = False
-        castle_queenside = False
         if self.color == 'white' and self.square == 4:
             # Can white castle kingside
             try:
@@ -1052,9 +1045,7 @@ class King:
                         all_squares[5] == all_squares[6] == ' ',
                         5 not in board.black_controlled_squares,
                         6 not in board.black_controlled_squares]):
-                    castle_kingside = True
-                    if not self.in_check:
-                        self.moves.append(6)
+                    self.moves.append(6)
             except AttributeError:
                 pass
             try:
@@ -1067,9 +1058,7 @@ class King:
                         all_squares[1] == all_squares[3] == ' ',
                         2 not in board.black_controlled_squares,
                         3 not in board.black_controlled_squares]):
-                    castle_queenside = True
-                    if not self.in_check:
-                        self.moves.append(2)
+                    self.moves.append(2)
             except AttributeError:
                 pass
 
@@ -1083,9 +1072,7 @@ class King:
                         all_squares[61] == all_squares[62] == ' ',
                         61 not in board.white_controlled_squares,
                         62 not in board.white_controlled_squares]):
-                    castle_kingside = True
-                    if not self.in_check:
-                        self.moves.append(62)
+                    self.moves.append(62)
             except AttributeError:
                 pass
             # Can black castle queenside
@@ -1098,31 +1085,25 @@ class King:
                         all_squares[57] == all_squares[59] == ' ',
                         58 not in board.white_controlled_squares,
                         59 not in board.white_controlled_squares]):
-                    castle_queenside = True
-                    if not self.in_check:
-                        self.moves.append(58)
+                    self.moves.append(58)
             except AttributeError:
                 pass
 
-        return castle_kingside, castle_queenside
-
-    def remove_moves_to_attacked_squares(self, white_controlled_squares: set,
-                                         black_controlled_squares: set):
+    def remove_moves_to_attacked_squares(self, white_controlled_squares,
+                                         black_controlled_squares):
         """Remove illegal moves into opponent controlled squares from
         King.moves.
-
-        Helper method to King.update_moves().
         """
         if self.color == 'white':
             opponent_controlled_squares = black_controlled_squares
         else:
             opponent_controlled_squares = white_controlled_squares
-        # Sets slower in profiler, faster in isolated experiment.
-        # self.moves = list(set(self.moves) - set(opponent_controlled_squares))
-        for opponent_square in opponent_controlled_squares:
-            if opponent_square in self.moves:
-                # There should be no duplicates in self.moves
-                self.moves.remove(opponent_square)
+
+        moves = self.moves.copy()
+        for move in moves:
+            if move in opponent_controlled_squares:
+                # Assumes no duplicates in self.moves
+                self.moves.remove(move)
 
     def check_if_in_check(self, white_controlled_squares: set,
                           black_controlled_squares: set):
@@ -1148,53 +1129,53 @@ class King:
 
     def move_piece(self, board, new_square: int):
         """Move the king."""
-        if new_square in self.moves:
-            if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
-                                                      Rook, Queen)):
-                captured_piece = board.squares[new_square]
-                assert captured_piece.color != self.color
-                if self.color == 'white':
-                    board.black_pieces.remove(captured_piece)
-                else:
-                    board.white_pieces.remove(captured_piece)
-
-            elif isinstance(board.squares[new_square], King):
-                raise Exception('King should not be able to be captured.')
-
-            # Check if king is castling. If so, move the corresponding rook.
-            # Validity of castling controlled in King.update_moves().
-            if self.has_moved is False:
-                if self.color == 'white':
-                    if new_square == 2:
-                        white_rook_a = board.squares[0]
-                        white_rook_a.move_piece(board, 3, castling=True)
-                    elif new_square == 6:
-                        white_rook_h = board.squares[7]
-                        white_rook_h.move_piece(board, 5, castling=True)
-                else:
-                    if new_square == 58:
-                        black_rook_a = board.squares[56]
-                        black_rook_a.move_piece(board, 59, castling=True)
-                    elif new_square == 62:
-                        black_rook_h = board.squares[63]
-                        black_rook_h.move_piece(board, 61, castling=True)
-            if self.has_moved is False:
-                self.has_moved = True
-                try:
-                    if captured_piece:
-                        board.update_zobrist_hash([captured_piece, self],
-                                                  lose_castling=True)
-                except UnboundLocalError:
-                    board.update_zobrist_hash([self], lose_castling=True)
-            elif self.has_moved:
-                try:
-                    if captured_piece:
-                        board.update_zobrist_hash([captured_piece, self])
-                except UnboundLocalError:
-                    board.update_zobrist_hash([self])
-
-            old_square, self.square = self.square, new_square
-            self.update_board_after_move(board, new_square, old_square)
-        else:
+        if new_square not in self.moves:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
+
+        if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
+                                                  Rook, Queen)):
+            captured_piece = board.squares[new_square]
+            assert captured_piece.color != self.color
+            if self.color == 'white':
+                board.black_pieces.remove(captured_piece)
+            else:
+                board.white_pieces.remove(captured_piece)
+
+        elif isinstance(board.squares[new_square], King):
+            raise Exception('King should not be able to be captured.')
+
+        # Check if king is castling. If so, move the corresponding rook.
+        # Validity of castling controlled in King.update_moves().
+        if self.has_moved is False:
+            if self.color == 'white':
+                if new_square == 2:
+                    white_rook_a = board.squares[0]
+                    white_rook_a.move_piece(board, 3, castling=True)
+                elif new_square == 6:
+                    white_rook_h = board.squares[7]
+                    white_rook_h.move_piece(board, 5, castling=True)
+            else:
+                if new_square == 58:
+                    black_rook_a = board.squares[56]
+                    black_rook_a.move_piece(board, 59, castling=True)
+                elif new_square == 62:
+                    black_rook_h = board.squares[63]
+                    black_rook_h.move_piece(board, 61, castling=True)
+        if self.has_moved is False:
+            self.has_moved = True
+            try:
+                if captured_piece:
+                    board.update_zobrist_hash([captured_piece, self],
+                                              lose_castling=True)
+            except UnboundLocalError:
+                board.update_zobrist_hash([self], lose_castling=True)
+        elif self.has_moved:
+            try:
+                if captured_piece:
+                    board.update_zobrist_hash([captured_piece, self])
+            except UnboundLocalError:
+                board.update_zobrist_hash([self])
+
+        old_square, self.square = self.square, new_square
+        self.update_board_after_move(board, new_square, old_square)

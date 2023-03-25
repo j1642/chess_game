@@ -1,7 +1,12 @@
-"""Algorithms for deciding computer moves."""
+"""Algorithms for deciding computer moves, traversing the move tree, and
+a CLI.
+"""
 
 from functools import reduce
 import logging
+import sys
+import threading
+import time
 
 import board
 import chess_utilities
@@ -525,165 +530,161 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
         pass
 
 
-if __name__ == '__main__':
-    import sys
-    import time
-    import threading
-
-    def uci(command: str, stop: threading.Event, quit: threading.Event):
-        """Interact with the engine using the Universal Chess Interface
-        (UCI).
-        """
-        # TODO: Complete UCI
-        global chessboard
-        engine_name = 'Unnamed Engine 0.x'
-        command = command.split()
-        command = [word.strip() for word in command]
-        assert '' not in command
-        print(command)
-        if command == []:
+def uci(command: str, stop: threading.Event, quit: threading.Event):
+    """Interact with the engine using the Universal Chess Interface
+    (UCI).
+    """
+    # TODO: Complete UCI
+    global chessboard
+    engine_name = 'Unnamed Engine 0.x'
+    command = command.split()
+    command = [word.strip() for word in command]
+    assert '' not in command
+    if command == []:
+        return
+    if len(command) == 1:
+        if command[0] == 'uci':
+            print('id name', engine_name)
+            print('id author j1642')
+            print('uciok')
             return
-        if len(command) == 1:
-            if command[0] == 'uci':
-                print('id name', engine_name)
-                print('id author j1642')
-                print('uciok')
-                return
-            elif command[0] == 'isready':
-                print('readyok')
-                return
-            elif command[0] == 'ucinewgame':
-                print('readyok')
-                return
-            elif command[0] == 'd':
-                print('\n', chessboard, sep='')
-                return
-            elif command[0] == 'stop':
-                # stop should not flow to here.
-                return
-            elif command[0] == 'quit':
-                # quit should not flow to here.
-                return
-            elif command[0] == 'register':
-                # Not planned.
-                return
-            elif command[0] == 'ucinewgame':
-                # Not planned.
+        elif command[0] == 'isready':
+            print('readyok')
+            return
+        elif command[0] == 'ucinewgame':
+            print('readyok')
+            return
+        elif command[0] == 'd':
+            print('\n', chessboard, sep='')
+            return
+        elif command[0] == 'stop':
+            # stop should not flow to here.
+            return
+        elif command[0] == 'quit':
+            # quit should not flow to here.
+            return
+        elif command[0] == 'register':
+            # Not planned.
+            return
+        elif command[0] == 'ucinewgame':
+            # Not planned.
+            return
+        else:
+            if command[0] in ['position', 'go']:
                 return
             else:
-                if command[0] in ['position', 'go']:
+                print('Unknown command.')
+    if command[0] == 'position':
+        if command[1] == 'fen':
+            fen = None
+            # fen = command[3:...]
+            # TODO: utils cannot handle full FEN string
+            chessboard = chess_utilities.import_fen_to_board(fen)
+        elif command[1] == 'startpos':
+            chessboard = board.Board()
+            chessboard.initialize_pieces()
+        elif any([chessboard.white_king is None,
+                 chessboard.black_king is None,
+                 len(chessboard.white_pieces + chessboard.black_pieces) < 2]):
+            return
+        if 'moves' in command:
+            moves_ind = command.index('moves')
+            for move in command[moves_ind + 1:]:
+                move = move.lower()
+                if not all([move[0].isalpha(), move[2].isalpha(),
+                            move[1].isdigit(), move[3].isdigit,
+                            len(move) == 4]):
+                    return
+                square_from = board.Board.ALGEBRAIC_NOTATION[move[:2]]
+                square_to = board.Board.ALGEBRAIC_NOTATION[move[2:]]
+                moving_piece = chessboard.squares[square_from]
+                if moving_piece.color == chessboard.last_move_piece.color:
+                    return
+                if moving_piece == chessboard.white_king:
+                    chessboard.update_black_controlled_squares()
+                    chessboard.white_king.update_moves(chessboard)
+                elif moving_piece == chessboard.black_king:
+                    chessboard.update_white_controlled_squares()
+                    chessboard.black_king.update_moves(chessboard)
+                else:
+                    moving_piece.update_moves(chessboard)
+                if square_to not in moving_piece.moves:
                     return
                 else:
-                    print('Unknown command.')
-        if command[0] == 'position':
-            if command[1] == 'fen':
-                fen = None
-                # fen = command[3:...]
-                # TODO: utils cannot handle full FEN string
-                chessboard = chess_utilities.import_fen_to_board(fen)
-            elif command[1] == 'startpos':
-                chessboard = board.Board()
-                chessboard.initialize_pieces()
-            elif any([chessboard.white_king is None,
-                     chessboard.black_king is None,
-                     len(chessboard.white_pieces + chessboard.black_pieces) < 2
-                      ]):
-                return
-            if 'moves' in command:
-                moves_ind = command.index('moves')
-                for move in command[moves_ind + 1:]:
-                    move = move.lower()
-                    if not all([move[0].isalpha(), move[2].isalpha(),
-                                move[1].isdigit(), move[3].isdigit,
-                                len(move) == 4]):
-                        return
-                    square_from = board.Board.ALGEBRAIC_NOTATION[move[:2]]
-                    square_to = board.Board.ALGEBRAIC_NOTATION[move[2:]]
-                    moving_piece = chessboard.squares[square_from]
-                    if moving_piece.color == chessboard.last_move_piece.color:
-                        return
-                    if moving_piece == chessboard.white_king:
-                        chessboard.update_black_controlled_squares()
-                        chessboard.white_king.update_moves(chessboard)
-                    elif moving_piece == chessboard.black_king:
-                        chessboard.update_white_controlled_squares()
-                        chessboard.black_king.update_moves(chessboard)
-                    else:
-                        moving_piece.update_moves(chessboard)
-                    if square_to not in moving_piece.moves:
-                        return
-                    else:
-                        moving_piece.move_piece(chessboard, square_to)
+                    moving_piece.move_piece(chessboard, square_to)
 
-        elif command[0] == 'go':
-            # TODO: info stdout, time commands.
-            searchmoves = None
-            if 'searchmoves' in command:
-                # Only look at subtrees of given moves.
-                searchmoves = []
-                searchmoves_ind = command.index('searchmoves')
-                for move in command[searchmoves_ind + 1:]:
-                    move = move.lower()
-                    if not all([move[0].isalpha(), move[2].isalpha(),
-                                move[1].isdigit(), move[3].isdigit,
-                                len(move) == 4]):
-                        return
-                    square_from = board.Board.ALGEBRAIC_NOTATION[move[:2]]
-                    square_to = board.Board.ALGEBRAIC_NOTATION[move[2:]]
-                    moving_piece = chessboard.squares[square_from]
-                    if moving_piece.color == chessboard.last_move_piece.color:
-                        return
-                    if moving_piece == chessboard.white_king:
-                        chessboard.update_black_controlled_squares()
-                        chessboard.white_king.update_moves(chessboard)
-                    elif moving_piece == chessboard.black_king:
-                        chessboard.update_white_controlled_squares()
-                        chessboard.black_king.update_moves(chessboard)
-                    else:
-                        moving_piece.update_moves(chessboard)
-                    if square_to not in moving_piece.moves:
-                        return
-                    searchmoves.append((moving_piece, square_to))
-
-            depth = float('inf')
-            if command[1] == 'depth':
-                try:
-                    if command[2].isdigit():
-                        # TODO: print "info depth 1 seldepth 0", ...
-                        depth = int(command[2])
-                    else:
-                        print('Unknown command')
-                        return
-                except IndexError:
+    elif command[0] == 'go':
+        # TODO: info stdout, time commands.
+        searchmoves = None
+        if 'searchmoves' in command:
+            # Only look at subtrees of given moves.
+            searchmoves = []
+            searchmoves_ind = command.index('searchmoves')
+            for move in command[searchmoves_ind + 1:]:
+                move = move.lower()
+                if not all([move[0].isalpha(), move[2].isalpha(),
+                            move[1].isdigit(), move[3].isdigit,
+                            len(move) == 4]):
                     return
+                square_from = board.Board.ALGEBRAIC_NOTATION[move[:2]]
+                square_to = board.Board.ALGEBRAIC_NOTATION[move[2:]]
+                moving_piece = chessboard.squares[square_from]
+                if moving_piece.color == chessboard.last_move_piece.color:
+                    return
+                if moving_piece == chessboard.white_king:
+                    chessboard.update_black_controlled_squares()
+                    chessboard.white_king.update_moves(chessboard)
+                elif moving_piece == chessboard.black_king:
+                    chessboard.update_white_controlled_squares()
+                    chessboard.black_king.update_moves(chessboard)
+                else:
+                    moving_piece.update_moves(chessboard)
+                if square_to not in moving_piece.moves:
+                    return
+                searchmoves.append((moving_piece, square_to))
 
-                def print_bestmove(depth, stop, quit):
-                    """Second thread, may be interrupted by Events."""
-                    bestmove = negamax(chessboard, depth,
-                                       stop=stop, quit=quit,
-                                       searchmoves=searchmoves)[1]
-                    bestmove = [board.Board.int_to_alg_notation[i]
-                                for i in bestmove]
-                    print('bestmove', ''.join(bestmove))
-                    stop.clear()
+        depth = float('inf')
+        if command[1] == 'depth':
+            try:
+                if command[2].isdigit():
+                    # TODO: print "info depth 1 seldepth 0", ...
+                    depth = int(command[2])
+                else:
+                    print('Unknown command')
+                    return
+            except IndexError:
+                return
 
-                t2 = threading.Thread(target=print_bestmove,
-                                      args=(depth, stop, quit))
-                t2.start()
-        elif len(command) > 1:
-            print('Unknown command.')
+            def print_bestmove(depth, stop, quit):
+                """Second thread, may be interrupted by Events."""
+                bestmove = negamax(chessboard, depth,
+                                   stop=stop, quit=quit,
+                                   searchmoves=searchmoves)[1]
+                bestmove = [board.Board.int_to_alg_notation[i]
+                            for i in bestmove]
+                print('bestmove', ''.join(bestmove))
+                stop.clear()
 
-    def get_uci_input(stop: threading.Event, quit: threading.Event):
-        """Control threading.Events, pass on other inputs."""
-        command = input().strip()
-        if command == 'quit':
-            quit.set()
-            sys.exit(0)
-        elif command == 'stop':
-            stop.set()
-        else:
-            uci(command, stop, quit)
+            t2 = threading.Thread(target=print_bestmove,
+                                  args=(depth, stop, quit))
+            t2.start()
+    elif len(command) > 1:
+        print('Unknown command.')
 
+
+def get_uci_input(stop: threading.Event, quit: threading.Event):
+    """Control threading.Events, pass on other inputs."""
+    command = input().strip()
+    if command == 'quit':
+        quit.set()
+        sys.exit(0)
+    elif command == 'stop':
+        stop.set()
+    else:
+        uci(command, stop, quit)
+
+
+if __name__ == '__main__':
     quit = threading.Event()
     stop = threading.Event()
     chessboard = board.Board()

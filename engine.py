@@ -530,12 +530,12 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
         pass
 
 
-def uci(command: str, stop: threading.Event, quit: threading.Event):
+def uci(command: str, stop: threading.Event, quit: threading.Event,
+        chessboard):
     """Interact with the engine using the Universal Chess Interface
     (UCI).
     """
     # TODO: Complete UCI
-    global chessboard
     engine_name = 'Unnamed Engine 0.x'
     command = command.split()
     command = [word.strip() for word in command]
@@ -672,7 +672,7 @@ def uci(command: str, stop: threading.Event, quit: threading.Event):
         print('Unknown command.')
 
 
-def get_uci_input(stop: threading.Event, quit: threading.Event):
+def get_uci_input(stop: threading.Event, quit: threading.Event, chessboard):
     """Control threading.Events, pass on other inputs."""
     command = input().strip()
     if command == 'quit':
@@ -681,15 +681,20 @@ def get_uci_input(stop: threading.Event, quit: threading.Event):
     elif command == 'stop':
         stop.set()
     else:
-        uci(command, stop, quit)
+        uci(command, stop, quit, chessboard)
 
 
-if __name__ == '__main__':
+def main():
+    """CLI engine."""
     quit = threading.Event()
     stop = threading.Event()
     chessboard = board.Board()
+    while not quit.is_set():
+        get_uci_input(stop, quit, chessboard)
+        time.sleep(0.3)
+
+
+if __name__ == '__main__':
     print('Unnamed Engine 0.x')
     print('Incomplete UCI.')
-    while not quit.is_set():
-        get_uci_input(stop, quit)
-        time.sleep(0.3)
+    main()

@@ -18,7 +18,6 @@ class Board:
         update_zobrist_hash()
         update_moves_white()
         update_moves_black()
-        update_king_moves()
         update_white_controlled_squares()
         update_black_controlled_squares()
         find_checking_pieces()
@@ -250,26 +249,6 @@ class Board:
                             self.zobrist_hash ^= self.hash_nums[14][3]
                         else:
                             raise ValueError('invalid rook square')
-
-    def update_king_moves(self):
-        """King moves are dependant on the possbile moves of all opponent
-        pieces, so they must be updated last.
-        """
-        for piece in self.white_pieces:
-            if piece.name == 'K':
-                white_king = piece
-                break
-        for piece in self.black_pieces:
-            if piece.name == 'k':
-                black_king = piece
-                break
-
-        white_king.check_if_in_check(self.white_controlled_squares,
-                                     self.black_controlled_squares)
-        black_king.check_if_in_check(self.white_controlled_squares,
-                                     self.black_controlled_squares)
-        white_king.update_moves(self)
-        black_king.update_moves(self)
 
     def update_white_controlled_squares(self):
         """Create a set to determine if black king is in check and limit

@@ -561,83 +561,81 @@ class Knight(_Piece):
     def __repr__(self):
         return f'({self.name}, Sq: {self.square}, {self.color})'
 
-    def update_moves(self, board):
+    def update_moves(self, chessboard):
         """Update knight moves."""
-        all_squares = board.squares
+        all_squares = chessboard.squares
         self.protected_squares = []
+        self.moves = []
         # Moves ordered from downward (toward 1st rank) to upward knight moves
-        knight_move_directions = (-15, -17, -6, -10, 6, 10, 15, 17)
-        all_moves = [self.square + delta for delta in knight_move_directions]
+        directions = [-15, -17, -6, -10, 6, 10, 15, 17]
 
         if self.square in ranks_files.rank_1:
-            all_moves = all_moves[4:]
+            directions = directions[4:]
         elif self.square in ranks_files.rank_2:
-            all_moves = all_moves[2:]
+            directions = directions[2:]
         elif self.square in ranks_files.rank_7:
-            all_moves = all_moves[:6]
+            directions = directions[:6]
         elif self.square in ranks_files.rank_8:
-            all_moves = all_moves[:4]
+            directions = directions[:4]
 
         if self.square in ranks_files.a_file:
-            for movement in (-17, -10, 6, 15):
+            for direction in (-17, -10, 6, 15):
                 try:
-                    all_moves.remove(self.square + movement)
+                    directions.remove(direction)
                 except ValueError:
-                    continue
+                    pass
         elif self.square in ranks_files.b_file:
-            for movement in (-10, 6):
+            for direction in (-10, 6):
                 try:
-                    all_moves.remove(self.square + movement)
+                    directions.remove(direction)
                 except ValueError:
-                    continue
+                    pass
         elif self.square in ranks_files.g_file:
-            for movement in (10, -6):
+            for direction in (10, -6):
                 try:
-                    all_moves.remove(self.square + movement)
+                    directions.remove(direction)
                 except ValueError:
-                    continue
+                    pass
         elif self.square in ranks_files.h_file:
-            for movement in (17, 10, -6, -15):
+            for direction in (17, 10, -6, -15):
                 try:
-                    all_moves.remove(self.square + movement)
+                    directions.remove(direction)
                 except ValueError:
-                    continue
+                    pass
 
-        # Remove moves where there is a friendly piece.
-        all_moves_copy = all_moves.copy()
-        for square in all_moves_copy:
+        for direction in directions:
+            move = self.square + direction
             try:
-                if self.color == all_squares[square].color:
-                    all_moves.remove(square)
-                    self.protected_squares.append(square)
+                if self.color == all_squares[move].color:
+                    self.protected_squares.append(move)
+                else:
+                    self.moves.append(move)
             except AttributeError:
-                continue
-
-        self.moves = all_moves
+                self.moves.append(move)
 
     def move_piece(self, board, new_square: int):
         """Move the knight."""
-        if new_square in self.moves:
-            if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
-                                                      Rook, Queen)):
-                captured_piece = board.squares[new_square]
-                board.update_zobrist_hash([captured_piece, self])
-                assert captured_piece.color != self.color
-                if self.color == 'white':
-                    board.black_pieces.remove(captured_piece)
-                else:
-                    board.white_pieces.remove(captured_piece)
-
-            elif isinstance(board.squares[new_square], King):
-                raise Exception('King should not be able to be captured.')
-            else:
-                board.update_zobrist_hash([self])
-            old_square, self.square = self.square, new_square
-            self.update_board_after_move(board, new_square, old_square)
-
-        else:
+        if new_square not in self.moves:
             print(f'Not a valid move for {self.name} (sq: {new_square}).')
             return 'Not a valid move.'
+
+        if isinstance(board.squares[new_square], (Pawn, Knight, Bishop,
+                                                  Rook, Queen)):
+            captured_piece = board.squares[new_square]
+            board.update_zobrist_hash([captured_piece, self])
+            assert captured_piece.color != self.color
+            if self.color == 'white':
+                board.black_pieces.remove(captured_piece)
+            else:
+                board.white_pieces.remove(captured_piece)
+
+        elif isinstance(board.squares[new_square], King):
+            raise Exception('King should not be able to be captured.')
+        else:
+            board.update_zobrist_hash([self])
+
+        old_square, self.square = self.square, new_square
+        self.update_board_after_move(board, new_square, old_square)
 
 
 class Bishop(_Piece):

@@ -581,7 +581,6 @@ def uci(command: str, stop: threading.Event, quit: threading.Event,
             # TODO: utils cannot handle full FEN string
             chessboard = chess_utilities.import_fen_to_board(fen)
         elif command[1] == 'startpos':
-            chessboard = board.Board()
             chessboard.initialize_pieces()
         elif any([chessboard.white_king is None,
                  chessboard.black_king is None,
@@ -691,10 +690,11 @@ def main():
     chessboard = board.Board()
     while not quit.is_set():
         get_uci_input(stop, quit, chessboard)
-        time.sleep(0.3)
+        time.sleep(0.2)
 
 
 if __name__ == '__main__':
     print('Unnamed Engine 0.x')
+    # TODO: complete UCI
     print('Incomplete UCI.')
     main()

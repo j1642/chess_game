@@ -1,6 +1,9 @@
 """Tests for engine.py, especially move tree search and node evaluation."""
+import contextlib
 import cProfile
+import io
 import unittest
+from unittest import mock
 
 import board
 import chess_utilities
@@ -135,6 +138,7 @@ class TestEngine(unittest.TestCase):
         #  3, 4, 5, ->   5, 4, 3,
         #  6, 7, 8]      2, 1, 0]
 
+    # Negamax throughput 240 to 340 knps, including pruned nodes.
     def test_negamax(self):
         """Search function finds the best move."""
         chessboard = chess_utilities.import_fen_to_board(
@@ -144,3 +148,43 @@ class TestEngine(unittest.TestCase):
             'k7/8/8/8/6rR/8/8/K7 b')
         search = engine.negamax(chessboard, 4)
         self.assertEqual(search[1], (30, 31))
+
+    @unittest.skip('')
+    def test_zobrist_undo(self):
+        """Reverse hashes when undoing a move."""
+        self.assertEqual(0, 1)
+
+    def test_uci_isready(self):
+        """UCI 'isready' command."""
+        response = io.StringIO()
+        with contextlib.redirect_stdout(response):
+            engine.uci('isready', '', '', board.Board())
+        self.assertEqual(response.getvalue(), 'readyok\n')
+
+    def test_uci_d(self):
+        """UCI 'd' command."""
+        chessboard = board.Board()
+        response = io.StringIO()
+        with contextlib.redirect_stdout(response):
+            engine.uci('d', '', '', chessboard)
+        self.assertEqual(response.getvalue(),
+                         ''.join(['\n', str(chessboard), '\n']))
+
+    @mock.patch('engine.input', create=True)
+    def test_uci_quit(self, mocked_input):
+        """UCI quit mid-calculation."""
+        mocked_input.side_effect = ['position startpos', 'go depth 4', 'quit']
+        with self.assertRaises(SystemExit):
+            engine.main()
+
+    @mock.patch('engine.input', create=True)
+    def test_uci_go_depth_stop_quit(self, mocked_input):
+        """UCI calculation returns response."""
+        # Side effect raises StopIteration when exhausted.
+        mocked_input.side_effect = ['position startpos', 'go depth 4', 'stop',
+                                    'quit']
+        response = io.StringIO()
+        with contextlib.redirect_stdout(response):
+            with self.assertRaises(SystemExit):
+                engine.main()
+        self.assertEqual(response.getvalue(), 'bestmove b1a3\n')

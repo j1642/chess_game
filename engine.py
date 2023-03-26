@@ -252,10 +252,16 @@ def generate_move_tree(chessboard, pieces_to_move):
                 StopIteration
         except IndexError:
             StopIteration
-        chessboard.update_white_controlled_squares()
-        chessboard.update_black_controlled_squares()
-        chessboard.white_king.update_moves(chessboard)
-        replicate_promotion_moves(chessboard)
+        if piece is chessboard.white_king:
+            chessboard.update_black_controlled_squares()
+            piece.update_moves(chessboard)
+        elif piece is chessboard.black_king:
+            chessboard.update_white_controlled_squares()
+            piece.update_moves(chessboard)
+        else:
+            piece.update_moves(chessboard)
+            if isinstance(piece, pieces.Pawn):
+                replicate_promotion_moves(chessboard)
         saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
                                                 i, pieces_to_move)
         for move in piece.moves:
@@ -344,13 +350,19 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
 
     best_move = None
     for i, piece in enumerate(pieces_to_move):
-        chessboard.update_white_controlled_squares()
-        chessboard.update_black_controlled_squares()
-        chessboard.white_king.update_moves(chessboard)
+        if piece is chessboard.white_king:
+            chessboard.update_black_controlled_squares()
+            piece.update_moves(chessboard)
+        elif piece is chessboard.black_king:
+            chessboard.update_white_controlled_squares()
+            piece.update_moves(chessboard)
+        else:
+            piece.update_moves(chessboard)
         if searchmoves:
             for i, search_piece in enumerate(pieces_to_move):
                 search_piece.moves = [moves_to_search[i]]
-        replicate_promotion_moves(chessboard)
+        if isinstance(piece, pieces.Pawn):
+            replicate_promotion_moves(chessboard)
 
         saved_piece_loop = save_state_per_piece(chessboard, pieces_to_move[i],
                                                 i, pieces_to_move)

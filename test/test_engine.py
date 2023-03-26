@@ -194,4 +194,4 @@ class TestEngine(unittest.TestCase):
         with contextlib.redirect_stdout(response):
             with self.assertRaises(SystemExit):
                 engine.main()
-        self.assertEqual(response.getvalue(), 'bestmove b1a3\n')
+        self.assertEqual(response.getvalue(), 'bestmove b1c3\n')

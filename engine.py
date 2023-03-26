@@ -452,11 +452,15 @@ def replicate_promotion_moves(chessboard):
     """Add specific promotion pieces to a pawn's moves. Assumes queen
     promotion is the default and is already accounted for.
     """
-    for piece in chessboard.white_pieces + chessboard.black_pieces:
-        if isinstance(piece, pieces.Pawn):
+    if chessboard.last_move_piece.color == 'white':
+        search_pieces = chessboard.black_pieces
+    else:
+        search_pieces = chessboard.white_pieces
+    for piece in search_pieces:
+        if piece.name[0].lower() == 'p':
             for move in piece.moves:
-                if any([move in pieces.ranks_files.rank_1,
-                        move in pieces.ranks_files.rank_8]):
+                if move in pieces.ranks_files.rank_1 \
+                        or move in pieces.ranks_files.rank_8:
                     piece.moves.append((move, 'knight'))
                     piece.moves.append((move, 'bishop'))
                     piece.moves.append((move, 'rook'))

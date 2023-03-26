@@ -149,10 +149,17 @@ class TestEngine(unittest.TestCase):
         search = engine.negamax(chessboard, 4)
         self.assertEqual(search[1], (30, 31))
 
-    @unittest.skip('')
     def test_zobrist_undo(self):
         """Reverse hashes when undoing a move."""
-        self.assertEqual(0, 1)
+        chessboard = board.Board()
+        chessboard.initialize_pieces()
+        chessboard.update_zobrist_hash()
+        initial_hash = chessboard.zobrist_hash
+        initial_ep_hash_to_undo = chessboard.ep_hash_to_undo
+
+        engine.negamax(chessboard, 2)
+        self.assertEqual(initial_hash, chessboard.zobrist_hash)
+        self.assertEqual(initial_ep_hash_to_undo, chessboard.ep_hash_to_undo)
 
     def test_uci_isready(self):
         """UCI 'isready' command."""

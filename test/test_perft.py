@@ -1,7 +1,7 @@
 """Debug the move generating functions by counting nodes of move tree."""
 
-import cProfile
 from collections import defaultdict
+import cProfile
 import unittest
 
 import board
@@ -92,7 +92,8 @@ def perft(chessboard, depth):
             #  partial_w_controlled_sqrs = None
             # if isinstance(chessboard.last_move_piece, pieces.Pawn):
             #     partial_b_controlled_sqrs = \
-            #         chessboard.get_moves_for_moved_and_sliding_pieces(chessboard.last_move_piece)
+            #         chessboard.get_moves_for_moved_and_sliding_pieces(
+            #            chessboard.last_move_piece)
             # else:
             #     partial_b_controlled_sqrs = \
             #         chessboard.find_sliding_controlled_squares('black')
@@ -121,7 +122,8 @@ class TestPerft(unittest.TestCase):
         chessboard = board.Board()
         chessboard.last_move_piece = pieces.Pawn('p', 'black', 100)
         chessboard.initialize_pieces(autopromote=['white', 'black'])
-        self.assertEqual(perft(chessboard, depth), nodes[depth])
+        node_count = perft(chessboard, depth)
+        self.assertEqual(node_count, nodes[depth])
 
     # Fails depth 4 (regression).
     def test_kiwipete(self, depth=3):
@@ -148,8 +150,14 @@ class TestPerft(unittest.TestCase):
         nodes = {1: 24, 2: 496, 3: 9483, 4: 182838, 5: 3605103}
         chessboard = chess_utilities.import_fen_to_board(
             'n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b', autopromote=True)
+        chessboard.update_zobrist_hash()
+        initial_hash = chessboard.zobrist_hash
+        initial_ep_hash_to_undo = chessboard.ep_hash_to_undo
+
         node_count = perft(chessboard, depth)
         self.assertEqual(node_count, nodes[depth])
+        self.assertEqual(initial_hash, chessboard.zobrist_hash)
+        self.assertEqual(initial_ep_hash_to_undo, chessboard.ep_hash_to_undo)
 
     @unittest.skip('passes! ~10 sec')
     def test_short_castling_gives_check(self):

@@ -441,7 +441,11 @@ def save_state_per_move(chessboard, move, piece):
             static_pieces = chessboard.black_pieces
         ep_captured_piece_ind = static_pieces.index(ep_captured_piece)
 
-    return prev_occupant, prev_occupant_ind, ep_captured_piece_ind
+    zobrist_hash = chessboard.zobrist_hash
+    en_passant_hash = chessboard.ep_hash_to_undo
+
+    return prev_occupant, prev_occupant_ind, ep_captured_piece_ind, \
+        zobrist_hash, en_passant_hash
 
 
 def replicate_promotion_moves(chessboard):
@@ -463,7 +467,8 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
     prev_move_piece, prev_move_from_to, prev_square, prev_moves, \
         switch_has_moved_to_False, piece, i, pieces_to_move = saved_piece_loop
 
-    prev_occupant, prev_occupant_ind, ep_captured_piece_ind = saved_move_loop
+    prev_occupant, prev_occupant_ind, ep_captured_piece_ind, zobrist_hash,\
+        en_passant_hash = saved_move_loop
 
     if switch_has_moved_to_False:
         piece.has_moved = False
@@ -484,8 +489,6 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
                 ep_captured_piece_ind,
                 prev_move_piece)
     # Undo castling.
-    # When moing the last piece on home row separating king/rook,
-    # new rook appears on its castling square.
     if isinstance(piece, pieces.King) and prev_square in [4, 60]:
         if move in [2, 6, 58, 62]:
             if move == 2:
@@ -511,7 +514,7 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
             rook.has_moved = False
             piece.has_moved = False
     # Undo promotion piece list changes.
-    # Possible bugs from changing list while iterating over it.
+    # Carefully change list while iterating over it.
     try:
         if chessboard.last_move_piece.name[1] == 'p' \
                 and isinstance(piece, pieces.Pawn):
@@ -525,8 +528,6 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
             assert len_before_changes == len(pieces_to_move)
     except IndexError:
         pass
-    chessboard.last_move_piece = prev_move_piece
-    chessboard.last_move_from_to = prev_move_from_to
     try:
         if prev_occupant.color == 'white':
             assert prev_occupant not in chessboard.white_pieces
@@ -540,6 +541,12 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
                 prev_occupant)
     except AttributeError:
         pass
+    # Undo hashing.
+    chessboard.zobrist_hash = zobrist_hash
+    chessboard.ep_hash_to_undo = en_passant_hash
+
+    chessboard.last_move_piece = prev_move_piece
+    chessboard.last_move_from_to = prev_move_from_to
 
 
 def uci(command: str, stop: threading.Event, quit: threading.Event,

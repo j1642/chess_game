@@ -22,14 +22,14 @@ A playable UCI chess engine.
 - Search
   - [Negamax](https://www.chessprogramming.org/Negamax) algorithm
   - [Alpha-beta](https://www.chessprogramming.org/Alpha-Beta) optimizations
+  - [Transposition table](https://www.chessprogramming.org/Transposition_Table) based on [Zobrist hashing](https://www.chessprogramming.org/Zobrist_Hashing)
 - Evaluation
   - Piece mobility
   - Pawn structure
   - [Piece square tables](https://www.chessprogramming.org/Piece-Square_Tables)
   - [Evaluation tapering](https://www.chessprogramming.org/Tapered_Eval)
  
-
-### Use:
+### Use
 Clone or unzip the repository (green Code button --> Download ZIP).
 ##### To play chess,
 ```
@@ -40,6 +40,6 @@ $ python3 game.py
 $ python3 engine.py
 ```
 
-### Dependencies:
+### Dependencies
 - Python 3.6+
 - Tkinter (to play against the computer)

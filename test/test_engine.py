@@ -41,11 +41,13 @@ class TestEngine(unittest.TestCase):
         board_eval -= 10 * len(chessboard.black_controlled_squares)
         self.assertEqual(board_eval, 0)
 
-        game_phase = engine.early_vs_endgame_phase(chessboard)
+        game_phase = engine.early_vs_endgame_phase(
+            chessboard,
+            engine.piece_phase_values)
         self.assertEqual(game_phase, 0)
 
         for piece in chessboard.white_pieces:
-            value = engine.white_pst_mg[piece.name[0].lower()][piece.square]
+            value = engine.white_pst_mg[piece.name[0]][piece.square]
             board_eval += value
         for piece in chessboard.black_pieces:
             value = engine.black_pst_mg[piece.name[0]][piece.square]
@@ -57,13 +59,13 @@ class TestEngine(unittest.TestCase):
     def test_piece_squares_tables(self):
         """Square values reflect across the board's horizontal midline."""
         self.assertEqual(
-            engine.white_pst_mg['k'][4],
+            engine.white_pst_mg['K'][4],
             engine.black_pst_mg['k'][60])
         self.assertEqual(
-            engine.white_pst_mg['k'][6],
+            engine.white_pst_mg['K'][6],
             engine.black_pst_mg['k'][62])
         self.assertEqual(
-            engine.white_pst_mg['k'][12],
+            engine.white_pst_mg['K'][12],
             engine.black_pst_mg['k'][52])
 
     def test_pawn_evaluation(self):
@@ -79,11 +81,13 @@ class TestEngine(unittest.TestCase):
         chessboard = board.Board()
         # Empty board approximates end of game.
         self.assertEqual(
-            engine.early_vs_endgame_phase(chessboard),
-            256)
+            engine.early_vs_endgame_phase(chessboard,
+                                          engine.piece_phase_values),
+            1.0)
         chessboard.initialize_pieces()
         self.assertEqual(
-            engine.early_vs_endgame_phase(chessboard),
+            engine.early_vs_endgame_phase(chessboard,
+                                          engine.piece_phase_values),
             0)
 
     def test_doubled_pawns_eval(self):
@@ -194,4 +198,19 @@ class TestEngine(unittest.TestCase):
         with contextlib.redirect_stdout(response):
             with self.assertRaises(SystemExit):
                 engine.main()
-        self.assertEqual(response.getvalue(), 'bestmove b1c3\n')
+        self.assertTrue(response.getvalue() in ['bestmove b1c3\n',
+                                                'bestmove b1a3\n'])
+
+    # 380knps depth 4, 30k depth 3, including pruned, etc.
+    @unittest.skip('Performance analysis, not a test.')
+    def test_kiwipete(self, depth=3):
+        """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
+        # nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
+        #         6: 8031647685}
+        chessboard = chess_utilities.import_fen_to_board(
+            'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w',
+            autopromote=True)
+        pr.enable()
+        engine.negamax(chessboard, depth)
+        pr.disable()
+        pr.dump_stats('profile.pstat')

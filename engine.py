@@ -155,18 +155,22 @@ piece_square_tables_eg = {'p':
         -27, -11,   4,  13,  14,   4,  -5, -17,
         -53, -34, -21, -11, -28, -14, -24, -43]
     }
-piece_values = {'p': 100, 'n': 300, 'b': 300, 'r': 500, 'q': 900,
-                'k': 10000}
+piece_values = {'p': 100, 'n': 300, 'b': 300, 'r': 500, 'q': 900, 'k': 10000,
+                'P': 100, 'N': 300, 'B': 300, 'R': 500, 'Q': 900, 'K': 10000}
+piece_phase_values = {'p': 0, 'n': 1, 'b': 1, 'r': 2, 'q': 4,
+                      'P': 0, 'N': 1, 'B': 1, 'R': 2, 'Q': 4}
 # Transform early/middle-game piece-square tables.
 black_pst_mg = piece_square_tables_mg
 white_pst_mg = {}
 for k, v in piece_square_tables_mg.items():
-    white_pst_mg[k] = reorder_piece_square_table(v, 'white')
+    white_pst_mg[k.upper()] = reorder_piece_square_table(v, 'white')
 # Transform endgame tables.
 black_pst_eg = piece_square_tables_eg
 white_pst_eg = {}
 for k, v in piece_square_tables_eg.items():
-    white_pst_eg[k] = reorder_piece_square_table(v, 'white')
+    white_pst_eg[k.upper()] = reorder_piece_square_table(v, 'white')
+
+transposition = {}
 
 
 def eval_doubled_blocked_isolated_pawns(chessboard):
@@ -177,28 +181,25 @@ def eval_doubled_blocked_isolated_pawns(chessboard):
     black_eval = 0
     white_pawns_per_file = [0] * 8
     black_pawns_per_file = [0] * 8
-    for i, board_file in enumerate(pieces.ranks_files.files):
-        for square in board_file:
-            if isinstance(chessboard.squares[square], pieces.Pawn):
-                # Blocked pawns
-                piece = chessboard.squares[square]
-                if piece.square + 8 not in piece.moves \
-                        and piece.square - 8 not in piece.moves:
-                    if piece.color == 'white':
-                        white_eval -= 50
-                    else:
-                        black_eval -= 50
+    for piece in chessboard.white_pieces + chessboard.black_pieces:
+        if piece.name[0].lower() == 'p':
+            # Blocked pawns
+            if piece.square + 8 not in piece.moves \
+                    and piece.square - 8 not in piece.moves:
                 if piece.color == 'white':
-                    white_pawns_per_file[i] += 1
+                    white_eval -= 50
                 else:
-                    black_pawns_per_file[i] += 1
+                    black_eval -= 50
+            if piece.color == 'white':
+                white_pawns_per_file[piece.square % 8] += 1
+            else:
+                black_pawns_per_file[piece.square % 8] += 1
     for color, pawns_per_file in enumerate([white_pawns_per_file,
                                             black_pawns_per_file]):
         pawn_eval = 0
         for i, pawn_count in enumerate(pawns_per_file):
             # Doubled pawns
             if pawn_count > 1:
-                # -0.5 for doubled, -0.75 for tripled
                 pawn_eval -= 25 * pawn_count
             # Isolated pawns
             if pawn_count > 0:
@@ -208,14 +209,12 @@ def eval_doubled_blocked_isolated_pawns(chessboard):
                     # A-pawn(s)
                     if pawns_per_file[i + 1] == 0:
                         pawn_eval -= 50
-                assert isinstance(lower_neighbor, int)
                 try:
                     higher_neighbor = pawns_per_file[i + 1]
                 except IndexError:
                     # H-pawn(s)
                     if pawns_per_file[i - 1] == 0:
                         pawn_eval -= 50
-                assert isinstance(higher_neighbor, int)
                 if lower_neighbor == 0 == higher_neighbor:
                     pawn_eval -= 50
 
@@ -226,20 +225,18 @@ def eval_doubled_blocked_isolated_pawns(chessboard):
     return white_eval - black_eval
 
 
-def early_vs_endgame_phase(chessboard):
+def early_vs_endgame_phase(chessboard, piece_phase_values):
     """Approximate the current stage of the game, from 0 (beginning) to
     256 (end). Fewer pieces remaining increases endgame proximity.
     """
-    piece_phases = {'p': 0, 'n': 1, 'b': 1, 'r': 2, 'q': 4}
     # Initially, there are 4 bishops, knights, and rooks; and 2 queens.
-    initial_phase = 4 * (1 + 1 + 2) + 4 * 2
+    # initial phase = 4 * (1 + 1 + 2) + 4 * 2
+    initial_phase = 24
     phase = initial_phase
     for piece in chessboard.white_pieces + chessboard.black_pieces:
-        if isinstance(piece, pieces.King):
-            continue
-        phase -= piece_phases[piece.name[0].lower()]
-    phase = (phase * 256 + (initial_phase / 2)) / initial_phase
-    phase = round(phase)
+        if not piece.name[0].lower() == 'k':
+            phase -= piece_phase_values[piece.name[0].lower()]
+    phase = phase / 24
     return phase
 
 
@@ -274,28 +271,27 @@ def generate_move_tree(chessboard, pieces_to_move):
 def evaluate_position(chessboard):
     """Return board position evaluation in centipawns."""
     # Piece values.
-    white_position = sum([piece_values[piece.name[0].lower()]
+    white_position = sum([piece_values[piece.name[0]]
                           for piece in chessboard.white_pieces])
-    black_position = sum([piece_values[piece.name[0].lower()]
+    black_position = sum([piece_values[piece.name[0]]
                           for piece in chessboard.black_pieces])
     # Piece mobility.
     white_position += 10 * len(chessboard.white_controlled_squares)
     black_position += 10 * len(chessboard.black_controlled_squares)
     # Opening/middlegame vs endgame phase taper.
-    phase = early_vs_endgame_phase(chessboard)
-    eg_percent = phase / 256
+    eg_percent = early_vs_endgame_phase(chessboard, piece_phase_values)
     mg_percent = 1 - eg_percent
 
     # Apply piece-square tables with phase taper percentages.
     for piece in chessboard.white_pieces:
-        midgame_piece_eval = white_pst_mg[piece.name[0].lower()][piece.square]
-        endgame_piece_eval = white_pst_eg[piece.name[0].lower()][piece.square]
+        midgame_piece_eval = white_pst_mg[piece.name[0]][piece.square]
+        endgame_piece_eval = white_pst_eg[piece.name[0]][piece.square]
         white_position += midgame_piece_eval * mg_percent \
             + endgame_piece_eval * eg_percent
 
     for piece in chessboard.black_pieces:
-        midgame_piece_eval = black_pst_mg[piece.name[0].lower()][piece.square]
-        endgame_piece_eval = black_pst_eg[piece.name[0].lower()][piece.square]
+        midgame_piece_eval = black_pst_mg[piece.name[0]][piece.square]
+        endgame_piece_eval = black_pst_eg[piece.name[0]][piece.square]
         black_position += midgame_piece_eval * mg_percent \
             + endgame_piece_eval * eg_percent
 

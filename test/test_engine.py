@@ -164,6 +164,7 @@ class TestEngine(unittest.TestCase):
         chessboard = chess_utilities.import_fen_to_board(
             'k7/8/8/8/6rR/8/8/K7 b')
         search = engine.negamax(chessboard, 4)
+        engine.transposition = {}
         self.assertEqual(search[1], (30, 31))
 
     def test_zobrist_undo(self):
@@ -175,6 +176,7 @@ class TestEngine(unittest.TestCase):
         initial_ep_hash_to_undo = chessboard.ep_hash_to_undo
 
         engine.negamax(chessboard, 2)
+        engine.transposition = {}
         self.assertEqual(initial_hash, chessboard.zobrist_hash)
         self.assertEqual(initial_ep_hash_to_undo, chessboard.ep_hash_to_undo)
 
@@ -200,6 +202,7 @@ class TestEngine(unittest.TestCase):
         mocked_input.side_effect = ['position startpos', 'go depth 4', 'quit']
         with self.assertRaises(SystemExit):
             engine.main()
+        engine.transposition = {}
 
     @mock.patch('engine.input', create=True)
     def test_uci_go_depth_stop_quit(self, mocked_input):
@@ -211,6 +214,7 @@ class TestEngine(unittest.TestCase):
         with contextlib.redirect_stdout(response):
             with self.assertRaises(SystemExit):
                 engine.main()
+        engine.transposition = {}
         self.assertTrue(response.getvalue() in ['bestmove b1c3\n',
                                                 'bestmove b1a3\n'])
 
@@ -223,7 +227,12 @@ class TestEngine(unittest.TestCase):
         chessboard = chess_utilities.import_fen_to_board(
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w',
             autopromote=True)
+        engine.transposition = {}
         pr.enable()
-        engine.negamax(chessboard, depth)
+        result = engine.negamax(chessboard, depth)
         pr.disable()
         pr.dump_stats('profile.pstat')
+        print(len(engine.transposition.keys()))
+        engine.transposition = {}
+        self.assertTrue(result[0] in [512, 539])
+        self.assertEqual(result[1], (12, 40))

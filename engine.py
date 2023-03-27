@@ -368,18 +368,40 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
                     chessboard.black_controlled_squares):
                 friendly_king.in_check = False
             else:
-                values = negamax(chessboard, depth - 1, -1 * beta,
-                                 -1 * alpha, stop, quit)
-                raw_score = values[0]
-                score = -1 * raw_score
+                if chessboard.zobrist_hash in transposition:
+                    _, score, node = transposition[chessboard.zobrist_hash]
+                    if node == 'cutnode':
+                        alpha = score
+                        continue
+                    elif node == 'allnode':
+                        beta = score
+                        continue
+                else:
+                    values = negamax(chessboard, depth - 1, -1 * beta,
+                                     -1 * alpha, stop, quit)
+                    raw_score = values[0]
+                    score = -1 * raw_score
+                # Cut node/Type 2
                 # Fail hard when score exceeds beta boundary.
                 if score >= beta:
                     best_move = chessboard.last_move_from_to
                     undo_move(chessboard, saved_piece_loop, saved_move_loop)
+                    transposition[chessboard.zobrist_hash] = \
+                        (best_move, score, 'cutnode')
                     return beta, best_move
-                if score > alpha:
+                # PV node/Type 1
+                elif score > alpha:
                     alpha = score
                     best_move = chessboard.last_move_from_to
+                    transposition[chessboard.zobrist_hash] = \
+                        (best_move, score, 'pvnode')
+                # All node/Type 3
+                else:
+                    transposition[chessboard.zobrist_hash] = \
+                        (best_move, score, 'allnode')
+                # TODO: add depth and age to transposition table,
+                # add cache invalidation based on age
+
             undo_move(chessboard, saved_piece_loop, saved_move_loop)
             try:
                 if quit.is_set():

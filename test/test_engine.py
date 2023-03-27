@@ -27,7 +27,9 @@ class TestEngine(unittest.TestCase):
         chessboard.update_white_controlled_squares()
         chessboard.update_black_controlled_squares()
         self.assertEqual(
-            engine.eval_doubled_blocked_isolated_pawns(chessboard),
+            engine.evaluate_pawns_and_phase(
+                chessboard,
+                engine.piece_phase_values)[0],
             0)
 
         board_eval = 0
@@ -41,9 +43,9 @@ class TestEngine(unittest.TestCase):
         board_eval -= 10 * len(chessboard.black_controlled_squares)
         self.assertEqual(board_eval, 0)
 
-        game_phase = engine.early_vs_endgame_phase(
+        game_phase = engine.evaluate_pawns_and_phase(
             chessboard,
-            engine.piece_phase_values)
+            engine.piece_phase_values)[1]
         self.assertEqual(game_phase, 0)
 
         for piece in chessboard.white_pieces:
@@ -74,20 +76,25 @@ class TestEngine(unittest.TestCase):
         chessboard.initialize_pieces()
         self.assertEqual(
             0.0,
-            engine.eval_doubled_blocked_isolated_pawns(chessboard))
+            engine.evaluate_pawns_and_phase(
+                chessboard,
+                engine.piece_phase_values)[0])
 
     def test_phase_eval(self):
-        """Detect game phase out of 256 (beginning, middle, end)."""
+        """Detect game phase 0 to 1 (beginning to end)."""
         chessboard = board.Board()
         # Empty board approximates end of game.
         self.assertEqual(
-            engine.early_vs_endgame_phase(chessboard,
-                                          engine.piece_phase_values),
+            engine.evaluate_pawns_and_phase(
+                chessboard,
+                engine.piece_phase_values)[1],
             1.0)
+        # Full board for beginning of game.
         chessboard.initialize_pieces()
         self.assertEqual(
-            engine.early_vs_endgame_phase(chessboard,
-                                          engine.piece_phase_values),
+            engine.evaluate_pawns_and_phase(
+                chessboard,
+                engine.piece_phase_values)[1],
             0)
 
     def test_doubled_pawns_eval(self):
@@ -96,7 +103,9 @@ class TestEngine(unittest.TestCase):
             '8/8/8/8/2P5/8/PPP5/8 w')
         # Update moves or eval will consider the pawns to be blocked.
         chessboard.update_white_controlled_squares()
-        evaluation = engine.eval_doubled_blocked_isolated_pawns(chessboard)
+        evaluation = engine.evaluate_pawns_and_phase(
+            chessboard,
+            engine.piece_phase_values)[0]
         self.assertEqual(evaluation, -50)
 
     def test_blocked_pawns_eval(self):
@@ -104,7 +113,9 @@ class TestEngine(unittest.TestCase):
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/8/8/bb6/PPP5/8 w')
         chessboard.update_white_controlled_squares()
-        evaluation = engine.eval_doubled_blocked_isolated_pawns(chessboard)
+        evaluation = engine.evaluate_pawns_and_phase(
+            chessboard,
+            engine.piece_phase_values)[0]
         self.assertEqual(evaluation, -100)
 
     def test_isolated_pawns_eval(self):
@@ -112,7 +123,9 @@ class TestEngine(unittest.TestCase):
         chessboard = chess_utilities.import_fen_to_board(
             '8/8/8/8/8/8/P1P4P/8 w')
         chessboard.update_white_controlled_squares()
-        evaluation = engine.eval_doubled_blocked_isolated_pawns(chessboard)
+        evaluation = engine.evaluate_pawns_and_phase(
+            chessboard,
+            engine.piece_phase_values)[0]
         self.assertEqual(evaluation, -150)
 
     def test_reorder_piece_square_table(self):

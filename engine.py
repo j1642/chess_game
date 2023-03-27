@@ -173,27 +173,34 @@ for k, v in piece_square_tables_eg.items():
 transposition = {}
 
 
-def eval_doubled_blocked_isolated_pawns(chessboard):
+def evaluate_pawns_and_phase(chessboard, piece_phase_values):
     """Return evaluation of doubled, blocked, and/or isolated pawns, in
-    centipawns.
+    centipawns, and the current game phase.
+
+    Evaluating pawns and calculating the game phase in the same loop is
+    faster than two seperate loops/functions. n vs 2n.
     """
     white_eval = 0
     black_eval = 0
     white_pawns_per_file = [0] * 8
     black_pawns_per_file = [0] * 8
+    phase = 24
     for piece in chessboard.white_pieces + chessboard.black_pieces:
-        if piece.name[0].lower() == 'p':
+        if piece.name[0] == 'p' or piece.name[0] == 'P':
             # Blocked pawns
-            if piece.square + 8 not in piece.moves \
-                    and piece.square - 8 not in piece.moves:
-                if piece.color == 'white':
-                    white_eval -= 50
-                else:
-                    black_eval -= 50
             if piece.color == 'white':
                 white_pawns_per_file[piece.square % 8] += 1
+                if piece.square + 8 not in piece.moves:
+                    white_eval -= 50
             else:
                 black_pawns_per_file[piece.square % 8] += 1
+                if piece.square - 8 not in piece.moves:
+                    black_eval -= 50
+        else:
+            if not piece.name[0] == 'K' and not piece.name[0] == 'k':
+                phase -= piece_phase_values[piece.name[0].lower()]
+    phase = round(phase / 24)
+
     for color, pawns_per_file in enumerate([white_pawns_per_file,
                                             black_pawns_per_file]):
         pawn_eval = 0
@@ -217,27 +224,12 @@ def eval_doubled_blocked_isolated_pawns(chessboard):
                         pawn_eval -= 50
                 if lower_neighbor == 0 == higher_neighbor:
                     pawn_eval -= 50
-
         if color == 0:
             white_eval += pawn_eval
         else:
             black_eval += pawn_eval
-    return white_eval - black_eval
 
-
-def early_vs_endgame_phase(chessboard, piece_phase_values):
-    """Approximate the current stage of the game, from 0 (beginning) to
-    256 (end). Fewer pieces remaining increases endgame proximity.
-    """
-    # Initially, there are 4 bishops, knights, and rooks; and 2 queens.
-    # initial phase = 4 * (1 + 1 + 2) + 4 * 2
-    initial_phase = 24
-    phase = initial_phase
-    for piece in chessboard.white_pieces + chessboard.black_pieces:
-        if not piece.name[0].lower() == 'k':
-            phase -= piece_phase_values[piece.name[0].lower()]
-    phase = phase / 24
-    return phase
+    return white_eval - black_eval, phase
 
 
 def generate_move_tree(chessboard, pieces_to_move):
@@ -278,8 +270,11 @@ def evaluate_position(chessboard):
     # Piece mobility.
     white_position += 10 * len(chessboard.white_controlled_squares)
     black_position += 10 * len(chessboard.black_controlled_squares)
+
+    total_evaluation, eg_percent = evaluate_pawns_and_phase(
+        chessboard,
+        piece_phase_values)
     # Opening/middlegame vs endgame phase taper.
-    eg_percent = early_vs_endgame_phase(chessboard, piece_phase_values)
     mg_percent = 1 - eg_percent
 
     # Apply piece-square tables with phase taper percentages.
@@ -295,8 +290,7 @@ def evaluate_position(chessboard):
         black_position += midgame_piece_eval * mg_percent \
             + endgame_piece_eval * eg_percent
 
-    total_evaluation = white_position - black_position
-    total_evaluation += eval_doubled_blocked_isolated_pawns(chessboard)
+    total_evaluation += white_position - black_position
     # Negation for negamax
     if chessboard.last_move_piece.color == 'white':
         total_evaluation *= -1

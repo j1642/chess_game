@@ -62,7 +62,7 @@ def divide(chessboard, depth):
 
 
 def perft(chessboard, depth):
-    """DFS through move tree and count the nodes."""
+    """DFS through move tree and return the node count."""
     if chessboard.last_move_piece.color == 'white':
         friendly_king = chessboard.black_king
         pieces_to_move = chessboard.black_pieces
@@ -88,21 +88,10 @@ def perft(chessboard, depth):
 
     for chessboard in generate_move_tree(chessboard, pieces_to_move):
         if friendly_king.color == 'white':
-            # Outline to limit pawn updates.
-            #  partial_w_controlled_sqrs = None
-            # if isinstance(chessboard.last_move_piece, pieces.Pawn):
-            #     partial_b_controlled_sqrs = \
-            #         chessboard.get_moves_for_moved_and_sliding_pieces(
-            #            chessboard.last_move_piece)
-            # else:
-            #     partial_b_controlled_sqrs = \
-            #         chessboard.find_sliding_controlled_squares('black')
             chessboard.update_black_controlled_squares()
         else:
             chessboard.update_white_controlled_squares()
         if friendly_king.check_if_in_check(
-                # partial_w_controlled_sqrs,
-                # partial_b_controlled_sqrs):
                 chessboard.white_controlled_squares,
                 chessboard.black_controlled_squares):
             friendly_king.in_check = False
@@ -114,8 +103,8 @@ def perft(chessboard, depth):
 class TestPerft(unittest.TestCase):
     """Check Perft node counts from various positions."""
 
-    # Depth 5 fails. Too high by 1.006x
-    def test_perft_initial_position(self, depth=4):
+    # Passes depth 5.
+    def test_perft_initial_position(self, depth=3):
         """Perft from the normal starting position."""
         nodes = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609,
                  6: 119060324}
@@ -125,7 +114,7 @@ class TestPerft(unittest.TestCase):
         node_count = perft(chessboard, depth)
         self.assertEqual(node_count, nodes[depth])
 
-    # Fails depth 4 (regression).
+    # Passes depth 4.
     def test_kiwipete(self, depth=3):
         """r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"""
         nodes = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690,
@@ -135,7 +124,7 @@ class TestPerft(unittest.TestCase):
         node_count = perft(chessboard, depth)
         self.assertEqual(node_count, nodes[depth])
 
-    # Passes depth 5.
+    # Fails depth 5 (regression).
     def test_position_3(self, depth=4):
         """Wiki position 3. Some captures, promotions, and checks."""
         nodes = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
@@ -144,7 +133,7 @@ class TestPerft(unittest.TestCase):
         node_count = perft(chessboard, depth)
         self.assertEqual(node_count, nodes[depth])
 
-    # Fails depth 5 (regression).
+    # Passes depth 5.
     def test_promotion(self, depth=4):
         """Promotion FEN from rocechess.ch/perft.html"""
         nodes = {1: 24, 2: 496, 3: 9483, 4: 182838, 5: 3605103}

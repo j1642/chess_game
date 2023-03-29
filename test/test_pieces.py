@@ -883,3 +883,10 @@ class TestPieces(SetUpTearDown):
             '8/8/8/8/8/8/8/q1KRBqqq w')
         white_rook = chessboard.squares[3]
         self.assertFalse(white_rook.is_pinned(chessboard))
+
+    def test_queen_is_pinned(self):
+        """Black queen is pinned. From perft kiwipete depth 4."""
+        # White queen just moved fcf6.
+        chessboard = chess_utilities.import_fen_to_board(
+            '3k4/4q3/4pQ2/6B1/8/8/8/4K3 b')
+        self.assertTrue(chessboard.squares[52].is_pinned(chessboard))

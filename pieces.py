@@ -159,7 +159,8 @@ class _Piece:
             pinning_pieces = (Bishop, Queen)
         else:
             pinning_pieces = (Rook, Queen)
-        for square in shared[0]:
+        shared = sorted(list(shared[0]))
+        for square in shared:
             try:
                 if self.color != chessboard.squares[square].color \
                         and isinstance(chessboard.squares[square],
@@ -173,8 +174,7 @@ class _Piece:
 
         king_found = False
         pinned_piece_found = False
-        shared = sorted(list(shared[0]))
-        pinning_pieces_squares.sort()
+
         if friendly_king.square < self.square:
             for pinning_piece_square in pinning_pieces_squares:
                 if self.square < pinning_piece_square:
@@ -182,11 +182,13 @@ class _Piece:
             else:
                 return False
         elif friendly_king.square > self.square:
-            for pinning_piece_square in pinning_pieces_squares:
+            for pinning_piece_square in reversed(pinning_pieces_squares):
                 if self.square > pinning_piece_square:
                     break
             else:
                 return False
+            # Reverse so the linear search finds friendly king, then self (the
+            # possibly pinned piece), then the possibly pinning piece.
             shared = reversed(shared)
         else:
             return False
@@ -202,15 +204,12 @@ class _Piece:
                         # Blocking piece between self and king.
                         return False
                 else:
-                    try:
-                        if square == pinning_piece_square:
-                            # Correct piece order for a pin.
-                            break
-                        elif chessboard.squares[square].color:
-                            # Blocking piece.
-                            return False
-                    except AttributeError:
-                        pass
+                    if square == pinning_piece_square:
+                        # Correct piece order for a pin.
+                        break
+                    elif chessboard.squares[square] != ' ':
+                        # Blocking piece.
+                        return False
 
         orig_white_controlled_squares = chessboard.white_controlled_squares
         orig_black_controlled_squares = chessboard.black_controlled_squares

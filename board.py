@@ -424,7 +424,7 @@ class Board:
         # and capturing the checking piece.
         all_legal_moves_in_check = set(interpose_squares
                                        + checking_pieces_squares)
-
+        # Keep en passant move if it will escape check.
         for piece in friendly_pieces:
             if isinstance(piece, pieces.King):
                 continue
@@ -436,9 +436,9 @@ class Board:
                         and piece.en_passant_move \
                         and abs(checking_pieces[0].square - piece.square) == 1:
                     if piece.color == 'white' \
-                            and piece.square in pieces.ranks_files.rank_6 \
+                            and piece.square in pieces.ranks_files.rank_5 \
                             and checking_pieces[0].square \
-                            in pieces.ranks_files.rank_6:
+                            in pieces.ranks_files.rank_5:
                         piece.moves.append(piece.en_passant_move)
                     elif piece.color == 'black' \
                             and piece.square in pieces.ranks_files.rank_4 \

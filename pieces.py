@@ -323,7 +323,7 @@ class Pawn(_Piece):
             return False
         orig_white_controlled_sqrs = chessboard.white_controlled_squares
         orig_black_controlled_sqrs = chessboard.black_controlled_squares
-        capturable_pawn = chessboard.squares[chessboard.last_move_from_to[1]]
+        capturable_pawn = chessboard.last_move_piece
         chessboard.squares[self.square] = ' '
         chessboard.squares[capturable_pawn.square] = ' '
         last_move_from, last_move_to = chessboard.last_move_from_to
@@ -332,15 +332,20 @@ class Pawn(_Piece):
         chessboard.squares[en_passant_square] = self
         if self.color == 'white':
             friendly_king = chessboard.white_king
+            capturable_pawn_ind = chessboard.black_pieces.index(
+                capturable_pawn)
+            chessboard.black_pieces.remove(capturable_pawn)
             chessboard.update_black_controlled_squares()
         else:
             friendly_king = chessboard.black_king
+            capturable_pawn_ind = chessboard.white_pieces.index(
+                capturable_pawn)
+            chessboard.white_pieces.remove(capturable_pawn)
             chessboard.update_white_controlled_squares()
         orig_in_check = friendly_king.in_check
         if friendly_king.check_if_in_check(
                 chessboard.white_controlled_squares,
                 chessboard.black_controlled_squares):
-            friendly_king.in_check = orig_in_check
             if self.en_passant_move is not None and self.moves != []:
                 self.moves.remove(self.en_passant_move)
                 self.en_passant_move = None
@@ -350,13 +355,18 @@ class Pawn(_Piece):
                 # Implementation moved to Board.moves_must_escape_...()
                 pass
         # Reset
+        friendly_king.in_check = orig_in_check
         chessboard.squares[self.square] = self
         chessboard.squares[capturable_pawn.square] = capturable_pawn
         chessboard.squares[en_passant_square] = ' '
         if self.color == 'white':
             chessboard.black_controlled_squares = orig_black_controlled_sqrs
+            chessboard.black_pieces.insert(capturable_pawn_ind,
+                                           capturable_pawn)
         else:
             chessboard.white_controlled_squares = orig_white_controlled_sqrs
+            chessboard.white_pieces.insert(capturable_pawn_ind,
+                                           capturable_pawn)
         return False
 
     def update_moves(self, board):

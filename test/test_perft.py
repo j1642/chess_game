@@ -104,7 +104,7 @@ class TestPerft(unittest.TestCase):
     """Check Perft node counts from various positions."""
 
     # Passes depth 5.
-    def test_perft_initial_position(self, depth=3):
+    def test_perft_initial_position(self, depth=4):
         """Perft from the normal starting position."""
         nodes = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609,
                  6: 119060324}
@@ -124,7 +124,7 @@ class TestPerft(unittest.TestCase):
         node_count = perft(chessboard, depth)
         self.assertEqual(node_count, nodes[depth])
 
-    # Fails depth 5 (regression).
+    # Passes depth 5.
     def test_position_3(self, depth=4):
         """Wiki position 3. Some captures, promotions, and checks."""
         nodes = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
@@ -173,3 +173,9 @@ class TestPerft(unittest.TestCase):
         chessboard.squares[14].move_piece(chessboard, 30)
         # 8/8/K7/7k/5pP1/8/8/8 b - g3 0 1
         self.assertEqual(perft(chessboard, 2), 33)
+
+    def test_en_passant_escapes_check_2(self):
+        """Undo Pawn.is_pinned() piece list changes."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/2p5/8/1P6/1K3p1k/8/4P1P1/8 b')
+        self.assertEqual(perft(chessboard, 2), 80)

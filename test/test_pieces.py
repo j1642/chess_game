@@ -890,3 +890,20 @@ class TestPieces(SetUpTearDown):
         chessboard = chess_utilities.import_fen_to_board(
             '3k4/4q3/4pQ2/6B1/8/8/8/4K3 b')
         self.assertTrue(chessboard.squares[52].is_pinned(chessboard))
+
+    def test_en_passant_escapes_check_1(self):
+        """En passant is valid move to escape check."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '8/2p5/8/1P6/1K3p1k/8/4P1P1/8 b')
+        chessboard.squares[50].update_moves(chessboard)
+        chessboard.squares[50].move_piece(chessboard, 34)
+        # '8/8/8/1Pp5/1K3p1k/8/4P1P1/8 w')
+        chessboard.update_black_controlled_squares()
+        chessboard.update_white_controlled_squares()
+        self.assertTrue(chessboard.white_king.in_check)
+
+        ep_pawn = chessboard.squares[33]
+        self.assertFalse(ep_pawn.is_pinned(chessboard))
+        self.assertTrue(chessboard.white_king.in_check)
+        self.assertTrue(42 in ep_pawn.moves)
+        self.assertEqual(42, ep_pawn.en_passant_move)

@@ -368,7 +368,7 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
                     chessboard.black_controlled_squares):
                 friendly_king.in_check = False
             else:
-                if chessboard.zobrist_hash in transposition:
+                try:
                     _, score, node = transposition[chessboard.zobrist_hash]
                     if node == 'cutnode':
                         alpha = score
@@ -376,7 +376,7 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
                     elif node == 'allnode':
                         beta = score
                         continue
-                else:
+                except KeyError:
                     values = negamax(chessboard, depth - 1, -1 * beta,
                                      -1 * alpha, stop, quit)
                     raw_score = values[0]
@@ -400,7 +400,18 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
                     transposition[chessboard.zobrist_hash] = \
                         (best_move, score, 'allnode')
                 # TODO: add depth and age to transposition table,
-                # add cache invalidation based on age
+                # Cache invalidation based on insertion order.
+                # Ideal hash table load is 0.6 to 0.75.
+                # Dicts refuse new entries past 1 million, use a growth
+                # factor of 3, and a starting size of 8.
+                # 8 * 3^10 = 472392
+                # Delete first 200,000 k, v pairs added to the
+                # transposition table.
+                if len(transposition) > 700_000:
+                    # Iterator would be nice but gives RuntimeError
+                    keys = list(transposition)[:200_000]
+                    for key in keys:
+                        del transposition[key]
 
             undo_move(chessboard, saved_piece_loop, saved_move_loop)
             try:

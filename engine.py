@@ -370,11 +370,17 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
             else:
                 try:
                     _, score, node = transposition[chessboard.zobrist_hash]
+                    # TODO: PV nodes pass through into next section and may be
+                    # overwritten as other node types. Is this good or bad?
                     if node == 'cutnode':
                         alpha = score
+                        undo_move(chessboard, saved_piece_loop,
+                                  saved_move_loop)
                         continue
                     elif node == 'allnode':
                         beta = score
+                        undo_move(chessboard, saved_piece_loop,
+                                  saved_move_loop)
                         continue
                 except KeyError:
                     values = negamax(chessboard, depth - 1, -1 * beta,
@@ -396,16 +402,16 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
                     transposition[chessboard.zobrist_hash] = \
                         (best_move, score, 'pvnode')
                 # All node/Type 3
-                else:
+                elif chessboard.zobrist_hash not in transposition:
                     transposition[chessboard.zobrist_hash] = \
                         (best_move, score, 'allnode')
-                # TODO: add depth and age to transposition table,
+                # Add depth and age to transposition table?
                 # Cache invalidation based on insertion order.
                 # Ideal hash table load is 0.6 to 0.75.
                 # Dicts refuse new entries past 1 million, use a growth
                 # factor of 3, and a starting size of 8.
                 # 8 * 3^10 = 472392
-                # Delete first 200,000 k, v pairs added to the
+                # Delete first 200,000 key/value pairs added to the
                 # transposition table.
                 if len(transposition) > 700_000:
                     # Iterator would be nice but gives RuntimeError

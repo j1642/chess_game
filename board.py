@@ -16,10 +16,9 @@ class Board:
         __repr__()
         initialize_pieces()
         update_zobrist_hash()
-        update_moves_white()
-        update_moves_black()
         update_white_controlled_squares()
         update_black_controlled_squares()
+        find_sliding_controlled_squares()
         find_checking_pieces()
         find_interposition_squares()
         moves_must_escape_check_or_checkmate()
@@ -40,19 +39,7 @@ class Board:
         'f8': 61, 'g8': 62, 'h8': 63}
     int_to_alg_notation = {v: k for k, v in ALGEBRAIC_NOTATION.items()}
 
-    random.seed(104)
-    hash_nums = []
-    # PNBRQKpnbrqk on squares [0, 64).
-    for _ in range(len('PNBRQKpnbrqk')):
-        hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(64)])
-    # Black to move is True.
-    hash_nums.append(random.randint(0, 2 ** 64 - 1))
-    # File of a valid ep square, A to H.
-    hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(8)])
-    # Castling available. K kingside, K queenside, k kingside, k queenside.
-    hash_nums.append([random.randint(0, 2 ** 64 - 1) for i in range(4)])
-
-    def __init__(self):
+    def __init__(self, rand_num_gen_seed=104):
         self.squares = [' '] * 64
         self.white_pieces = []
         self.black_pieces = []
@@ -65,6 +52,21 @@ class Board:
         self.zobrist_hash = 0
         self.ep_hash_to_undo = None
         self.applied_initial_castling_hash = False
+
+        random.seed(rand_num_gen_seed)
+        self.hash_nums = []
+        # PNBRQKpnbrqk on squares [0, 64).
+        for _ in range(len('PNBRQKpnbrqk')):
+            self.hash_nums.append([random.randint(0, 2 ** 64 - 1)
+                                   for i in range(64)])
+        # Black to move is True.
+        self.hash_nums.append(random.randint(0, 2 ** 64 - 1))
+        # File of a valid ep square, A to H.
+        self.hash_nums.append([random.randint(0, 2 ** 64 - 1)
+                               for i in range(8)])
+        # Castling available. K kingside, K queenside, k kingside, k queenside.
+        self.hash_nums.append([random.randint(0, 2 ** 64 - 1)
+                               for i in range(4)])
 
     def __repr__(self):
         """Print the board setup, starting from the eighth rank (row)."""
@@ -253,9 +255,6 @@ class Board:
     def update_white_controlled_squares(self):
         """Create a set to determine if black king is in check and limit
         black king moves which would put it in check.
-
-        Note: Avoiding an "augment only" keyword argument helps avoid
-        discrepancies between controlled_squares and set of one color's moves.
         """
         white_controlled_squares = []
 
@@ -316,7 +315,7 @@ class Board:
         # King cannot be pinned.
         assert isinstance(color_pieces[-1], pieces.King)
         for piece in color_pieces[:-1]:
-            # <piece>.is_pinned() calls func. which removes illegal moves
+            # is_pinned() calls func. which removes illegal moves
             piece.is_pinned(self)
 
     def find_checking_pieces(self) -> list:

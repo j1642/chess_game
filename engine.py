@@ -297,6 +297,28 @@ def evaluate_position(chessboard):
     return total_evaluation
 
 
+def iterative_deepening(chessboard, depth, max_time=5, **kwargs):
+    """Move the best move piece to the front of its piece list for the
+    next depth calculation.
+    """
+    start = time.time()
+    for partial_depth in range(1, depth + 1):
+        evaluation, best_move = negamax(chessboard, partial_depth, **kwargs)
+        best_move_piece = chessboard.squares[best_move[0]]
+        if best_move_piece.name[0] != 'k' and best_move_piece.name[0] != 'K':
+            # Move ordering to speed up search function at deeper max
+            # depth, as in negamax(depth=1) then negamax(depth=2).
+            if best_move_piece.color == 'white':
+                chessboard.white_pieces.remove(best_move_piece)
+                chessboard.white_pieces.insert(0, best_move_piece)
+            else:
+                chessboard.black_pieces.remove(best_move_piece)
+                chessboard.black_pieces.insert(0, best_move_piece)
+        if max_time < (time.time() - start):
+            break
+    return evaluation, best_move
+
+
 def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
             stop=None, quit=None, searchmoves=None):
     """DFS through move tree and evaluate leaves.

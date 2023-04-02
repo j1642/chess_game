@@ -2,6 +2,7 @@
 import contextlib
 import cProfile
 import io
+import time
 import unittest
 from unittest import mock
 
@@ -236,3 +237,31 @@ class TestEngine(unittest.TestCase):
         engine.transposition = {}
         self.assertTrue(result[0] in [512, 539])
         self.assertEqual(result[1], (12, 40))
+
+    def test_undo_move_when_in_transposition_table(self):
+        """Do not raise AssertionError from p on 14 "capturing" bp on 6."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '4k3/8/8/3PN3/1p2P3/2N5/PPP2PpP/R3K2R b',
+            autopromote=True)
+        engine.negamax(chessboard, 1)
+
+    def test_iterative_deepening(self):
+        """Move ordering from iterative deepening increases performance."""
+        chessboard = chess_utilities.import_fen_to_board(
+            '4k3/4q3/bn3n2/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w',
+            autopromote=True)
+        engine.transposition = {}
+        start = time.time()
+        engine.iterative_deepening(chessboard, 3)
+        iter_deep_elapsed = time.time() - start
+        self.assertTrue(iter_deep_elapsed < 0.05)
+
+        engine.transposition = {}
+        chessboard = chess_utilities.import_fen_to_board(
+            '4k3/4q3/bn3n2/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w',
+            autopromote=True)
+        start = time.time()
+        engine.negamax(chessboard, 3)
+        normal_elapsed = time.time() - start
+        self.assertTrue(normal_elapsed > 0.15)
+        engine.transposition = {}

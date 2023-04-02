@@ -242,13 +242,14 @@ class Game:
             res_white_turn = self.white_turn()
             if res_white_turn:
                 sys.exit(0)
-            self.between_moves()
-            self.board.remove_illegal_moves_for_pinned_pieces('black')
             self.display.update_gui(self.board)
             # res_black_turn = self.black_turn()
             # Engine provides illegal moves sometimes, which are noticed
             # by <piece>.move_piece
             comp_move = engine.negamax(self.board, 2)[1]
+            # Refresh move lists after search.
+            self.between_moves()
+            self.board.remove_illegal_moves_for_pinned_pieces('black')
             print(comp_move)
             print(self.board.squares[comp_move[0]].moves)
             res_black_turn = self.computer_turn(move=comp_move)

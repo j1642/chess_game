@@ -552,7 +552,8 @@ def undo_move(chessboard, saved_piece_loop, saved_move_loop):
         if chessboard.last_move_piece.name[1] == 'p' \
                 and isinstance(piece, pieces.Pawn):
             len_before_changes = len(pieces_to_move)
-            removed_piece = pieces_to_move.pop(0)
+            pieces_to_move.remove(chessboard.last_move_piece)
+            removed_piece = chessboard.last_move_piece
             assert removed_piece.color == piece.color
             logging.debug(f"Undo: removing {removed_piece} from piece list")
             pieces_to_move.insert(i, piece)

@@ -130,7 +130,7 @@ class Game:
 
         self.turn_color = self.player_color
 
-    def player_turn(self, old_square=None):
+    def player_turn(self, old_square=None, move=None):
         """Human turn."""
         if self.player_color == 'white':
             player_pieces = self.board.white_pieces
@@ -230,29 +230,28 @@ class Game:
     def play(self):
         """Play the game."""
         if not self.board.black_pieces + self.board.white_pieces:
-            # Computer pawns will autopromote to queen.
             if self.computer_color == 'white':
                 self.board.initialize_pieces(autopromote=['white'])
             else:
                 self.board.initialize_pieces(autopromote=['black'])
         while True:
+            self.display.update_gui(self.board)
+            comp_move = None
+            if self.computer_color == 'white':
+                comp_move = engine.negamax(self.board, 2)[1]
             self.between_moves()
             self.board.remove_illegal_moves_for_pinned_pieces('white')
-            self.display.update_gui(self.board)
-            res_white_turn = self.white_turn()
+            res_white_turn = self.white_turn(move=comp_move)
             if res_white_turn:
                 sys.exit(0)
+
             self.display.update_gui(self.board)
-            # res_black_turn = self.black_turn()
-            # Engine provides illegal moves sometimes, which are noticed
-            # by <piece>.move_piece
-            comp_move = engine.negamax(self.board, 2)[1]
-            # Refresh move lists after search.
+            comp_move = None
+            if self.computer_color == 'black':
+                comp_move = engine.negamax(self.board, 2)[1]
             self.between_moves()
             self.board.remove_illegal_moves_for_pinned_pieces('black')
-            print(comp_move)
-            print(self.board.squares[comp_move[0]].moves)
-            res_black_turn = self.computer_turn(move=comp_move)
+            res_black_turn = self.black_turn(move=comp_move)
             if res_black_turn:
                 sys.exit(0)
 

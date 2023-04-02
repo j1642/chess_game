@@ -469,6 +469,7 @@ class Pawn(_Piece):
             return self.promote_pawn(board)
 
         new_piece = all_squares[self.square]
+        board.update_zobrist_hash([self, new_piece])
 
         # King pieces must always be final item in board.<color>_pieces.
         # Insert into board.<color>_pieces, never append.
@@ -544,6 +545,7 @@ class Pawn(_Piece):
             self.promote_pawn(board, promote_to)
             board.last_move_piece = board.squares[new_square]
         elif self.color == 'black' and self.square in ranks_files.rank_1:
+            logging.debug(f"{self} promotes ({promote_to})")
             self.promote_pawn(board, promote_to)
             board.last_move_piece = board.squares[new_square]
 

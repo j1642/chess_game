@@ -3,24 +3,8 @@
 import unittest
 from unittest import mock
 
+import chess_utilities
 import game
-import pieces
-
-
-def setup_board_kings_in_corner(g: game.Game):
-    """Set up the kings and a pawn in a corner as an incomplete template
-    for stalemate and checkmate.
-    """
-    a8 = g.board.ALGEBRAIC_NOTATION['a8']
-    a7 = g.board.ALGEBRAIC_NOTATION['a7']
-    a6 = g.board.ALGEBRAIC_NOTATION['a6']
-    g.board.black_pieces = [pieces.King('k', 'black', a8),
-                            pieces.Pawn('pa', 'black', a7)]
-    g.board.white_pieces = [pieces.King('K', 'white', a6)]
-    for piece in g.board.white_pieces + g.board.black_pieces:
-        g.board.squares[piece.square] = piece
-    g.board.white_king = g.board.squares[a6]
-    g.board.black_king = g.board.squares[a8]
 
 
 class TestGame(unittest.TestCase):
@@ -88,14 +72,12 @@ class TestGame(unittest.TestCase):
             with self.subTest(player_color=player_color):
                 mocked_input.side_effect = [player_color]
                 g = game.Game()
-                setup_board_kings_in_corner(g)
+                g.board = chess_utilities.import_fen_to_board(
+                    'k7/p7/K7/8/8/8/8/1R6 w')
                 if player_color == 'white':
                     g.player_king = g.board.white_king
                 else:
                     g.player_king = g.board.black_king
-                b1 = g.board.ALGEBRAIC_NOTATION['b1']
-                g.board.squares[b1] = pieces.Rook('Ra', 'white', b1)
-                g.board.white_pieces.append(g.board.squares[b1])
 
                 g.between_moves()
                 res = g.black_turn()
@@ -108,14 +90,12 @@ class TestGame(unittest.TestCase):
             with self.subTest(player_color=player_color):
                 mocked_input.side_effect = [player_color]
                 g = game.Game()
-                setup_board_kings_in_corner(g)
+                g.board = chess_utilities.import_fen_to_board(
+                    'k6R/p7/K7/8/8/8/8/8 w')
                 g.player_king = g.board.white_king
                 if player_color == 'black':
                     g.player_king = g.board.black_king
-                h8 = g.board.ALGEBRAIC_NOTATION['h8']
-                g.board.squares[h8] = pieces.Rook('Ra', 'white', h8)
-                g.board.white_pieces.append(g.board.squares[h8])
-                g.board.last_move_piece = g.board.squares[h8]
+                g.board.last_move_piece = g.board.squares[63]
                 g.board.last_move_from_to = (7, 63)
 
                 g.between_moves()

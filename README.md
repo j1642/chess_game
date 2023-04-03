@@ -11,7 +11,7 @@
 A playable UCI chess engine.
 
 ### Features
-- [UCI communication protocol](https://www.wbec-ridderkerk.nl/html/UCIProtocol.html)
+- Multithreaded [UCI communication protocol](https://www.wbec-ridderkerk.nl/html/UCIProtocol.html)
 ([Universal Chess Interface](https://en.wikipedia.org/wiki/Universal_Chess_Interface))
 
 - Board representation

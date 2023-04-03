@@ -97,14 +97,14 @@ class Board:
         white_knight_g = pieces.Knight('Ng', 'white', 6)
         white_rook_h = pieces.Rook('Rh', 'white', 7)
 
-        white_pawn_a = pieces.Pawn('Pa', 'white', 8)
-        white_pawn_b = pieces.Pawn('Pb', 'white', 9)
-        white_pawn_c = pieces.Pawn('Pc', 'white', 10)
-        white_pawn_d = pieces.Pawn('Pd', 'white', 11)
-        white_pawn_e = pieces.Pawn('Pe', 'white', 12)
-        white_pawn_f = pieces.Pawn('Pf', 'white', 13)
-        white_pawn_g = pieces.Pawn('Pg', 'white', 14)
-        white_pawn_h = pieces.Pawn('Ph', 'white', 15)
+        white_pawn_a = pieces.Pawn('P', 'white', 8)
+        white_pawn_b = pieces.Pawn('P', 'white', 9)
+        white_pawn_c = pieces.Pawn('P', 'white', 10)
+        white_pawn_d = pieces.Pawn('P', 'white', 11)
+        white_pawn_e = pieces.Pawn('P', 'white', 12)
+        white_pawn_f = pieces.Pawn('P', 'white', 13)
+        white_pawn_g = pieces.Pawn('P', 'white', 14)
+        white_pawn_h = pieces.Pawn('P', 'white', 15)
 
         self.white_pieces = [white_rook_a, white_knight_b, white_bishop_c,
                              white_queen, white_bishop_f,
@@ -122,14 +122,14 @@ class Board:
         black_knight_g = pieces.Knight('ng', 'black', 62)
         black_rook_h = pieces.Rook('rh', 'black', 63)
 
-        black_pawn_a = pieces.Pawn('pa', 'black', 48)
-        black_pawn_b = pieces.Pawn('pb', 'black', 49)
-        black_pawn_c = pieces.Pawn('pc', 'black', 50)
-        black_pawn_d = pieces.Pawn('pd', 'black', 51)
-        black_pawn_e = pieces.Pawn('pe', 'black', 52)
-        black_pawn_f = pieces.Pawn('pf', 'black', 53)
-        black_pawn_g = pieces.Pawn('pg', 'black', 54)
-        black_pawn_h = pieces.Pawn('ph', 'black', 55)
+        black_pawn_a = pieces.Pawn('p', 'black', 48)
+        black_pawn_b = pieces.Pawn('p', 'black', 49)
+        black_pawn_c = pieces.Pawn('p', 'black', 50)
+        black_pawn_d = pieces.Pawn('p', 'black', 51)
+        black_pawn_e = pieces.Pawn('p', 'black', 52)
+        black_pawn_f = pieces.Pawn('p', 'black', 53)
+        black_pawn_g = pieces.Pawn('p', 'black', 54)
+        black_pawn_h = pieces.Pawn('p', 'black', 55)
 
         self.black_pieces = [black_rook_a, black_knight_b, black_bishop_c,
                              black_queen, black_bishop_f,
@@ -260,7 +260,7 @@ class Board:
 
         for piece in self.white_pieces:
             piece.update_moves(self)
-            if not isinstance(piece, pieces.Pawn):
+            if not piece.name == 'P':
                 for move in piece.moves:
                     white_controlled_squares.append(move)
             for square in piece.protected_squares:
@@ -276,7 +276,7 @@ class Board:
 
         for piece in self.black_pieces:
             piece.update_moves(self)
-            if not isinstance(piece, pieces.Pawn):
+            if not piece.name == 'p':
                 for move in piece.moves:
                     black_controlled_squares.append(move)
             for square in piece.protected_squares:

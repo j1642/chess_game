@@ -27,21 +27,14 @@ class TestGame(unittest.TestCase):
     """Test: user input, computer moves, stalemates, checkmated."""
 
     @mock.patch('game.input', create=True)
-    def test_get_player_move_from(self, mocked_input):
+    def test_get_player_move(self, mocked_input):
         """Ask the player for a square to move from."""
-        mocked_input.side_effect = ['white', 'a2']
+        mocked_input.side_effect = ['white', 'a2a3']
         g = game.Game()
         g.board.initialize_pieces()
-        square = g.get_player_move_from()
-        self.assertEqual(square, 8)
-
-    @mock.patch('game.input', create=True)
-    def test_get_player_move_to(self, mocked_input):
-        """Ask the player for a square to move to."""
-        mocked_input.side_effect = ['black', 'a2']
-        g = game.Game()
-        square = g.get_player_move_to()
-        self.assertEqual(square, 8)
+        old_square, new_square = g.get_player_move()
+        self.assertEqual(old_square, 8)
+        self.assertEqual(new_square, 16)
 
     @mock.patch('game.input', create=True)
     def test_is_valid_square(self, mocked_input):
@@ -134,10 +127,9 @@ class TestGame(unittest.TestCase):
 
     @mock.patch('game.input', create=True)
     def test_scholars_mate(self, mocked_input):
-        # Relatively slow test/
+        # Relatively slow test.
         """Reach Scholar's Mate step by step."""
-        mocked_input.side_effect = ['white', 'e2', 'e4', 'd1', 'h5', 'f1',
-                                    'c4', 'h5', 'f7']
+        mocked_input.side_effect = ['white', 'e2e4', 'd1h5', 'f1c4', 'h5f7']
         g = game.Game()
         g.board.initialize_pieces()
         for computer_move in [('e7', 'e5'), ('b8', 'c6'), ('g8', 'f6'),

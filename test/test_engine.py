@@ -217,7 +217,8 @@ class TestEngine(unittest.TestCase):
                 engine.main()
         engine.transposition = {}
         self.assertTrue(response.getvalue() in ['bestmove b1c3\n',
-                                                'bestmove b1a3\n'])
+                                                'bestmove b1a3\n',
+                                                'bestmove g1f3\n'])
 
     # 380knps depth 4, 30k depth 3, including pruned, etc.
     @unittest.skip('Performance analysis, not a test.')

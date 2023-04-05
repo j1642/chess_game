@@ -366,12 +366,9 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
     for i, piece in enumerate(pieces_to_move):
         if piece is chessboard.white_king:
             chessboard.update_black_controlled_squares()
-            piece.update_moves(chessboard)
         elif piece is chessboard.black_king:
             chessboard.update_white_controlled_squares()
-            piece.update_moves(chessboard)
-        else:
-            piece.update_moves(chessboard)
+        piece.update_moves(chessboard)
         if searchmoves:
             for i, search_piece in enumerate(pieces_to_move):
                 search_piece.moves = [moves_to_search[i]]
@@ -644,12 +641,6 @@ def uci(command: str, stop: threading.Event, quit: threading.Event,
             return
         elif command[0] == 'd':
             print('\n', chessboard, sep='')
-            return
-        elif command[0] == 'stop':
-            # stop should not flow to here.
-            return
-        elif command[0] == 'quit':
-            # quit should not flow to here.
             return
         elif command[0] == 'register':
             # Not planned.

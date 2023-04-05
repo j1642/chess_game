@@ -297,6 +297,8 @@ def evaluate_position(chessboard):
     return total_evaluation
 
 
+# TODO: Fix iter. deep. weird best moves.
+# Incorporate iterative deepening into search.
 def iterative_deepening(chessboard, depth, max_time=5, **kwargs):
     """Move the best move piece to the front of its piece list for the
     next depth calculation.
@@ -392,8 +394,7 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
             else:
                 try:
                     _, score, node = transposition[chessboard.zobrist_hash]
-                    # TODO: PV nodes pass through into next section and may be
-                    # overwritten as other node types. Is this good or bad?
+                    # Should PV nodes ever be overwritten as other node types?
                     if node == 'cutnode':
                         alpha = score
                         undo_move(chessboard, saved_piece_loop,
@@ -403,6 +404,18 @@ def negamax(chessboard, depth, alpha=float('-inf'), beta=float('inf'),
                         beta = score
                         undo_move(chessboard, saved_piece_loop,
                                   saved_move_loop)
+                        continue
+                    elif node == 'pvnode':
+                        if score > beta:
+                            best_move = chessboard.last_move_from_to
+                            undo_move(chessboard, saved_piece_loop,
+                                      saved_move_loop)
+                            return beta, best_move
+                        elif score > alpha:
+                            alpha = score
+                            best_move = chessboard.last_move_from_to
+                            undo_move(chessboard, saved_piece_loop,
+                                      saved_move_loop)
                         continue
                 except KeyError:
                     values = negamax(chessboard, depth - 1, -1 * beta,

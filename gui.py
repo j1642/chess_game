@@ -113,19 +113,14 @@ class GUI:
                 raise Exception(f'Square {ind}: contents invalid.')
 
             image_path = tk.PhotoImage(file=image_path)
-            # Need to store Photoimage object reference to display it
+            # Need to store PhotoImage object reference to display it
             # after the for loop and function end.
-            # Re-initializing images list on every update...() does not
-            # fix memory leak
             self.image_references[ind] = image_path
 
             self.find_command_make_button(chessboard,
                                           (image_path, column_num,
                                               row_num, ind, square),
                                           selected_piece)
-        # mainloop() blocks flow from moving on.
-        # self.root.mainloop()
-
         # update_idletasks() disables GUI click interaction.
         self.root.update_idletasks()
 
@@ -149,8 +144,6 @@ class GUI:
         else:
             command = lambda: selected_piece.move_piece(chessboard, index)
 
-        # Changing images through button updating slows memory leak.
-        # Leak is presumably from excess button creation.
         if self.buttons[index] == 0:
             button = tk.Button(
                 self.root,

@@ -1,21 +1,9 @@
-"""The six chess piece types each have their own class.
+"""Pawn, Knight, Bishop, Rook, Queen, and King classes.
 
-The common piece methods are update_moves() and move_piece(), with more
-specialized methods including Pawn.promote_pawn(), King.check_if_in_check(),
-and King.remove_moves_to_attacked_squares().
+The RanksFiles class stores sets which assist the update_moves() methods.
 
-The RanksFiles class acts as iterable storage which assists all of the
-update_moves() methods.
-
-The squares of a chessboard are represented here as integers from 0 to 63.
-Square 0 is the a1 square, which is the bottom-left square from white's
-perspective, and the top-right square from black's perspective.
-
-The integer values of the squares increase within a rank (row).
-E.g. a1 is square 0, h1 is square 7.
-
-The values also increase with increasing rank number.
-E.g. a2 is square 8, while a1 is square 0.
+The "magic numbers" in this file (integers [0, 63]) correspond to the
+squares of a chessboard.
 
 Algebraic notation of the squares.
 | a8 | b8 | c8 | ... | h8 |
@@ -37,7 +25,7 @@ import logging
 
 
 class RanksFiles:
-    """Holds iterables for limiting piece movement."""
+    """Holds sets for limiting piece movement."""
 
     def __init__(self):
         self.a_file = {i * 8 for i in range(8)}
@@ -134,14 +122,10 @@ class _Piece:
                 in ranks_files.low_left_top_right_diagonals:
             if self.square in low_left_top_right_diagonal:
                 break
-        else:
-            assert self.square in [48, 56, 57, 6, 7, 15]
         for top_left_low_right_diagonal in \
                 ranks_files.top_left_low_right_diagonals:
             if self.square in top_left_low_right_diagonal:
                 break
-        else:
-            assert self.square in [0, 1, 8, 62, 63, 55]
         if friendly_king.square in rank:
             shared = (rank, 'rank')
         elif friendly_king.square in file_:

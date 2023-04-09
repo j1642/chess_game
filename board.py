@@ -261,10 +261,8 @@ class Board:
         for piece in self.white_pieces:
             piece.update_moves(self)
             if not piece.name == 'P':
-                for move in piece.moves:
-                    white_controlled_squares.append(move)
-            for square in piece.protected_squares:
-                white_controlled_squares.append(square)
+                white_controlled_squares += piece.moves
+            white_controlled_squares += piece.protected_squares
 
         self.white_controlled_squares = set(white_controlled_squares)
 
@@ -277,10 +275,8 @@ class Board:
         for piece in self.black_pieces:
             piece.update_moves(self)
             if not piece.name == 'p':
-                for move in piece.moves:
-                    black_controlled_squares.append(move)
-            for square in piece.protected_squares:
-                black_controlled_squares.append(square)
+                black_controlled_squares += piece.moves
+            black_controlled_squares += piece.protected_squares
 
         self.black_controlled_squares = set(black_controlled_squares)
 

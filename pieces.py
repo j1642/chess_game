@@ -975,7 +975,6 @@ class King:
         """Update king moves, while considering castling and illegal moves."""
         all_squares = board.squares
         all_moves = []
-        self.protected_squares = []
         directions = [7, 8, 9, -1, 1, -9, -8, -7]
 
         if self.square in ranks_files.rank_1:
@@ -987,30 +986,29 @@ class King:
                 try:
                     directions.remove(direction)
                 except ValueError:
-                    continue
+                    pass
         elif self.square in ranks_files.h_file:
             for direction in (9, 1, -7):
                 try:
                     directions.remove(direction)
                 except ValueError:
-                    continue
+                    pass
 
         if self.color == 'white':
             opponent_controlled_squares = board.black_controlled_squares
         else:
             opponent_controlled_squares = board.white_controlled_squares
-        for direction in directions:
-            new_square = self.square + direction
-            self.protected_squares.append(new_square)
-            if new_square not in opponent_controlled_squares:
-                all_moves.append(new_square)
 
+        self.protected_squares = [self.square + direction for direction
+                                  in directions]
+        all_moves = [move for move in self.protected_squares if move not
+                     in opponent_controlled_squares]
         for square in self.protected_squares:
             try:
                 if self.color == all_squares[square].color:
                     all_moves.remove(square)
             except (AttributeError, ValueError):
-                continue
+                pass
 
         if self.check_if_in_check(board.white_controlled_squares,
                                   board.black_controlled_squares):
